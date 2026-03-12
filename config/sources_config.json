@@ -133,15 +133,15 @@
         "Referer": "https://dilar.tube/"
       },
       "selectors": {
-        "manga_title": "h1.text-4xl, h1, meta[property='og:title']",
-        "manga_cover": "div.relative.aspect-\\[2\\/3\\] img, img[alt*='cover'], meta[property='og:image']",
-        "manga_description": "p.text-gray-300.line-clamp-4, p.mt-4.text-gray-300, .description, meta[name='description']",
-        "manga_genres": "div.flex.flex-wrap.gap-2 a, a[href*='/genre/']",
-        "chapter_list": "div.mt-8.space-y-4 a, a.flex.items-center.justify-between, a[href*='/chapter/'], a[href*='/ch-']",
-        "chapter_page_image": "div.flex.flex-col.items-center img, img[loading='lazy']",
-        "filter_list": "div.grid a.w-full.h-full, a[href*='/series/']",
+        "manga_title": "h1, meta[property='og:title']",
+        "manga_cover": ".series-cover img, img[alt*='cover'], meta[property='og:image'], div.relative img",
+        "manga_description": ".series-story, p.text-gray-300.line-clamp-4, .description, meta[name='description']",
+        "manga_genres": ".bg-primary\\\\/10, div.flex.flex-wrap.gap-2 a, a[href*='/genre/']",
+        "chapter_list": ".chapter-item a, a[href*='/chapter/'], a[href*='/ch-'], a.flex.items-center.justify-between",
+        "chapter_page_image": ".reader-image img, div.flex.flex-col.items-center img",
+        "filter_list": "a[href*='/series/'], div.grid a.w-full.h-full",
         "filter_title": "h3",
-        "filter_cover": "div[style*='background-image'], img"
+        "filter_cover": "img[src*='/uploads/'], div[style*='background-image'], img"
       },
       "regex": {
         "chapter_number": "(?:chapter|ch|episode|-f|/)\\\\D*?(\\\\d+(?:\\\\.\\\\d+)?)"
@@ -152,4 +152,5 @@
     }
   }
 }
+
 
