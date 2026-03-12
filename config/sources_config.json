@@ -133,6 +133,11 @@
         "Referer": "https://dilar.tube/"
       },
       "selectors": {
+        "api_list": "https://dilar.tube/api/series?page={page}&search={query}",
+        "api_details": "https://dilar.tube/api/series/{id}",
+        "api_chapters": "https://dilar.tube/api/chapters/{id}",
+        "cover_url_pattern": "https://dilar.tube/uploads/manga/cover/{id}/large_{filename}",
+        "page_url_pattern": "https://dilar.tube/uploads/releases/{storage_key}/hq/{filename}",
         "manga_title": "h1, meta[property='og:title']",
         "manga_cover": ".series-cover img, img[alt*='cover'], meta[property='og:image'], div.relative img",
         "manga_description": ".series-story, p.text-gray-300.line-clamp-4, .description, meta[name='description']",
@@ -152,5 +157,4 @@
     }
   }
 }
-
 
