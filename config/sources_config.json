@@ -120,8 +120,36 @@
         "theme": "madara",
         "is_nsfw": false
       }
+    },
+    "dilar": {
+      "enabled": true,
+      "name": "ديلار (Dilar)",
+      "base_url": "https://dilar.tube",
+      "api_base": "",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://dilar.tube/"
+      },
+      "selectors": {
+        "manga_title": "h1, meta[property='og:title']",
+        "manga_cover": "img[alt*='cover'], meta[property='og:image']",
+        "manga_description": ".description, p.text-sm, meta[name='description']",
+        "manga_genres": "a[href*='/genre/']",
+        "chapter_list": "a[href*='/chapter/'], a[href*='/ch-'], a[href*='/ch/']",
+        "chapter_page_image": "img[loading='lazy'], .images-container img, img",
+        "filter_list": "a[href*='/series/']",
+        "filter_title": "h3, img",
+        "filter_cover": "img"
+      },
+      "regex": {
+        "chapter_number": "(?:chapter|ch|episode|-f|/)\\\\D*?(\\\\d+(?:\\\\.\\\\d+)?)"
+      },
+      "other": {
+        "is_nsfw": false
+      }
     }
   }
 }
-
 
