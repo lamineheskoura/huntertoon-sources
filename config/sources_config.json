@@ -1,1 +1,127 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-03-12",
+  "format": "huntertoon-sources-v1",
+  "sources": {
+    "azora": {
+      "enabled": true,
+      "name": "أزورا مون (AzoraMoon)",
+      "base_url": "https://azoramoon.com",
+      "api_base": "https://api.azoramoon.com",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://azoramoon.com/",
+        "Origin": "https://azoramoon.com",
+        "Sec-Ch-Ua": "\"Chromium\";v=\"122\", \"Not(A:Brand\";v=\"24\", \"Google Chrome\";v=\"122\"",
+        "Sec-Ch-Ua-Mobile": "?1",
+        "Sec-Ch-Ua-Platform": "\"Android\"",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-site"
+      },
+      "selectors": {
+        "manga_title": "meta[property='og:title']",
+        "manga_cover": "meta[property='og:image']",
+        "manga_description": "meta[name='description']",
+        "chapter_list": "a[href*='/chapter-']",
+        "chapter_title": "الفصل {number}",
+        "chapter_page_image": "img[data-image-index]"
+      },
+      "regex": {
+        "chapter_number": "/chapter-(\\d+(?:\\.\\d+)?)",
+        "slug": "/series/([^/?#]+)"
+      },
+      "other": {
+        "uses_nextjs_api": true,
+        "is_nsfw": false
+      }
+    },
+    "team_x": {
+      "enabled": true,
+      "name": "تيم إكس (Team-X)",
+      "base_url": "https://olympustaff.com",
+      "api_base": "",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://olympustaff.com"
+      },
+      "selectors": {
+        "homepage_list": ".last-chapter .box",
+        "homepage_title": ".info h3 a, .info h3, h3 a, h3, a, img",
+        "homepage_cover": ".imgu img, img",
+        "homepage_url": "a",
+        "manga_title": "h1, meta[property='og:title']",
+        "manga_cover": ".whitebox img.shadow-sm, meta[property='og:image']",
+        "manga_description": ".review-content p",
+        "manga_genres": ".review-author-info a",
+        "chapter_list": ".chapter-card, .wp-manga-chapter, .chapter-item, .list-chapter li",
+        "chapter_number_attr": "data-number",
+        "chapter_views_attr": "data-views",
+        "chapter_date": ".chapter-date, .date, .meta-date",
+        "chapter_locked": ".locked, .fa-lock, .paywall, .premium, .status-badge.locked",
+        "chapter_page_image": ".image_list .page-break img, .reading-content img",
+        "search_list": "a[href*='/series/']",
+        "search_title": "h4, img",
+        "search_cover": "img",
+        "filter_list": ".listupd .bs",
+        "filter_title": ".tt, img",
+        "filter_cover": "img",
+        "filter_url": "a"
+      },
+      "other": {
+        "is_nsfw": false
+      }
+    },
+    "three_asq": {
+      "enabled": true,
+      "name": "3asq (شهامة)",
+      "base_url": "https://3asq.org",
+      "api_base": "",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://3asq.org/",
+        "Sec-Ch-Ua": "\"Chromium\";v=\"122\", \"Not(A:Brand\";v=\"24\", \"Google Chrome\";v=\"122\"",
+        "Sec-Ch-Ua-Mobile": "?0",
+        "Sec-Ch-Ua-Platform": "\"Windows\"",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "same-origin",
+        "Sec-Fetch-User": "?1",
+        "Upgrade-Insecure-Requests": "1"
+      },
+      "selectors": {
+        "homepage_list": ".page-item-detail",
+        "homepage_title": ".post-title h3 a",
+        "homepage_cover": ".item-thumb a img",
+        "homepage_url": ".post-title h3 a",
+        "manga_title": ".post-title h1",
+        "manga_cover": ".summary_image img",
+        "manga_description": ".description-summary, .manga-excerpt",
+        "manga_genres": ".genres-content a",
+        "chapter_list": ".wp-manga-chapter",
+        "chapter_title": "a",
+        "chapter_url": "a",
+        "chapter_date": ".chapter-release-date i",
+        "chapter_locked": ".c-premium, .fa-lock",
+        "chapter_page_image": ".reading-content .page-break img",
+        "search_list": ".c-tabs-item__content",
+        "search_title": ".post-title h3 a",
+        "search_cover": ".tab-thumb a img"
+      },
+      "regex": {
+        "chapter_number": "chapter-(\\d+(?:\\.\\d+)?)"
+      },
+      "other": {
+        "theme": "madara",
+        "is_nsfw": false
+      }
+    }
+  }
+}
+
 
