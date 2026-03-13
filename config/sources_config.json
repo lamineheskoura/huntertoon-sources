@@ -1,5 +1,5 @@
 {
-  "version": "1.0.1",
+  "version": "1.0.0",
   "last_updated": "2026-03-12",
   "format": "huntertoon-sources-v1",
   "sources": {
@@ -128,9 +128,10 @@
       "api_base": "",
       "headers": {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept": "application/json, text/plain, */*",
         "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-        "Referer": "https://dilar.tube/"
+        "Referer": "https://dilar.tube/",
+        "X-Requested-With": "XMLHttpRequest"
       },
       "selectors": {
         "api_list": "https://dilar.tube/api/series?page={page}&search={query}",
@@ -152,6 +153,55 @@
         "chapter_number": "(?:chapter|ch|episode|-f|/)\\\\D*?(\\\\d+(?:\\\\.\\\\d+)?)"
       },
       "other": {
+        "icon_asset": "assets/icons/dilar.png",
+        "theme": "api",
+        "is_nsfw": false
+      }
+    },
+    "lekmanga": {
+      "enabled": true,
+      "name": "مانجا ليك (Mangalek)",
+      "base_url": "https://lekmanga.net",
+      "api_base": "",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://lekmanga.net/",
+        "Sec-Ch-Ua": "\"Chromium\";v=\"122\", \"Not(A:Brand\";v=\"24\", \"Google Chrome\";v=\"122\"",
+        "Sec-Ch-Ua-Mobile": "?1",
+        "Sec-Ch-Ua-Platform": "\"Android\"",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "same-origin",
+        "Sec-Fetch-User": "?1",
+        "Upgrade-Insecure-Requests": "1"
+      },
+      "selectors": {
+        "homepage_list": ".page-item-detail",
+        "homepage_title": ".post-title h3 a",
+        "homepage_cover": ".item-thumb a img",
+        "homepage_url": ".post-title h3 a",
+        "manga_title": ".post-title h1, meta[property='og:title']",
+        "manga_cover": ".summary_image img, meta[property='og:image']",
+        "manga_description": ".description-summary, .manga-excerpt",
+        "manga_genres": ".genres-content a",
+        "chapter_list": ".wp-manga-chapter",
+        "chapter_title": "a",
+        "chapter_url": "a",
+        "chapter_date": ".chapter-release-date i",
+        "chapter_locked": ".c-premium, .fa-lock",
+        "chapter_page_image": ".reading-content .page-break img",
+        "search_list": ".c-tabs-item__content, .page-item-detail",
+        "search_title": ".post-title h3 a",
+        "search_cover": ".tab-thumb a img, .item-thumb a img"
+      },
+      "regex": {
+        "chapter_number": "(?:chapter|ch|episode|-f|/)\\\\D*?(\\\\d+(?:\\\\.\\\\d+)?)"
+      },
+      "other": {
+        "icon_asset": "assets/icons/mangalik.png",
+        "theme": "madara",
         "is_nsfw": false
       }
     }
