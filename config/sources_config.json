@@ -77,7 +77,7 @@
     },
     "three_asq": {
       "enabled": true,
-      "name": "3asq (شهامة)",
+      "name": "3asq ",
       "base_url": "https://3asq.org",
       "api_base": "",
       "headers": {
