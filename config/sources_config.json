@@ -1,5 +1,5 @@
 {
-  "version": "1.0.2",
+  "version": "1.0.3",
   "last_updated": "2026-03-12",
   "format": "huntertoon-sources-v1",
   "sources": {
@@ -77,7 +77,7 @@
     },
     "three_asq": {
       "enabled": true,
-      "name": "3asq ",
+      "name": "3asq (شهامة)",
       "base_url": "https://3asq.org",
       "api_base": "",
       "headers": {
@@ -154,6 +154,7 @@
       },
       "other": {
         "icon_asset": "assets/icons/dilar.png",
+        "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=dilar.tube",
         "theme": "api",
         "is_nsfw": false
       }
@@ -164,18 +165,19 @@
       "base_url": "https://lekmanga.net",
       "api_base": "",
       "headers": {
-        "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
         "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
         "Referer": "https://lekmanga.net/",
-        "Sec-Ch-Ua": "\"Chromium\";v=\"122\", \"Not(A:Brand\";v=\"24\", \"Google Chrome\";v=\"122\"",
-        "Sec-Ch-Ua-Mobile": "?1",
-        "Sec-Ch-Ua-Platform": "\"Android\"",
+        "Sec-Ch-Ua": "\"Chromium\";v=\"124\", \"Google Chrome\";v=\"124\", \"Not-A.Brand\";v=\"99\"",
+        "Sec-Ch-Ua-Mobile": "?0",
+        "Sec-Ch-Ua-Platform": "\"Windows\"",
         "Sec-Fetch-Dest": "document",
         "Sec-Fetch-Mode": "navigate",
         "Sec-Fetch-Site": "same-origin",
         "Sec-Fetch-User": "?1",
-        "Upgrade-Insecure-Requests": "1"
+        "Upgrade-Insecure-Requests": "1",
+        "Cookie": ""
       },
       "selectors": {
         "homepage_list": ".page-item-detail",
@@ -201,6 +203,7 @@
       },
       "other": {
         "icon_asset": "assets/icons/mangalik.png",
+        "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=lekmanga.net",
         "theme": "madara",
         "is_nsfw": false
       }
