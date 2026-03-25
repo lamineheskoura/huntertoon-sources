@@ -1,13 +1,15 @@
 {
-  "version": "1.0.3",
-  "last_updated": "2026-03-12",
-  "format": "huntertoon-sources-v1",
+  "version": "2.0.0",
+  "last_updated": "2026-03-25",
+  "format": "huntertoon-sources-v2",
   "sources": {
     "azora": {
       "enabled": true,
       "name": "أزورا مون (AzoraMoon)",
       "base_url": "https://azoramoon.com",
       "api_base": "https://api.azoramoon.com",
+      "requires_cf": false,
+      "image_referer": "https://azoramoon.com/",
       "headers": {
         "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36",
         "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
@@ -25,7 +27,6 @@
         "manga_cover": "meta[property='og:image']",
         "manga_description": "meta[name='description']",
         "chapter_list": "a[href*='/chapter-']",
-        "chapter_title": "الفصل {number}",
         "chapter_page_image": "img[data-image-index]"
       },
       "regex": {
@@ -33,6 +34,7 @@
         "slug": "/series/([^/?#]+)"
       },
       "other": {
+        "icon_asset": "assets/icons/azora.png",
         "uses_nextjs_api": true,
         "is_nsfw": false
       }
@@ -42,8 +44,10 @@
       "name": "تيم إكس (Team-X)",
       "base_url": "https://olympustaff.com",
       "api_base": "",
+      "requires_cf": false,
+      "image_referer": "https://olympustaff.com/",
       "headers": {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
         "Referer": "https://olympustaff.com"
@@ -72,6 +76,7 @@
         "filter_url": "a"
       },
       "other": {
+        "icon_asset": "assets/icons/teamx.png",
         "is_nsfw": false
       }
     },
@@ -80,6 +85,8 @@
       "name": "3asq (شهامة)",
       "base_url": "https://3asq.org",
       "api_base": "",
+      "requires_cf": false,
+      "image_referer": "https://3asq.org/",
       "headers": {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
@@ -117,6 +124,7 @@
         "chapter_number": "chapter-(\\d+(?:\\.\\d+)?)"
       },
       "other": {
+        "icon_asset": "assets/icons/3asq.png",
         "theme": "madara",
         "is_nsfw": false
       }
@@ -126,31 +134,23 @@
       "name": "ديلار (Dilar)",
       "base_url": "https://dilar.tube",
       "api_base": "",
+      "requires_cf": false,
+      "image_referer": "https://dilar.tube/",
       "headers": {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
         "Accept": "application/json, text/plain, */*",
         "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-        "Referer": "https://dilar.tube/",
-        "X-Requested-With": "XMLHttpRequest"
+        "Referer": "https://dilar.tube/"
       },
       "selectors": {
         "api_list": "https://dilar.tube/api/series?page={page}&search={query}",
         "api_details": "https://dilar.tube/api/series/{id}",
         "api_chapters": "https://dilar.tube/api/chapters/{id}",
         "cover_url_pattern": "https://dilar.tube/uploads/manga/cover/{id}/large_{filename}",
-        "page_url_pattern": "https://dilar.tube/uploads/releases/{storage_key}/hq/{filename}",
-        "manga_title": "h1, meta[property='og:title']",
-        "manga_cover": ".series-cover img, img[alt*='cover'], meta[property='og:image'], div.relative img",
-        "manga_description": ".series-story, p.text-gray-300.line-clamp-4, .description, meta[name='description']",
-        "manga_genres": ".bg-primary\\\\/10, div.flex.flex-wrap.gap-2 a, a[href*='/genre/']",
-        "chapter_list": ".chapter-item a, a[href*='/chapter/'], a[href*='/ch-'], a.flex.items-center.justify-between",
-        "chapter_page_image": ".reader-image img, div.flex.flex-col.items-center img",
-        "filter_list": "a[href*='/series/'], div.grid a.w-full.h-full",
-        "filter_title": "h3",
-        "filter_cover": "img[src*='/uploads/'], div[style*='background-image'], img"
+        "page_url_pattern": "https://dilar.tube/uploads/releases/{storage_key}/hq/{filename}"
       },
       "regex": {
-        "chapter_number": "(?:chapter|ch|episode|-f|/)\\\\D*?(\\\\d+(?:\\\\.\\\\d+)?)"
+        "chapter_number": "(?:chapter|ch|episode|-f|/)\\D*?(\\d+(?:\\.\\d+)?)"
       },
       "other": {
         "icon_asset": "assets/icons/dilar.png",
@@ -162,52 +162,47 @@
     "lekmanga": {
       "enabled": true,
       "name": "مانجا ليك (Mangalek)",
-      "base_url": "https://lekmanga.net",
+      "base_url": "https://lek-manga.net",
       "api_base": "",
+      "requires_cf": true,
+      "image_referer": "https://lek-manga.net/",
       "headers": {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-        "Referer": "https://lekmanga.net/",
-        "Sec-Ch-Ua": "\"Chromium\";v=\"124\", \"Google Chrome\";v=\"124\", \"Not-A.Brand\";v=\"99\"",
-        "Sec-Ch-Ua-Mobile": "?0",
-        "Sec-Ch-Ua-Platform": "\"Windows\"",
+        "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
+        "Referer": "https://lek-manga.net/",
+        "Origin": "https://lek-manga.net",
         "Sec-Fetch-Dest": "document",
         "Sec-Fetch-Mode": "navigate",
         "Sec-Fetch-Site": "same-origin",
-        "Sec-Fetch-User": "?1",
-        "Upgrade-Insecure-Requests": "1",
-        "Cookie": ""
+        "Upgrade-Insecure-Requests": "1"
       },
       "selectors": {
         "homepage_list": ".page-item-detail",
-        "homepage_title": ".post-title h3 a",
+        "homepage_title": ".post-title h3 a, .post-title h5 a",
         "homepage_cover": ".item-thumb a img",
-        "homepage_url": ".post-title h3 a",
-        "manga_title": ".post-title h1, meta[property='og:title']",
-        "manga_cover": ".summary_image img, meta[property='og:image']",
-        "manga_description": ".description-summary, .manga-excerpt",
+        "homepage_url": ".post-title h3 a, .post-title h5 a",
+        "manga_title": ".post-title h1",
+        "manga_cover": ".summary_image img",
+        "manga_description": ".description-summary .summary__content, .description-summary",
         "manga_genres": ".genres-content a",
-        "chapter_list": ".wp-manga-chapter",
-        "chapter_title": "a",
-        "chapter_url": "a",
-        "chapter_date": ".chapter-release-date i",
-        "chapter_locked": ".c-premium, .fa-lock",
-        "chapter_page_image": ".reading-content .page-break img",
-        "search_list": ".c-tabs-item__content, .page-item-detail",
-        "search_title": ".post-title h3 a",
-        "search_cover": ".tab-thumb a img, .item-thumb a img"
+        "chapter_list": ".wp-manga-chapter, li.wp-manga-chapter",
+        "chapter_date": ".chapter-release-date i, .chapter-release-date",
+        "chapter_locked": ".premium-chapter, .c-premium, .fa-lock, .premium-block",
+        "chapter_page_image": ".reading-content .page-break img, .wp-manga-chapter-img",
+        "search_list": ".c-tabs-item__content",
+        "search_title": ".post-title h3 a, .post-title h4 a",
+        "search_cover": ".tab-thumb a img"
       },
       "regex": {
-        "chapter_number": "(?:chapter|ch|episode|-f|/)\\\\D*?(\\\\d+(?:\\\\.\\\\d+)?)"
+        "chapter_number": "(?:chapter|ch|الفصل|فصل)[- _]*(\\d+(?:\\.\\d+)?)"
       },
       "other": {
         "icon_asset": "assets/icons/mangalik.png",
-        "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=lekmanga.net",
+        "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=lek-manga.net",
         "theme": "madara",
         "is_nsfw": false
       }
     }
   }
 }
-
