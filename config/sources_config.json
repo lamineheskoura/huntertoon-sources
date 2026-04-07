@@ -1,6 +1,6 @@
 {
-  "version": "2.0.0",
-  "last_updated": "2026-03-25",
+  "version": "2.0.1",
+  "last_updated": "2026-04-07",
   "format": "huntertoon-sources-v2",
   "sources": {
     "azora": {
@@ -27,7 +27,7 @@
         "manga_cover": "meta[property='og:image']",
         "manga_description": "meta[name='description']",
         "chapter_list": "a[href*='/chapter-']",
-        "chapter_page_image": "img[data-image-index]"
+        "chapter_page_image": ".comic-images-wrapper img[data-image-index]"
       },
       "regex": {
         "chapter_number": "/chapter-(\\d+(?:\\.\\d+)?)",
