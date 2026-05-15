@@ -1,5 +1,5 @@
 {
-  "version": "2.2.2",
+  "version": "2.2.3",
   "last_updated": "2026-05-15",
   "format": "huntertoon-sources-v2",
   "sources": {
@@ -412,14 +412,14 @@
       "enabled": true,
       "requires_cf": true,
       "name": "MangaStarz",
-      "base_url": "https://mangastarz.com",
+      "base_url": "https://manga-starz.net/",
       "api_base": "",
-      "image_referer": "https://mangastarz.com/",
+      "image_referer": "https://manga-starz.net/",
       "headers": {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
         "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-        "Referer": "https://mangastarz.com/"
+        "Referer": "https://manga-starz.net/"
       },
       "selectors": {
         "homepage_list": ".page-item-detail",
