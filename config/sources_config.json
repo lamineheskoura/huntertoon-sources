@@ -1,9 +1,12 @@
 {
-  "version": "2.2.0",
+  "version": "2.2.1",
   "sources": {
     "azora": {
       "enabled": true,
       "requires_cf": true,
+      "name": "أزورا مون (AzoraMoon)",
+      "base_url": "https://azoramoon.com",
+      "image_referer": "https://azoramoon.com/",
       "selectors": {
         "manga_title": "meta[property=\"og:title\"]",
         "manga_cover": "meta[property=\"og:image\"]",
@@ -15,14 +18,14 @@
       "regex": {
         "slug": "/series/([^/?#]+)",
         "chapter_number": "/chapter-(\\d+(?:\\.\\d+)?)"
-      },
-      "name": "أزورا مون (AzoraMoon)",
-      "base_url": "https://azoramoon.com",
-      "image_referer": "$baseUrl/"
+      }
     },
     "dilar": {
       "enabled": true,
       "requires_cf": true,
+      "name": "ديلار (Dilar)",
+      "base_url": "https://dilar.tube",
+      "image_referer": "https://dilar.tube/",
       "selectors": {
         "api_list": "https://dilar.tube/api/series?page={page}&title={query}",
         "cover_url_pattern": "https://dilar.tube/uploads/manga/cover/{id}/large_{filename}",
@@ -34,14 +37,14 @@
         "icon_asset": "assets/icons/dilar.png"
       },
       "headers": {},
-      "regex": {},
-      "name": "ديلار (Dilar)",
-      "base_url": "https://dilar.tube",
-      "image_referer": "$baseUrl/"
+      "regex": {}
     },
     "hijala": {
       "enabled": true,
       "requires_cf": true,
+      "name": "حجالة مانجا (Hijala)",
+      "base_url": "https://hijala.com",
+      "image_referer": "https://hijala.com/",
       "selectors": {
         "homepage_list": ".listupd .bs, .listupd .bsx",
         "homepage_cover": ".limit img, img",
@@ -63,21 +66,24 @@
         "filter_url": "a",
         "filter_cover": "img",
         "filter_title": ".tt a, .tt, img",
-        "chapter_page_image": ""
+        "chapter_page_image": "#readerarea img"
       },
       "other": {
         "reader_fallback_strategy": "selector,noscript,regex,ts_reader",
-        "chapter_image_extensions": ".webp,.jpg,.jpeg,.png"
+        "chapter_image_extensions": ".webp,.jpg,.jpeg,.png",
+        "chapter_ts_reader_pattern": "ts_reader\\.(?:run|init)\\s*\\(\\s*({[\\s\\S]*?})\\s*\\)"
       },
       "headers": {},
-      "regex": {},
-      "name": "حجالة مانجا (Hijala)",
-      "base_url": "https://hijala.com",
-      "image_referer": "$baseUrl/"
+      "regex": {
+        "chapter_image_regex": "<img[^>]+src\\s*=\\s*[\"']([^\"\']+)[\"']"
+      }
     },
     "lava_scans": {
       "enabled": true,
       "requires_cf": true,
+      "name": "لافا سكانز (Lava Scans)",
+      "base_url": "https://lavascans.com",
+      "image_referer": "https://lavascans.com/",
       "selectors": {
         "homepage_list": ".magma-card, .pop-card, .legend-card, .listupd .bs, .listupd .bsx",
         "homepage_cover": ".magma-bg img, .pop-poster img, .legend-img, .limit img, img",
@@ -99,21 +105,24 @@
         "filter_url": "a",
         "filter_cover": ".magma-bg img, .pop-poster img, .legend-img, img",
         "filter_title": ".magma-title a, .pop-name, .legend-title a, .tt a, .tt, img",
-        "chapter_page_image": ""
+        "chapter_page_image": "#readerarea img"
       },
       "other": {
         "reader_fallback_strategy": "selector,noscript,regex,ts_reader",
-        "chapter_image_extensions": ".webp,.jpg,.jpeg,.png"
+        "chapter_image_extensions": ".webp,.jpg,.jpeg,.png",
+        "chapter_ts_reader_pattern": "ts_reader\\.(?:run|init)\\s*\\(\\s*({[\\s\\S]*?})\\s*\\)"
       },
       "headers": {},
-      "regex": {},
-      "name": "لافا سكانز (Lava Scans)",
-      "base_url": "https://lavascans.com",
-      "image_referer": "$baseUrl/"
+      "regex": {
+        "chapter_image_regex": "<img[^>]+src\\s*=\\s*[\"']([^\"\']+)[\"']"
+      }
     },
     "lekmanga": {
       "enabled": true,
       "requires_cf": true,
+      "name": "LekManga",
+      "base_url": "https://lek-manga.net",
+      "image_referer": "https://lek-manga.net/",
       "selectors": {
         "homepage_list": ".page-item-detail",
         "homepage_title": ".post-title h3 a, .post-title h5 a",
@@ -135,13 +144,14 @@
       "headers": {},
       "regex": {
         "chapter_number": "(?:chapter|ch|الفصل|فصل)[- _]*(\\d+(?:\\.\\d+)?)"
-      },
-      "name": "LekManga",
-      "image_referer": "$baseUrl/"
+      }
     },
     "mangasid": {
       "enabled": true,
       "requires_cf": true,
+      "name": "مانجا سيد (Mangasid)",
+      "base_url": "https://mangasid.com",
+      "image_referer": "https://mangasid.com/",
       "selectors": {
         "homepage_list": ".manga-card",
         "search_list": ".manga-card, a[href^=\"/manga/\"], .listupd .bs",
@@ -161,21 +171,24 @@
         "filter_url": "a",
         "filter_cover": "img",
         "filter_title": "h3, .manga-title, .tt",
-        "chapter_page_image": ""
+        "chapter_page_image": "#readerarea img"
       },
       "other": {
         "reader_fallback_strategy": "selector,noscript,regex,ts_reader",
-        "chapter_image_extensions": ".webp,.jpg,.jpeg,.png"
+        "chapter_image_extensions": ".webp,.jpg,.jpeg,.png",
+        "chapter_ts_reader_pattern": "ts_reader\\.(?:run|init)\\s*\\(\\s*({[\\s\\S]*?})\\s*\\)"
       },
       "headers": {},
-      "regex": {},
-      "name": "مانجا سيد (Mangasid)",
-      "base_url": "https://mangasid.com",
-      "image_referer": "$baseUrl/"
+      "regex": {
+        "chapter_image_regex": "<img[^>]+src\\s*=\\s*[\"']([^\"\']+)[\"']"
+      }
     },
     "mangatek": {
       "enabled": true,
       "requires_cf": true,
+      "name": "مانجاتك (Mangatek)",
+      "base_url": "https://mangatek.com",
+      "image_referer": "https://mangatek.com/",
       "selectors": {
         "homepage_list": "a[href^=\"/manga/\"], .manga-card, .listupd .bs",
         "homepage_url": "a",
@@ -198,33 +211,37 @@
         "filter_url": "a",
         "filter_cover": "img",
         "filter_title": "h3, .manga-title, .tt",
-        "chapter_page_image": ""
+        "chapter_page_image": "#readerarea img"
       },
       "other": {
         "reader_fallback_strategy": "selector,noscript,regex,ts_reader",
-        "chapter_image_extensions": ".webp,.jpg,.jpeg,.png"
+        "chapter_image_extensions": ".webp,.jpg,.jpeg,.png",
+        "chapter_ts_reader_pattern": "ts_reader\\.(?:run|init)\\s*\\(\\s*({[\\s\\S]*?})\\s*\\)"
       },
       "headers": {},
-      "regex": {},
-      "name": "مانجاتك (Mangatek)",
-      "base_url": "https://mangatek.com",
-      "image_referer": "$baseUrl/"
+      "regex": {
+        "chapter_image_regex": "<img[^>]+src\\s*=\\s*[\"']([^\"\']+)[\"']"
+      }
     },
     "mangatime": {
       "enabled": true,
       "requires_cf": true,
+      "name": "مانجا تايم (MangaTime)",
+      "base_url": "https://mangatime.org",
+      "image_referer": "https://mangatime.org/",
       "selectors": {},
       "other": {
         "icon_asset": "assets/icons/default_source.png"
       },
       "headers": {},
-      "regex": {},
-      "name": "مانجا تايم (MangaTime)",
-      "base_url": "https://mangatime.org"
+      "regex": {}
     },
     "mangastarz": {
       "enabled": true,
       "requires_cf": true,
+      "name": "MangaStarz",
+      "base_url": "https://manga-starz.net",
+      "image_referer": "https://manga-starz.net/",
       "selectors": {
         "homepage_list": ".page-item-detail",
         "homepage_title": ".post-title h3 a, .post-title h5 a",
@@ -246,13 +263,14 @@
       "headers": {},
       "regex": {
         "chapter_number": "(?:chapter|ch|الفصل|فصل)[- _]*(\\d+(?:\\.\\d+)?)"
-      },
-      "name": "MangaStarz",
-      "image_referer": "$baseUrl/"
+      }
     },
     "team_x": {
       "enabled": true,
       "requires_cf": false,
+      "name": "تيم إكس (Team-X)",
+      "base_url": "https://www.olympustaff.com",
+      "image_referer": "https://www.olympustaff.com/",
       "selectors": {
         "homepage_list": ".last-chapter .box",
         "homepage_cover": ".imgu img, img",
@@ -278,14 +296,14 @@
       },
       "other": {},
       "headers": {},
-      "regex": {},
-      "name": "تيم إكس (Team-X)",
-      "base_url": "https://www.olympustaff.com",
-      "image_referer": "$baseUrl/"
+      "regex": {}
     },
     "three_asq": {
       "enabled": true,
       "requires_cf": true,
+      "name": "3asq",
+      "base_url": "https://3asq.org",
+      "image_referer": "https://3asq.org/",
       "selectors": {
         "homepage_list": ".page-item-detail",
         "homepage_title": ".post-title h3 a",
@@ -307,10 +325,7 @@
       },
       "other": {},
       "headers": {},
-      "regex": {},
-      "name": "3asq",
-      "base_url": "https://3asq.org",
-      "image_referer": "$baseUrl/"
+      "regex": {}
     }
   }
 }
