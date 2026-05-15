@@ -1,5 +1,5 @@
 {
-  "version": "2.2.0",
+  "version": "2.2.2",
   "last_updated": "2026-05-15",
   "format": "huntertoon-sources-v2",
   "sources": {
@@ -206,7 +206,7 @@
     },
     "hijala": {
       "enabled": true,
-      "requires_cf": true,
+      "requires_cf": false,
       "name": "حجالة مانجا (Hijala)",
       "base_url": "https://hijala.com",
       "api_base": "",
@@ -237,7 +237,8 @@
         "filter_list": ".listupd .bs",
         "filter_url": "a",
         "filter_cover": "img",
-        "filter_title": ".tt a, .tt, img"
+        "filter_title": ".tt a, .tt, img",
+        "chapter_page_image": "#readerarea img, .reading-content img, .page-break img"
       },
       "other": {
         "icon_asset": "assets/icons/hijala.png",
@@ -251,7 +252,7 @@
     },
     "lava_scans": {
       "enabled": true,
-      "requires_cf": true,
+      "requires_cf": false,
       "name": "لافا سكانز (Lava Scans)",
       "base_url": "https://lavascans.com",
       "api_base": "",
@@ -282,7 +283,8 @@
         "filter_list": ".magma-card, .pop-card, .legend-card, .listupd .bs",
         "filter_url": "a",
         "filter_cover": ".magma-bg img, .pop-poster img, .legend-img, img",
-        "filter_title": ".magma-title a, .pop-name, .legend-title a, .tt a, .tt, img"
+        "filter_title": ".magma-title a, .pop-name, .legend-title a, .tt a, .tt, img",
+        "chapter_page_image": "#readerarea img, .reading-content img, .page-break img"
       },
       "other": {
         "icon_asset": "assets/icons/lava_scans.png",
@@ -296,7 +298,7 @@
     },
     "mangasid": {
       "enabled": true,
-      "requires_cf": true,
+      "requires_cf": false,
       "name": "مانجا سيد (Mangasid)",
       "base_url": "https://mangasid.com",
       "api_base": "",
@@ -325,7 +327,8 @@
         "filter_list": "a[href^='/manga/'], .manga-card, .listupd .bs",
         "filter_url": "a",
         "filter_cover": "img",
-        "filter_title": "h3, .manga-title, .tt"
+        "filter_title": "h3, .manga-title, .tt",
+        "chapter_page_image": "#readerarea img, .reading-content img, .page-break img"
       },
       "other": {
         "icon_asset": "assets/icons/mangasid.png",
@@ -339,7 +342,7 @@
     },
     "mangatek": {
       "enabled": true,
-      "requires_cf": true,
+      "requires_cf": false,
       "name": "مانجاتك (Mangatek)",
       "base_url": "https://mangatek.com",
       "api_base": "",
@@ -371,7 +374,8 @@
         "filter_list": "a[href^='/manga/'], .manga-card, .listupd .bs",
         "filter_url": "a",
         "filter_cover": "img",
-        "filter_title": "h3, .manga-title, .tt"
+        "filter_title": "h3, .manga-title, .tt",
+        "chapter_page_image": "#readerarea img, .reading-content img, .page-break img"
       },
       "other": {
         "icon_asset": "assets/icons/mangatek.png",
@@ -385,7 +389,7 @@
     },
     "mangatime": {
       "enabled": true,
-      "requires_cf": true,
+      "requires_cf": false,
       "name": "مانجا تايم (MangaTime)",
       "base_url": "https://mangatime.org",
       "api_base": "",
@@ -443,3 +447,4 @@
       }
     }
   }
+}
