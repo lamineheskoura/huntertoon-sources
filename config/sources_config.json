@@ -1,5 +1,5 @@
 {
-  "version": "2.2.1",
+  "version": "2.2.2",
   "sources": {
     "azora": {
       "enabled": true,
@@ -75,7 +75,7 @@
       },
       "headers": {},
       "regex": {
-        "chapter_image_regex": "<img[^>]+src\\s*=\\s*[\"']([^\"\']+)[\"']"
+        "chapter_image_regex": "<img[^>]+src\\s*=\\s*[\"']([^\"']+)[\"']"
       }
     },
     "lava_scans": {
@@ -114,7 +114,7 @@
       },
       "headers": {},
       "regex": {
-        "chapter_image_regex": "<img[^>]+src\\s*=\\s*[\"']([^\"\']+)[\"']"
+        "chapter_image_regex": "<img[^>]+src\\s*=\\s*[\"']([^\"']+)[\"']"
       }
     },
     "lekmanga": {
@@ -180,7 +180,7 @@
       },
       "headers": {},
       "regex": {
-        "chapter_image_regex": "<img[^>]+src\\s*=\\s*[\"']([^\"\']+)[\"']"
+        "chapter_image_regex": "<img[^>]+src\\s*=\\s*[\"']([^\"']+)[\"']"
       }
     },
     "mangatek": {
@@ -220,7 +220,7 @@
       },
       "headers": {},
       "regex": {
-        "chapter_image_regex": "<img[^>]+src\\s*=\\s*[\"']([^\"\']+)[\"']"
+        "chapter_image_regex": "<img[^>]+src\\s*=\\s*[\"']([^\"']+)[\"']"
       }
     },
     "mangatime": {
