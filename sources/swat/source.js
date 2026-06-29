@@ -94,6 +94,8 @@ function createSource(api, config) {
   }
 
   return {
+    requiresCloudflare: false,
+
     async getHomepageManga(args) {
       const page = args && args.page ? args.page : 1;
       const data = await getJson(apiBase + "/series/releases/?page=" + page);
