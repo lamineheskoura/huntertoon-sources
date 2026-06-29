@@ -12,15 +12,13 @@ function createSource(api, config) {
   };
 
   async function getJson(url) {
-    const response = await fetch(url, {
-      method: "GET",
-      headers,
-    });
-    if (!response.ok) {
-      console.log("[Swat] getJson response not OK: " + response.status + " for " + url);
-      throw new Error("Request failed: " + response.status + " for " + url);
+    const text = await api.fetchText(url, headers);
+    if (!text) throw new Error("Empty response: " + url);
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      throw new Error("JSON parse error for " + url + ": " + String(e));
     }
-    return await response.json();
   }
 
   function coverFromPoster(poster) {
@@ -106,7 +104,6 @@ function createSource(api, config) {
         const results = Array.isArray(data.results) ? data.results : [];
         return results.map(toManga);
       } catch (e) {
-        console.log("[Swat] getHomepageManga error: " + (e && e.message ? e.message : String(e)));
         return [];
       }
     },
