@@ -38,7 +38,7 @@
       },
       "script": {
         "url": "sources/swat/source.js",
-        "sha256": "abd768023c4fdf746ac84c9db1b33ace6b723b4c954611d87470c6166d4712af",
+        "sha256": "fff38bcee4e1d560d610cb01eabaf479b79b26a645da2bb7d2818624797b25b7",
         "entry": "createSource"
       },
       "capabilities": {
