@@ -1,0 +1,65 @@
+{
+  "version": "1.0.0",
+  "schema_version": 3,
+  "runtime_api_version": "1.0",
+  "manifest_version": "2026.06.29-dev.1",
+  "generated_at": "2026-06-29T00:00:00Z",
+  "last_updated": "2026-06-29",
+  "min_app_version": "1.4.0",
+  "repository": {
+    "owner": "lamineheskoura",
+    "repo": "huntertoon-sources",
+    "branch": "main",
+    "raw_base_url": "https://raw.githubusercontent.com/lamineheskoura/huntertoon-sources/main"
+  },
+  "update_policy": {
+    "check_interval_hours": 6,
+    "allow_auto_update_installed": true,
+    "keep_previous_versions": 2
+  },
+  "sources": {
+    "swat": {
+      "id": "swat",
+      "name": "سوات مانجا (Swat Manga)",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "stable",
+      "base_url": "https://appswat.com",
+      "website_url": "https://appswat.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=appswat.com",
+      "requires_cf": false,
+      "image_referer": "https://appswat.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "application/json",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://appswat.com/",
+        "Origin": "https://appswat.com"
+      },
+      "script": {
+        "url": "sources/swat/source.js",
+        "sha256": "abd768023c4fdf746ac84c9db1b33ace6b723b4c954611d87470c6166d4712af",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": ["manga"],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Swat API source migrated to JavaScript",
+        "changelog": "Initial JS migration for testing"
+      }
+    }
+  }
+}
