@@ -1,10 +1,10 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.1",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.06.29-dev.1",
+  "manifest_version": "2026.06.29-dev.2",
   "generated_at": "2026-06-29T00:00:00Z",
-    "last_updated": "2026-06-29T14:30:00Z",
+    "last_updated": "2026-06-29T17:00:00Z",
   "min_app_version": "1.4.0",
   "repository": {
     "owner": "lamineheskoura",
@@ -38,7 +38,7 @@
       },
       "script": {
         "url": "sources/swat/source.js",
-        "sha256": "508a0ce8e35006f567e2432ac1d73f8f7d8a4ddc3145fe8e02ca224678e5e75b",
+        "sha256": "b3bb3a2ecbc96bc646fbd344d236fe3a7e43f8998c076ada8f13365c3817433c",
         "entry": "createSource"
       },
       "capabilities": {
@@ -80,7 +80,7 @@
       },
       "script": {
         "url": "sources/team_x/source.js",
-        "sha256": "b8985125d82407de2ff91b7ac3c548694a16997acaf28005ec6e02b9eb2bb0bf",
+        "sha256": "3cac6ea2656893d82b3d064a3977457b1d9721e7f645090a8e7d6ed8aee3aba6",
         "entry": "createSource"
       },
       "capabilities": {

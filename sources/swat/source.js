@@ -17,6 +17,7 @@ function createSource(api, config) {
       headers,
     });
     if (!response.ok) {
+      console.log("[Swat] getJson response not OK: " + response.status + " for " + url);
       throw new Error("Request failed: " + response.status + " for " + url);
     }
     return await response.json();
@@ -100,10 +101,12 @@ function createSource(api, config) {
     async getHomepageManga(args) {
       try {
         const page = args && args.page ? args.page : 1;
-        const data = await getJson(apiBase + "/series/releases/?page=" + page);
+        const url = apiBase + "/series/releases/?page=" + page;
+        const data = await getJson(url);
         const results = Array.isArray(data.results) ? data.results : [];
         return results.map(toManga);
       } catch (e) {
+        console.log("[Swat] getHomepageManga error: " + (e && e.message ? e.message : String(e)));
         return [];
       }
     },

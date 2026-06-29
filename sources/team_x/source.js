@@ -152,6 +152,10 @@ function createSource(api, config) {
             var locked = await api.cssText(card.html, lockSel);
             isLocked = !!locked;
           }
+          if (!isLocked) {
+            var buyTarget = await api.cssAttr(card.html, "a", "data-bs-target");
+            isLocked = buyTarget === "#buyModel";
+          }
 
           allChapters.push({
             number: chapterNumber,
