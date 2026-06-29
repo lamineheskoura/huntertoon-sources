@@ -49,14 +49,15 @@ function createSource(api, config) {
   }
 
   function buildQuery(params) {
-    const url = new URL("https://placeholder.local");
-    Object.keys(params).forEach((key) => {
-      const value = params[key];
+    var parts = [];
+    for (var key in params) {
+      if (!params.hasOwnProperty(key)) continue;
+      var value = params[key];
       if (value !== null && value !== undefined && value !== "") {
-        url.searchParams.set(key, String(value));
+        parts.push(encodeURIComponent(key) + "=" + encodeURIComponent(String(value)));
       }
-    });
-    return url.search;
+    }
+    return parts.length > 0 ? "?" + parts.join("&") : "";
   }
 
   async function fetchChapters(seriesId) {
@@ -97,31 +98,41 @@ function createSource(api, config) {
     requiresCloudflare: false,
 
     async getHomepageManga(args) {
-      const page = args && args.page ? args.page : 1;
-      const data = await getJson(apiBase + "/series/releases/?page=" + page);
-      const results = Array.isArray(data.results) ? data.results : [];
-      return results.map(toManga);
+      try {
+        const page = args && args.page ? args.page : 1;
+        const data = await getJson(apiBase + "/series/releases/?page=" + page);
+        const results = Array.isArray(data.results) ? data.results : [];
+        return results.map(toManga);
+      } catch (e) {
+        return [];
+      }
     },
 
     async search(args) {
-      const query = args && args.query ? args.query : "";
-      const page = args && args.page ? args.page : 1;
-      const data = await getJson(
-        apiBase + "/series/" + buildQuery({ search: query, page: page, limit: 20 })
-      );
-      const results = Array.isArray(data.results) ? data.results : [];
-      return results.map(toManga);
+      try {
+        const query = args && args.query ? args.query : "";
+        const page = args && args.page ? args.page : 1;
+        const qs = buildQuery({ search: query, page: page, limit: 20 });
+        const data = await getJson(apiBase + "/series/" + qs);
+        const results = Array.isArray(data.results) ? data.results : [];
+        return results.map(toManga);
+      } catch (e) {
+        return [];
+      }
     },
 
     async getFilteredManga(args) {
-      const page = args && args.page ? args.page : 1;
-      const type = args ? args.type : null;
-      const typeParam = toTypeParam(type);
-      const data = await getJson(
-        apiBase + "/series/" + buildQuery({ page: page, limit: 20, type__name: typeParam })
-      );
-      const results = Array.isArray(data.results) ? data.results : [];
-      return results.map(toManga);
+      try {
+        const page = args && args.page ? args.page : 1;
+        const type = args ? args.type : null;
+        const typeParam = toTypeParam(type);
+        const qs = buildQuery({ page: page, limit: 20, type__name: typeParam });
+        const data = await getJson(apiBase + "/series/" + qs);
+        const results = Array.isArray(data.results) ? data.results : [];
+        return results.map(toManga);
+      } catch (e) {
+        return [];
+      }
     },
 
     async getGenresAndTypes() {

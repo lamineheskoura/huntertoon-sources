@@ -4,7 +4,7 @@
   "runtime_api_version": "1.0",
   "manifest_version": "2026.06.29-dev.1",
   "generated_at": "2026-06-29T00:00:00Z",
-  "last_updated": "2026-06-29",
+    "last_updated": "2026-06-29T14:30:00Z",
   "min_app_version": "1.4.0",
   "repository": {
     "owner": "lamineheskoura",
@@ -38,7 +38,7 @@
       },
       "script": {
         "url": "sources/swat/source.js",
-        "sha256": "fff38bcee4e1d560d610cb01eabaf479b79b26a645da2bb7d2818624797b25b7",
+        "sha256": "508a0ce8e35006f567e2432ac1d73f8f7d8a4ddc3145fe8e02ca224678e5e75b",
         "entry": "createSource"
       },
       "capabilities": {
@@ -59,6 +59,48 @@
         "author": "HunterToon Team",
         "description": "Swat API source migrated to JavaScript",
         "changelog": "Initial JS migration for testing"
+      }
+    },
+    "team_x": {
+      "id": "team_x",
+      "name": "تيم إكس (Team-X)",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "stable",
+      "base_url": "https://www.olympustaff.com",
+      "website_url": "https://www.olympustaff.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=olympustaff.com",
+      "requires_cf": false,
+      "image_referer": "https://www.olympustaff.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://www.olympustaff.com/"
+      },
+      "script": {
+        "url": "sources/team_x/source.js",
+        "sha256": "b8985125d82407de2ff91b7ac3c548694a16997acaf28005ec6e02b9eb2bb0bf",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": ["manga"],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Team-X (Madara CMS) source migrated to JavaScript",
+        "changelog": "Initial JS migration with HTML/CSS bridge"
       }
     }
   }
