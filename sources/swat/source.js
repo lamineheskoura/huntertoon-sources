@@ -27,7 +27,7 @@ function createSource(api, config) {
   }
 
   function toManga(item) {
-    const id = String(item.id || item.serie_id || "");
+    const id = String(item.serie_id || item.id || "");
     return {
       title: String(item.title || "بدون عنوان"),
       detailUrl: baseUrl + "/series/" + id,

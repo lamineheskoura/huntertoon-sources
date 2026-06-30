@@ -1,10 +1,10 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.06.29-dev.3",
+  "manifest_version": "2026.06.29-dev.4",
   "generated_at": "2026-06-29T00:00:00Z",
-    "last_updated": "2026-06-29T18:00:00Z",
+    "last_updated": "2026-06-29T19:00:00Z",
   "min_app_version": "1.4.0",
   "repository": {
     "owner": "lamineheskoura",
@@ -21,7 +21,7 @@
     "swat": {
       "id": "swat",
       "name": "سوات مانجا (Swat Manga)",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "enabled": true,
       "status": "stable",
       "base_url": "https://appswat.com",
@@ -38,7 +38,7 @@
       },
       "script": {
         "url": "sources/swat/source.js",
-        "sha256": "ea86f887109fbec426877365ba7fad49d60ca8b5856369db87a57edb35ba505a",
+        "sha256": "9bfb3e8189a6f2a8b02a093041464e82ce2678c3b1fe93b7e552ffbb67244c6f",
         "entry": "createSource"
       },
       "capabilities": {
@@ -64,7 +64,7 @@
     "team_x": {
       "id": "team_x",
       "name": "تيم إكس (Team-X)",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "enabled": true,
       "status": "stable",
       "base_url": "https://www.olympustaff.com",
@@ -80,7 +80,7 @@
       },
       "script": {
         "url": "sources/team_x/source.js",
-        "sha256": "3cac6ea2656893d82b3d064a3977457b1d9721e7f645090a8e7d6ed8aee3aba6",
+        "sha256": "c056b0b422308289ef2d0a36192ef2852d881277361b6f87a95183f5776c3747",
         "entry": "createSource"
       },
       "capabilities": {

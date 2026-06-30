@@ -171,7 +171,6 @@ function createSource(api, config) {
 
       if (addedThisPage === 0 || cards.length < 5) break;
       page++;
-      await new Promise(function (r) { setTimeout(r, 300); });
     }
 
     allChapters.sort(function (a, b) {
