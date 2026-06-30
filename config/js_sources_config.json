@@ -1,10 +1,10 @@
 {
-  "version": "1.3.0",
+  "version": "1.3.1",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.06.30-dev.1",
+  "manifest_version": "2026.06.30-dev.2",
   "generated_at": "2026-06-29T00:00:00Z",
-    "last_updated": "2026-06-30T10:30:00Z",
+    "last_updated": "2026-06-30T11:00:00Z",
   "min_app_version": "1.4.0",
   "repository": {
     "owner": "lamineheskoura",
@@ -21,7 +21,7 @@
     "swat": {
       "id": "swat",
       "name": "سوات مانجا (Swat Manga)",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "enabled": true,
       "status": "stable",
       "base_url": "https://appswat.com",
@@ -64,7 +64,7 @@
     "team_x": {
       "id": "team_x",
       "name": "تيم إكس (Team-X)",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "enabled": true,
       "status": "stable",
       "base_url": "https://www.olympustaff.com",
@@ -80,7 +80,7 @@
       },
       "script": {
         "url": "sources/team_x/source.js",
-        "sha256": "c056b0b422308289ef2d0a36192ef2852d881277361b6f87a95183f5776c3747",
+        "sha256": "f6782a32140932da7eee13910fa9d781e872635044b97fbb52cfea8f4f0acb8a",
         "entry": "createSource"
       },
       "capabilities": {
@@ -148,13 +148,13 @@
     "lekmanga": {
       "id": "lekmanga",
       "name": "LekManga",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "enabled": true,
       "status": "beta",
       "base_url": "https://lek-manga.net",
       "website_url": "https://lek-manga.net",
       "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=lek-manga.net",
-      "requires_cf": true,
+      "requires_cf": false,
       "image_referer": "https://lek-manga.net/",
       "headers": {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -165,7 +165,7 @@
       },
       "script": {
         "url": "sources/lekmanga/source.js",
-        "sha256": "0ae64b3bdf714035ba42f7c024dcd504dc5ee5d304bfb828007afa6759ce4e3a",
+        "sha256": "8d1112d8338e10f05b45ffcf0a1ca2ba72bde70274cf54b3d210a2dff9ea9ae0",
         "entry": "createSource"
       },
       "capabilities": {
@@ -174,7 +174,7 @@
         "supports_filters": true,
         "supports_lazy_chapters": false,
         "supports_download": true,
-        "requires_cloudflare": true
+        "requires_cloudflare": false
       },
       "compatibility": {
         "min_app_version": "1.4.0",
@@ -185,7 +185,7 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "LekManga Madara source migrated to JavaScript",
-        "changelog": "Initial JS migration; requires Cloudflare-capable runtime"
+        "changelog": "Initial JS migration; Cloudflare only expected on detail/reader paths"
       }
     }
   }

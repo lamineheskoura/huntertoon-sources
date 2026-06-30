@@ -83,6 +83,7 @@ function createSource(api, config) {
     for (var i = 0; i < items.length; i++) {
       var item = items[i];
       var href = await tryAttr(item.html, opts.urlSel || "a", "href");
+      if (!href && item.attrs) href = item.attrs.href || "";
       if (!href) continue;
       var detailUrl = makeAbsolute(href);
       if (seen[detailUrl]) continue;
