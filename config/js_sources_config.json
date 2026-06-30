@@ -1,10 +1,10 @@
 {
-  "version": "1.3.1",
+  "version": "1.4.0",
   "schema_version": 3,
   "runtime_api_version": "1.0",
   "manifest_version": "2026.06.30-dev.2",
-  "generated_at": "2026-06-29T00:00:00Z",
-    "last_updated": "2026-06-30T11:00:00Z",
+  "generated_at": "2026-06-30T15:30:00Z",
+    "last_updated": "2026-06-30T15:30:00Z",
   "min_app_version": "1.4.0",
   "repository": {
     "owner": "lamineheskoura",
@@ -148,13 +148,13 @@
     "lekmanga": {
       "id": "lekmanga",
       "name": "LekManga",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "enabled": true,
-      "status": "beta",
+      "status": "stable",
       "base_url": "https://lek-manga.net",
       "website_url": "https://lek-manga.net",
       "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=lek-manga.net",
-      "requires_cf": false,
+      "requires_cf": true,
       "image_referer": "https://lek-manga.net/",
       "headers": {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -165,7 +165,91 @@
       },
       "script": {
         "url": "sources/lekmanga/source.js",
-        "sha256": "8d1112d8338e10f05b45ffcf0a1ca2ba72bde70274cf54b3d210a2dff9ea9ae0",
+        "sha256": "0ae64b3bdf714035ba42f7c024dcd504dc5ee5d304bfb828007afa6759ce4e3a",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": ["manga"],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": true
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "LekManga Madara source migrated to JavaScript",
+        "changelog": "Fixed requiresCloudflare to true matching built-in source behavior; VPN no longer needed"
+      }
+    },
+    "mangastarz": {
+      "id": "mangastarz",
+      "name": "MangaStarz",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://manga-starz.net",
+      "website_url": "https://manga-starz.net",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=manga-starz.net",
+      "requires_cf": true,
+      "image_referer": "https://manga-starz.net/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://manga-starz.net/"
+      },
+      "script": {
+        "url": "sources/mangastarz/source.js",
+        "sha256": "e93921ffdae5181efa8f31903100e90a6d711387fd8a24f212067fa2897ffc74",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": ["manga"],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": true
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "MangaStarz Madara source migrated to JavaScript",
+        "changelog": "Initial JS migration matching built-in Madara source behavior"
+      }
+    },
+    "lavascans": {
+      "id": "lavascans",
+      "name": "لافا سكانز (Lava Scans)",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://lavascans.com",
+      "website_url": "https://lavascans.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=lavascans.com",
+      "requires_cf": false,
+      "image_referer": "https://lavascans.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://lavascans.com/"
+      },
+      "script": {
+        "url": "sources/lavascans/source.js",
+        "sha256": "3bb99f81330a41a120c4d9bf2f9a6730d9a7d9a889fa9a7149b5b383fa98212f",
         "entry": "createSource"
       },
       "capabilities": {
@@ -184,8 +268,8 @@
         "language": "ar",
         "adult": false,
         "author": "HunterToon Team",
-        "description": "LekManga Madara source migrated to JavaScript",
-        "changelog": "Initial JS migration; Cloudflare only expected on detail/reader paths"
+        "description": "LavaScans custom theme source migrated to JavaScript with multi-strategy page extraction",
+        "changelog": "Initial JS migration matching built-in source behavior"
       }
     }
   }

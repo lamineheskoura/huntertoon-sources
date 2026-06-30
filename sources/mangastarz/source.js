@@ -1,5 +1,5 @@
 function createSource(api, config) {
-  var baseUrl = (config && config.base_url) || "https://lek-manga.net";
+  var baseUrl = (config && config.base_url) || "https://manga-starz.net";
   var selectors = (config && config.selectors) || {};
 
   var userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
@@ -15,7 +15,6 @@ function createSource(api, config) {
     "Upgrade-Insecure-Requests": "1"
   };
 
-  var lastChapterUrl = baseUrl + "/";
   var defaultGenres = [
     "أكشن", "مغامرة", "خيال", "فنتازيا", "دراما", "رومانسي", "كوميدي", "شونين",
     "رعب", "خارق للطبيعة", "نفسي", "غموض", "حياة مدرسية", "رياضة", "تاريخي", "شريحة من الحياة"
@@ -187,7 +186,6 @@ function createSource(api, config) {
 
     async getChapterPages(args) {
       var chapterUrl = normalizeUrl((args && args.url) || "");
-      lastChapterUrl = chapterUrl;
       var html = await fetchHtml(chapterUrl);
       var imgSel = sel("chapter_page_image", ".reading-content .page-break img, .wp-manga-chapter-img");
       var images = await api.cssMap(html, imgSel, {
@@ -235,7 +233,7 @@ function createSource(api, config) {
     getImageHeaders() {
       return {
         "User-Agent": userAgent,
-        "Referer": lastChapterUrl || baseUrl + "/",
+        "Referer": baseUrl + "/",
         "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
         "Sec-Fetch-Dest": "image",
