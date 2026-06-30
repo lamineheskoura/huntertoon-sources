@@ -1,10 +1,10 @@
 {
-  "version": "1.4.0",
+  "version": "1.4.1",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.06.30-dev.2",
-  "generated_at": "2026-06-30T15:30:00Z",
-    "last_updated": "2026-06-30T15:30:00Z",
+  "manifest_version": "2026.06.30-dev.3",
+  "generated_at": "2026-06-30T16:30:00Z",
+    "last_updated": "2026-06-30T16:30:00Z",
   "min_app_version": "1.4.0",
   "repository": {
     "owner": "lamineheskoura",
@@ -18,6 +18,49 @@
     "keep_previous_versions": 2
   },
   "sources": {
+    "azora": {
+      "id": "azora",
+      "name": "أزورا مانجا (Azora Manga)",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "stable",
+      "base_url": "https://azorafly.com",
+      "website_url": "https://azorafly.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=azorafly.com",
+      "requires_cf": false,
+      "image_referer": "https://azorafly.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://azorafly.com/",
+        "Origin": "https://azorafly.com"
+      },
+      "script": {
+        "url": "sources/azora/source.js",
+        "sha256": "bd555b87b3d84f708fd7fc60cae192d0f178e421f1ae54862732179b8401ca3e",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": ["manga"],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Azora Manga source using the current azorafly.com API and reader HTML",
+        "changelog": "Initial installable JS source with API chapters and reader image extraction"
+      }
+    },
     "swat": {
       "id": "swat",
       "name": "سوات مانجا (Swat Manga)",
