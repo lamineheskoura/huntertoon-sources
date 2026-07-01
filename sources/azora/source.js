@@ -1,7 +1,7 @@
 function createSource(api, config) {
   var baseUrl = ((config && config.base_url) || "https://azorafly.com").replace(/\/+$/, "");
   var apiBase = "https://api.azorafly.com";
-  var userAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
+  var userAgent = (config && config.user_agent) || "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
   var lastChapterUrl = baseUrl + "/";
 
   var headers = {
@@ -119,8 +119,12 @@ function createSource(api, config) {
   }
 
   function extractSlug(url) {
-    var m = String(url || "").match(/\/series\/([^\/?#]+)/);
-    return m ? m[1] : "";
+    var value = String(url || "");
+    var m = value.match(/\/(?:series|manga)\/([^\/?#]+)/);
+    if (m) return m[1];
+    value = value.replace(/[?#].*$/, "").replace(/\/+$/, "");
+    var parts = value.split("/");
+    return parts.length ? parts[parts.length - 1] : "";
   }
 
   function extractPostId(html) {
@@ -186,38 +190,57 @@ function createSource(api, config) {
   }
 
   async function extractImages(html) {
-    var urls = [];
+    var entries = [];
     var seen = {};
-    function add(raw) {
+    function add(raw, index) {
       var url = sanitizeImageUrl(raw || "");
       if (!url || seen[url]) return;
       if (url.indexOf("/featured/") !== -1 || url.indexOf("logo") !== -1 || url.indexOf("avatar") !== -1 || url.indexOf("icon") !== -1) return;
       seen[url] = true;
-      urls.push(url);
-    }
-
-    var images = await api.cssMap(html, ".comic-images-wrapper img[data-reader-page-image], img[data-reader-page-image]", {
-      src: { selector: "", type: "attr", attr: "src" },
-      dataSrc: { selector: "", type: "attr", attr: "data-src" },
-      lazy: { selector: "", type: "attr", attr: "data-lazy-src" }
-    });
-    for (var i = 0; i < images.length; i++) {
-      add(images[i].src || images[i].dataSrc || images[i].lazy || "");
+      entries.push({ url: url, index: typeof index === "number" ? index : 999999 });
     }
 
     var normalized = html.replace(/\\\//g, "/");
+    var tagRegex = /<img[^>]+data-reader-page-image[^>]*>/gi;
+    var attrRegex = /(src|data-src|data-lazy-src|data-reader-index)\s*=\s*["']([^"']+)["']/gi;
+    var tagMatch;
+    while ((tagMatch = tagRegex.exec(normalized)) !== null) {
+      var tag = tagMatch[0];
+      var attrs = {};
+      var attrMatch;
+      while ((attrMatch = attrRegex.exec(tag)) !== null) {
+        attrs[attrMatch[1]] = attrMatch[2];
+      }
+      var index = parseInt(attrs["data-reader-index"] || "", 10);
+      add(attrs.src || attrs["data-src"] || attrs["data-lazy-src"] || "", isNaN(index) ? 999999 : index);
+      add(attrs["data-src"] || "", isNaN(index) ? 999999 : index);
+      add(attrs["data-lazy-src"] || "", isNaN(index) ? 999999 : index);
+    }
+
+    if (!entries.length) {
+      var images = await api.cssAll(html, ".comic-images-wrapper img[data-reader-page-image], img[data-reader-page-image]");
+      for (var i = 0; i < images.length; i++) {
+        var attrs = images[i].attrs || {};
+        var index = parseInt(attrs["data-reader-index"] || "", 10);
+        add(attrs.src || attrs["data-src"] || attrs["data-lazy-src"] || "", isNaN(index) ? 999999 : index);
+        add(attrs["data-src"] || "", isNaN(index) ? 999999 : index);
+        add(attrs["data-lazy-src"] || "", isNaN(index) ? 999999 : index);
+      }
+    }
+
     var re = /https?:\/\/storage\.azora(?:fly|moon)\.com\/[^\s"'<>\\]+\.(?:jpg|jpeg|png|webp)/gi;
     var m;
-    while ((m = re.exec(normalized)) !== null) add(m[0]);
+    while ((m = re.exec(normalized)) !== null) add(m[0], 999999);
 
-    urls.sort(function (a, b) {
+    entries.sort(function (a, b) {
+      if (a.index !== b.index) return a.index - b.index;
       function page(u) {
         var pm = u.match(/page-(\d+)/i) || u.split("/").pop().match(/^(\d+)/) || u.match(/(\d+)\.(?:jpg|jpeg|png|webp)$/i);
         return pm ? parseInt(pm[1], 10) : 999999;
       }
-      return page(a) - page(b);
+      return page(a.url) - page(b.url);
     });
-    return urls;
+    return entries.map(function (entry) { return entry.url; });
   }
 
   return {
@@ -261,7 +284,8 @@ function createSource(api, config) {
       var url = makeAbsolute((args && args.url) || "");
       var slug = extractSlug(url);
       var html = await getHtml(url);
-      var post = await findPostBySlug(slug);
+      var post = null;
+      try { post = await findPostBySlug(slug); } catch (e) {}
       var postId = (post && post.id) || extractPostId(html);
 
       var title = (post && post.postTitle) || await api.cssAttr(html, "meta[property='og:title']", "content") || "بدون عنوان";
@@ -272,8 +296,15 @@ function createSource(api, config) {
         genres = post.genres.map(function (g) { return String((g && g.name) || "").trim(); }).filter(function (g) { return !!g; });
       }
 
-      var chapters = await fetchChapters(postId, slug);
-      if (!chapters.length) chapters = await fallbackChaptersFromHtml(html);
+      var chapters = [];
+      try {
+        chapters = await fetchChapters(postId, slug);
+      } catch (e) {}
+      if (!chapters.length) {
+        try {
+          chapters = await fallbackChaptersFromHtml(html);
+        } catch (e) {}
+      }
 
       return {
         title: String(title).trim(),

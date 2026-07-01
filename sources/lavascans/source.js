@@ -2,7 +2,7 @@ function createSource(api, config) {
   var baseUrl = (config && config.base_url) || "https://lavascans.com";
   var selectors = (config && config.selectors) || {};
 
-  var userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+  var userAgent = (config && config.user_agent) || "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
   var defaultHeaders = {
     "User-Agent": userAgent,
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
@@ -79,8 +79,7 @@ function createSource(api, config) {
       var detailUrl = makeAbsolute(item.href || "");
       if (!detailUrl || seen[detailUrl]) continue;
       seen[detailUrl] = true;
-      var cover = item.coverDataSrc || item.coverLazySrc || item.coverSrc || "";
-      if (cover.indexOf("data:image") !== -1) cover = "";
+      var cover = pickCoverUrl(item);
       results.push({ title: title, detailUrl: detailUrl, coverUrl: cover, contentType: "manga" });
     }
     return results;
@@ -137,6 +136,15 @@ function createSource(api, config) {
     if (!url || url.indexOf("data:image/") === 0) url = (img.src || "").trim();
     if (url.indexOf("data:image/") === 0) return "";
     return url;
+  }
+
+  function pickCoverUrl(item) {
+    var url = extractImageUrl({
+      dataSrc: item.coverDataSrc,
+      lazy: item.coverLazySrc,
+      src: item.coverSrc
+    });
+    return url ? makeAbsolute(url) : "";
   }
 
   function isValidImageUrl(url) {
@@ -254,7 +262,7 @@ function createSource(api, config) {
   }
 
   return {
-    requiresCloudflare: false,
+    requiresCloudflare: true,
 
     async getHomepageManga(args) {
       try {
@@ -305,6 +313,7 @@ function createSource(api, config) {
       if (!cover) cover = await api.cssAttr(html, coverSel, "data-lazy-src");
       if (!cover) cover = await api.cssAttr(html, coverSel, "src");
       if (!cover) cover = await api.cssAttr(html, "meta[property='og:image']", "content");
+      cover = cover ? makeAbsolute(cover) : "";
 
       var description = await api.cssText(html, sel("manga_description", ".lh-story-content, .m-desc, .entry-content p, .entry-content"));
       description = (description || "").replace("متابعة قراءة", "").replace(/\s+/g, " ").trim();
