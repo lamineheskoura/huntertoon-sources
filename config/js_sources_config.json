@@ -276,9 +276,9 @@
     "lavascans": {
       "id": "lavascans",
       "name": "لافا سكانز (Lava Scans)",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "enabled": true,
-      "status": "beta",
+      "status": "stable",
       "base_url": "https://lavascans.com",
       "website_url": "https://lavascans.com",
       "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=lavascans.com",
@@ -287,12 +287,12 @@
       "headers": {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.8",
         "Referer": "https://lavascans.com/"
       },
       "script": {
         "url": "sources/lavascans/source.js",
-        "sha256": "3bb99f81330a41a120c4d9bf2f9a6730d9a7d9a889fa9a7149b5b383fa98212f",
+        "sha256": "6b03fd01a66ea147184e1c39752e40ac100600beaeb974ce588313a220a0bd34",
         "entry": "createSource"
       },
       "capabilities": {
@@ -311,8 +311,8 @@
         "language": "ar",
         "adult": false,
         "author": "HunterToon Team",
-        "description": "LavaScans custom theme source migrated to JavaScript with multi-strategy page extraction",
-        "changelog": "Initial JS migration matching built-in source behavior"
+        "description": "LavaScans custom theme source - JS implementation matching built-in Dart source behavior",
+        "changelog": "Fix image extraction: match built-in source with selector chain, noscript, regex, ts_reader fallbacks; sort by data-index; filter SVGs and icon GIFs"
       }
     }
   }

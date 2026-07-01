@@ -131,62 +131,123 @@ function createSource(api, config) {
     return chapters;
   }
 
+  function extractImageUrl(img) {
+    var url = (img.dataSrc || "").trim();
+    if (!url || url.indexOf("data:image/") === 0) url = (img.lazy || "").trim();
+    if (!url || url.indexOf("data:image/") === 0) url = (img.src || "").trim();
+    if (url.indexOf("data:image/") === 0) return "";
+    return url;
+  }
+
+  function isValidImageUrl(url) {
+    if (!url) return false;
+    var lower = url.toLowerCase();
+    if (lower.indexOf(".svg") !== -1) return false;
+    if (lower.indexOf(".gif") !== -1 && lower.indexOf("icon") !== -1) return false;
+    if (lower.indexOf("data:") === 0 && lower.indexOf("data:image/") !== 0) return false;
+    return true;
+  }
+
   async function extractPageImages(html) {
     var urls = [];
+    var strategies = (sel("reader_fallback_strategy", "selector,noscript,regex,ts_reader")).split(",");
 
-    // Strategy 1: CSS selector via bridge
-    var imgSel = sel("chapter_page_image", "#readerarea img, .reading-content img, .page-break img");
-    var images = await api.cssMap(html, imgSel, {
-      dataSrc: { selector: "", type: "attr", attr: "data-src" },
-      lazy: { selector: "", type: "attr", attr: "data-lazy-src" },
-      src: { selector: "", type: "attr", attr: "src" }
-    });
-    for (var i = 0; i < images.length; i++) {
-      var src = images[i].dataSrc || images[i].lazy || images[i].src || "";
-      if (src && src.indexOf("data:image") === -1) {
-        src = makeAbsolute(src);
-        if (urls.indexOf(src) === -1) urls.push(src);
-      }
-    }
-    if (urls.length) return urls;
+    for (var si = 0; si < strategies.length; si++) {
+      var strategy = strategies[si].trim();
+      if (urls.length) break;
 
-    // Strategy 2: noscript fallback
-    var noscriptMatch = html.match(/<noscript>([\s\S]*?)<\/noscript>/gi);
-    if (noscriptMatch) {
-      for (var n = 0; n < noscriptMatch.length; n++) {
-        var imgRegex = /<img[^>]+src\s*=\s*["']([^"']+)["']/gi;
-        var m;
-        while ((m = imgRegex.exec(noscriptMatch[n])) !== null) {
-          var s = makeAbsolute(m[1]);
-          if (s && urls.indexOf(s) === -1) urls.push(s);
-        }
-      }
-      if (urls.length) return urls;
-    }
+      if (strategy === "selector") {
+        // Try each selector in chain
+        var selectorsStr = sel("chapter_page_image", "#readerarea img, .reading-content img, .page-break img");
+        var selectors = selectorsStr.split(",");
+        for (var si2 = 0; si2 < selectors.length; si2++) {
+          var selStr = selectors[si2].trim();
+          if (!selStr) continue;
+          var images = await api.cssAll(html, selStr);
+          if (!images || !images.length) continue;
 
-    // Strategy 3: regex for image tags with valid extensions
-    var exts = (sel("chapter_image_extensions", ".webp,.jpg,.jpeg,.png")).split(",");
-    var extPattern = "\\.(" + exts.map(function(e) { return e.replace(".", ""); }).join("|") + ")";
-    var imgRegex2 = new RegExp("<img[^>]+src\\s*=\\s*[\"']([^\"']+" + extPattern + ")[\"']", "gi");
-    while ((m = imgRegex2.exec(html)) !== null) {
-      var s = makeAbsolute(m[1]);
-      if (s && urls.indexOf(s) === -1) urls.push(s);
-    }
-    if (urls.length) return urls;
-
-    // Strategy 4: ts_reader JSON
-    var tsMatch = html.match(/ts_reader\.(?:run|init)\s*\(\s*({[\s\S]*?})\s*\)/);
-    if (tsMatch) {
-      try {
-        var data = JSON.parse(tsMatch[1]);
-        var imgList = (data.sources && data.sources[0] && data.sources[0].images) || data.images;
-        if (imgList && typeof imgList.forEach === "function") {
-          imgList.forEach(function(img) {
-            var s = makeAbsolute(String(img));
-            if (s && urls.indexOf(s) === -1) urls.push(s);
+          // Sort by data-index if present
+          images.sort(function(a, b) {
+            var idxA = parseInt((a.attrs && a.attrs["data-index"]) || "", 10);
+            var idxB = parseInt((b.attrs && b.attrs["data-index"]) || "", 10);
+            if (!isNaN(idxA) && !isNaN(idxB)) return idxA - idxB;
+            return 0;
           });
+
+          for (var j = 0; j < images.length; j++) {
+            var img = images[j];
+            var attrs = img.attrs || {};
+            var src = extractImageUrl({
+              dataSrc: attrs["data-src"],
+              lazy: attrs["data-lazy-src"],
+              src: attrs["src"]
+            });
+            if (!src) continue;
+            src = makeAbsolute(src);
+            if (!isValidImageUrl(src)) continue;
+            if (urls.indexOf(src) === -1) urls.push(src);
+          }
+          if (urls.length) break;
         }
-      } catch (e) {}
+      }
+
+      if (!urls.length && strategy === "noscript") {
+        // Find noscript inside reader container
+        var containerSel = sel("chapter_reader_container", ".reader-area, #readerarea");
+        var containerHtml = await api.cssHtml(html, containerSel);
+        if (containerHtml) {
+          var noscriptMatch = containerHtml.match(/<noscript>([\s\S]*?)<\/noscript>/i);
+          if (noscriptMatch) {
+            var imgRegex = /<img[^>]+src\s*=\s*["']([^"']+)["']/gi;
+            var m;
+            while ((m = imgRegex.exec(noscriptMatch[1])) !== null) {
+              var s = makeAbsolute(m[1]);
+              if (s && isValidImageUrl(s) && urls.indexOf(s) === -1) urls.push(s);
+            }
+          }
+        }
+      }
+
+      if (!urls.length && strategy === "regex") {
+        // Regex for img tags with valid extensions in container
+        var containerSel = sel("chapter_reader_container", ".reader-area, #readerarea");
+        var containerHtml = await api.cssHtml(html, containerSel);
+        if (containerHtml) {
+          var exts = (sel("chapter_image_extensions", ".webp,.jpg,.jpeg,.png")).split(",");
+          var extPattern = "\\.(" + exts.map(function(e) { return e.replace(".", ""); }).join("|") + ")";
+          var imgRegex2 = new RegExp("<img[^>]+src\\s*=\\s*[\"']([^\"']+" + extPattern + ")[\"']", "gi");
+          while ((m = imgRegex2.exec(containerHtml)) !== null) {
+            var s = makeAbsolute(m[1]);
+            if (s && isValidImageUrl(s) && urls.indexOf(s) === -1) urls.push(s);
+          }
+        }
+        // Fallback: search full HTML if container regex found nothing
+        if (!urls.length) {
+          var exts = (sel("chapter_image_extensions", ".webp,.jpg,.jpeg,.png")).split(",");
+          var extPattern = "\\.(" + exts.map(function(e) { return e.replace(".", ""); }).join("|") + ")";
+          var imgRegex2 = new RegExp("<img[^>]+src\\s*=\\s*[\"']([^\"']+" + extPattern + ")[\"']", "gi");
+          while ((m = imgRegex2.exec(html)) !== null) {
+            var s = makeAbsolute(m[1]);
+            if (s && isValidImageUrl(s) && urls.indexOf(s) === -1) urls.push(s);
+          }
+        }
+      }
+
+      if (!urls.length && strategy === "ts_reader") {
+        var tsMatch = html.match(/ts_reader\.(?:run|init)\s*\(\s*({[\s\S]*?})\s*\)/);
+        if (tsMatch) {
+          try {
+            var data = JSON.parse(tsMatch[1]);
+            var imgList = (data.sources && data.sources[0] && data.sources[0].images) || data.images;
+            if (imgList && typeof imgList.forEach === "function") {
+              imgList.forEach(function(img) {
+                var s = makeAbsolute(String(img));
+                if (s && isValidImageUrl(s) && urls.indexOf(s) === -1) urls.push(s);
+              });
+            }
+          } catch (e) {}
+        }
+      }
     }
 
     return urls;
