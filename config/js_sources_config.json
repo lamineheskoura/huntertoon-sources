@@ -1,10 +1,10 @@
 {
-  "version": "1.4.1",
+  "version": "1.4.2",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.06.30-dev.3",
-  "generated_at": "2026-06-30T16:30:00Z",
-    "last_updated": "2026-06-30T16:30:00Z",
+  "manifest_version": "2026.07.01-dev.1",
+  "generated_at": "2026-07-01T03:30:00Z",
+    "last_updated": "2026-07-01T03:30:00Z",
   "min_app_version": "1.4.0",
   "repository": {
     "owner": "lamineheskoura",
@@ -21,13 +21,13 @@
     "azora": {
       "id": "azora",
       "name": "أزورا مانجا (Azora Manga)",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "enabled": true,
       "status": "stable",
       "base_url": "https://azorafly.com",
       "website_url": "https://azorafly.com",
       "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=azorafly.com",
-      "requires_cf": false,
+      "requires_cf": true,
       "image_referer": "https://azorafly.com/",
       "headers": {
         "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
@@ -292,7 +292,7 @@
       },
       "script": {
         "url": "sources/lavascans/source.js",
-        "sha256": "3bb99f81330a41a120c4d9bf2f9a6730d9a7d9a889fa9a7149b5b383fa98212f",
+        "sha256": "23835e7cf296d7e163bbf9b74671f2aee6395af8dc07d3b706f07243f0f4a344",
         "entry": "createSource"
       },
       "capabilities": {
@@ -301,7 +301,7 @@
         "supports_filters": true,
         "supports_lazy_chapters": false,
         "supports_download": true,
-        "requires_cloudflare": false
+        "requires_cloudflare": true
       },
       "compatibility": {
         "min_app_version": "1.4.0",
@@ -312,7 +312,7 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "LavaScans custom theme source migrated to JavaScript with multi-strategy page extraction",
-        "changelog": "Initial JS migration matching built-in source behavior"
+        "changelog": "Mark Cloudflare as required so image downloads include CF cookies like the built-in source"
       }
     }
   }
