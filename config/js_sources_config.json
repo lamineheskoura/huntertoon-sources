@@ -1,10 +1,10 @@
 {
-    "version":  "1.4.2",
+    "version":  "1.4.3",
     "schema_version":  3,
     "runtime_api_version":  "1.0",
-    "manifest_version":  "2026.07.01-dev.2",
-    "generated_at":  "2026-07-01T08:20:00Z",
-    "last_updated":  "2026-07-01T08:20:00Z",
+    "manifest_version":  "2026.07.01-dev.3",
+    "generated_at":  "2026-07-01T09:10:00Z",
+    "last_updated":  "2026-07-01T09:10:00Z",
     "min_app_version":  "1.4.0",
     "repository":  {
                        "owner":  "lamineheskoura",
@@ -150,6 +150,94 @@
                                                     "author":  "HunterToon Team",
                                                     "description":  "Team-X (Madara CMS) source migrated to JavaScript",
                                                     "changelog":  "Normalize canonical host to olympustaff.com so JS referer/image requests match the working built-in source"
+                                                }
+                               },
+                    "three_asq":  {
+                                      "id":  "three_asq",
+                                      "name":  "3asq (شهامة)",
+                                      "version":  "1.0.0",
+                                      "enabled":  true,
+                                      "status":  "stable",
+                                      "base_url":  "https://3asq.org",
+                                      "website_url":  "https://3asq.org",
+                                      "icon_url":  "https://www.google.com/s2/favicons?sz=64\u0026domain=3asq.org",
+                                      "requires_cf":  false,
+                                      "image_referer":  "https://3asq.org/",
+                                      "headers":  {
+                                                      "User-Agent":  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                                                      "Accept":  "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                                                      "Accept-Language":  "ar,en-US;q=0.9,en;q=0.8",
+                                                      "Referer":  "https://3asq.org/"
+                                                  },
+                                      "script":  {
+                                                     "url":  "sources/three_asq/source.js",
+                                                     "sha256":  "96564f04c3be0164fde9d37ff255d2285a46611e5ad319052b4acf6f7cbec080",
+                                                     "entry":  "createSource"
+                                                 },
+                                      "capabilities":  {
+                                                           "content_types":  [
+                                                                                 "manga"
+                                                                             ],
+                                                           "supports_search":  true,
+                                                           "supports_filters":  true,
+                                                           "supports_lazy_chapters":  false,
+                                                           "supports_download":  true,
+                                                           "requires_cloudflare":  false
+                                                       },
+                                      "compatibility":  {
+                                                            "min_app_version":  "1.4.0",
+                                                            "runtime_api_version":  "1.0"
+                                                        },
+                                      "metadata":  {
+                                                       "language":  "ar",
+                                                       "adult":  false,
+                                                       "author":  "HunterToon Team",
+                                                       "description":  "3asq Madara HTML source migrated to installable JavaScript",
+                                                       "changelog":  "Initial JS implementation matching built-in Madara homepage, search, details, AJAX chapters, and reader behavior"
+                                                   }
+                                  },
+                    "hijala":  {
+                                   "id":  "hijala",
+                                   "name":  "حجالة مانجا (Hijala)",
+                                   "version":  "1.0.0",
+                                   "enabled":  true,
+                                   "status":  "stable",
+                                   "base_url":  "https://hijala.com",
+                                   "website_url":  "https://hijala.com",
+                                   "icon_url":  "https://www.google.com/s2/favicons?sz=64\u0026domain=hijala.com",
+                                   "requires_cf":  false,
+                                   "image_referer":  "https://hijala.com/",
+                                   "headers":  {
+                                                   "User-Agent":  "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                                                   "Accept":  "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                                                   "Accept-Language":  "ar,en-US;q=0.9,en;q=0.8",
+                                                   "Referer":  "https://hijala.com/"
+                                               },
+                                   "script":  {
+                                                  "url":  "sources/hijala/source.js",
+                                                  "sha256":  "b164e940675b713ef951801ea6883dee5c863d6d6433db2f0bf64bd1c65fb749",
+                                                  "entry":  "createSource"
+                                              },
+                                   "capabilities":  {
+                                                        "content_types":  [
+                                                                              "manga"
+                                                                          ],
+                                                        "supports_search":  true,
+                                                        "supports_filters":  true,
+                                                        "supports_lazy_chapters":  false,
+                                                        "supports_download":  true,
+                                                        "requires_cloudflare":  false
+                                                    },
+                                   "compatibility":  {
+                                                         "min_app_version":  "1.4.0",
+                                                         "runtime_api_version":  "1.0"
+                                                     },
+                                   "metadata":  {
+                                                    "language":  "ar",
+                                                    "adult":  false,
+                                                    "author":  "HunterToon Team",
+                                                    "description":  "Hijala Tezuka-style HTML source migrated to installable JavaScript",
+                                                    "changelog":  "Initial JS implementation with repeated homepage-card filtering and resilient selector/noscript/regex/ts_reader extraction"
                                                 }
                                },
                     "dilar":  {
@@ -329,6 +417,318 @@
                                                        "description":  "LavaScans custom theme source - JS implementation matching built-in Dart source behavior",
                                                        "changelog":  "Fix JS covers and reader images, and move Cloudflare authority to source.js instead of the manifest"
                                                    }
-                                  }
+                                  },
+                    "lava_scans":  {
+                                       "id":  "lava_scans",
+                                       "name":  "لافا سكانز (Lava Scans)",
+                                       "version":  "1.0.0",
+                                       "enabled":  true,
+                                       "status":  "stable",
+                                       "base_url":  "https://lavascans.com",
+                                       "website_url":  "https://lavascans.com",
+                                       "icon_url":  "https://www.google.com/s2/favicons?sz=64\u0026domain=lavascans.com",
+                                       "requires_cf":  false,
+                                       "image_referer":  "https://lavascans.com/",
+                                       "headers":  {
+                                                       "User-Agent":  "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                                                       "Accept":  "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                                                       "Accept-Language":  "ar,en-US;q=0.9,en;q=0.8",
+                                                       "Referer":  "https://lavascans.com/"
+                                                   },
+                                       "script":  {
+                                                      "url":  "sources/lava_scans/source.js",
+                                                      "sha256":  "540d678d9b98eb3806364310d6c3dd6463ba25d5ed59e176ae3a52cb000e1aa4",
+                                                      "entry":  "createSource"
+                                                  },
+                                       "capabilities":  {
+                                                            "content_types":  [
+                                                                                  "manga"
+                                                                              ],
+                                                            "supports_search":  true,
+                                                            "supports_filters":  true,
+                                                            "supports_lazy_chapters":  false,
+                                                            "supports_download":  true,
+                                                            "requires_cloudflare":  false
+                                                        },
+                                       "compatibility":  {
+                                                             "min_app_version":  "1.4.0",
+                                                             "runtime_api_version":  "1.0"
+                                                         },
+                                       "metadata":  {
+                                                        "language":  "ar",
+                                                        "adult":  false,
+                                                        "author":  "HunterToon Team",
+                                                        "description":  "Canonical lava_scans installable JavaScript source matching the built-in LavaScans behavior",
+                                                        "changelog":  "Initial canonical-ID JS entry with Cloudflare authority in source.js and absolute covers/reader images"
+                                                    }
+                                   },
+                    "mangatime":  {
+                                      "id":  "mangatime",
+                                      "name":  "مانجا تايم (MangaTime)",
+                                      "version":  "1.0.0",
+                                      "enabled":  true,
+                                      "status":  "beta",
+                                      "base_url":  "https://mangatime.org",
+                                      "website_url":  "https://mangatime.org",
+                                      "icon_url":  "https://www.google.com/s2/favicons?sz=64\u0026domain=mangatime.org",
+                                      "requires_cf":  false,
+                                      "image_referer":  "https://mangatime.org/",
+                                      "headers":  {
+                                                      "User-Agent":  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                                                      "Accept":  "application/json, text/html, */*",
+                                                      "Accept-Language":  "ar,en-US;q=0.9,en;q=0.8",
+                                                      "Referer":  "https://mangatime.org/"
+                                                  },
+                                      "script":  {
+                                                     "url":  "sources/mangatime/source.js",
+                                                     "sha256":  "a2914e349bdff63a19ed99c00f6f01b5fb7eb910aaf21309e12e58fc2c7d6cb0",
+                                                     "entry":  "createSource"
+                                                 },
+                                      "capabilities":  {
+                                                           "content_types":  [
+                                                                                 "manga"
+                                                                             ],
+                                                           "supports_search":  true,
+                                                           "supports_filters":  true,
+                                                           "supports_lazy_chapters":  false,
+                                                           "supports_download":  true,
+                                                           "requires_cloudflare":  false
+                                                       },
+                                      "compatibility":  {
+                                                            "min_app_version":  "1.4.0",
+                                                            "runtime_api_version":  "1.0"
+                                                        },
+                                      "metadata":  {
+                                                       "language":  "ar",
+                                                       "adult":  false,
+                                                       "author":  "HunterToon Team",
+                                                       "description":  "MangaTime tRPC/API source migrated to JavaScript",
+                                                       "changelog":  "Initial JS implementation preserving JSON chapter references and image page generation"
+                                                   }
+                                  },
+                    "mangatek":  {
+                                     "id":  "mangatek",
+                                     "name":  "مانجاتك (Mangatek)",
+                                     "version":  "1.0.0",
+                                     "enabled":  true,
+                                     "status":  "beta",
+                                     "base_url":  "https://mangatek.com",
+                                     "website_url":  "https://mangatek.com",
+                                     "icon_url":  "https://www.google.com/s2/favicons?sz=64\u0026domain=mangatek.com",
+                                     "requires_cf":  false,
+                                     "image_referer":  "https://mangatek.com/",
+                                     "headers":  {
+                                                     "User-Agent":  "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                                                     "Accept":  "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                                                     "Accept-Language":  "ar,en-US;q=0.9,en;q=0.8",
+                                                     "Referer":  "https://mangatek.com/"
+                                                 },
+                                     "script":  {
+                                                    "url":  "sources/mangatek/source.js",
+                                                    "sha256":  "b99cf43487527bcebeef4a1c3b1783fb9c5ba445dcfe58c4be497570a563b1d3",
+                                                    "entry":  "createSource"
+                                                },
+                                     "capabilities":  {
+                                                          "content_types":  [
+                                                                                "manga",
+                                                                                "overlay"
+                                                                            ],
+                                                          "supports_search":  true,
+                                                          "supports_filters":  true,
+                                                          "supports_lazy_chapters":  false,
+                                                          "supports_download":  true,
+                                                          "requires_cloudflare":  false
+                                                      },
+                                     "compatibility":  {
+                                                           "min_app_version":  "1.4.0",
+                                                           "runtime_api_version":  "1.0"
+                                                       },
+                                     "metadata":  {
+                                                      "language":  "ar",
+                                                      "adult":  false,
+                                                      "author":  "HunterToon Team",
+                                                      "description":  "Mangatek Astro/overlay-capable source migrated to JavaScript",
+                                                      "changelog":  "Initial JS implementation with image fallback and optional WebCrypto overlay decoding"
+                                                  }
+                                 },
+                    "mangasid":  {
+                                     "id":  "mangasid",
+                                     "name":  "مانجا سيد (Mangasid)",
+                                     "version":  "1.0.0",
+                                     "enabled":  true,
+                                     "status":  "beta",
+                                     "base_url":  "https://mangasid.com",
+                                     "website_url":  "https://mangasid.com",
+                                     "icon_url":  "https://www.google.com/s2/favicons?sz=64\u0026domain=mangasid.com",
+                                     "requires_cf":  false,
+                                     "image_referer":  "https://mangasid.com/",
+                                     "headers":  {
+                                                     "User-Agent":  "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                                                     "Accept":  "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                                                     "Accept-Language":  "ar,en-US;q=0.9,en;q=0.8",
+                                                     "Referer":  "https://mangasid.com/"
+                                                 },
+                                     "script":  {
+                                                    "url":  "sources/mangasid/source.js",
+                                                    "sha256":  "cb5e08e4c050d980b74b273e84bb80d91177cb258b04988c7a46b41cbec48113",
+                                                    "entry":  "createSource"
+                                                },
+                                     "capabilities":  {
+                                                          "content_types":  [
+                                                                                "manga",
+                                                                                "overlay"
+                                                                            ],
+                                                          "supports_search":  true,
+                                                          "supports_filters":  true,
+                                                          "supports_lazy_chapters":  false,
+                                                          "supports_download":  true,
+                                                          "requires_cloudflare":  false
+                                                      },
+                                     "compatibility":  {
+                                                           "min_app_version":  "1.4.0",
+                                                           "runtime_api_version":  "1.0"
+                                                       },
+                                     "metadata":  {
+                                                      "language":  "ar",
+                                                      "adult":  false,
+                                                      "author":  "HunterToon Team",
+                                                      "description":  "Mangasid Astro/overlay-capable source migrated to JavaScript",
+                                                      "changelog":  "Initial JS implementation with API-host URL handling, image fallback, and optional WebCrypto overlay decoding"
+                                                  }
+                                 },
+                    "hizo_manga":  {
+                                       "id":  "hizo_manga",
+                                       "name":  "Hizo Manga",
+                                       "version":  "1.0.0",
+                                       "enabled":  true,
+                                       "status":  "beta",
+                                       "base_url":  "https://hizomanga.net",
+                                       "website_url":  "https://hizomanga.net",
+                                       "icon_url":  "https://www.google.com/s2/favicons?sz=64\u0026domain=hizomanga.net",
+                                       "requires_cf":  false,
+                                       "image_referer":  "https://hizomanga.net/",
+                                       "headers":  {
+                                                       "User-Agent":  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                                                       "Accept":  "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                                                       "Accept-Language":  "ar,en-US;q=0.9,en;q=0.8",
+                                                       "Referer":  "https://hizomanga.net/"
+                                                   },
+                                       "script":  {
+                                                      "url":  "sources/hizo_manga/source.js",
+                                                      "sha256":  "53c0dfad79a60c84c854f25ca1a6d187d39105bb0b41fb2eb40dd0f147f8490d",
+                                                      "entry":  "createSource"
+                                                  },
+                                       "capabilities":  {
+                                                            "content_types":  [
+                                                                                  "manga",
+                                                                                  "novel"
+                                                                              ],
+                                                            "supports_search":  true,
+                                                            "supports_filters":  false,
+                                                            "supports_lazy_chapters":  false,
+                                                            "supports_download":  true,
+                                                            "requires_cloudflare":  false
+                                                        },
+                                       "compatibility":  {
+                                                             "min_app_version":  "1.4.0",
+                                                             "runtime_api_version":  "1.0"
+                                                         },
+                                       "metadata":  {
+                                                        "language":  "ar",
+                                                        "adult":  false,
+                                                        "author":  "HunterToon Team",
+                                                        "description":  "Hizo Manga mixed manga/novel source migrated to JavaScript",
+                                                        "changelog":  "Initial JS implementation with novel text detection and image fallback"
+                                                    }
+                                   },
+                    "fada_riwayat":  {
+                                         "id":  "fada_riwayat",
+                                         "name":  "فضاء الروايات (Fada Riwayat)",
+                                         "version":  "1.0.0",
+                                         "enabled":  true,
+                                         "status":  "beta",
+                                         "base_url":  "https://cenele.com",
+                                         "website_url":  "https://cenele.com",
+                                         "icon_url":  "https://www.google.com/s2/favicons?sz=64\u0026domain=cenele.com",
+                                         "requires_cf":  false,
+                                         "image_referer":  "https://cenele.com/",
+                                         "headers":  {
+                                                         "User-Agent":  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                                                         "Accept":  "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                                                         "Accept-Language":  "ar,en-US;q=0.9,en;q=0.8",
+                                                         "Referer":  "https://cenele.com/"
+                                                     },
+                                         "script":  {
+                                                        "url":  "sources/fada_riwayat/source.js",
+                                                        "sha256":  "6daec76db2324246f741d7da47681acabd8c9f21ee5b5691d8380bc9609bf16b",
+                                                        "entry":  "createSource"
+                                                    },
+                                         "capabilities":  {
+                                                              "content_types":  [
+                                                                                    "manga",
+                                                                                    "novel"
+                                                                                ],
+                                                              "supports_search":  true,
+                                                              "supports_filters":  false,
+                                                              "supports_lazy_chapters":  false,
+                                                              "supports_download":  true,
+                                                              "requires_cloudflare":  false
+                                                          },
+                                         "compatibility":  {
+                                                               "min_app_version":  "1.4.0",
+                                                               "runtime_api_version":  "1.0"
+                                                           },
+                                         "metadata":  {
+                                                          "language":  "ar",
+                                                          "adult":  false,
+                                                          "author":  "HunterToon Team",
+                                                          "description":  "Fada Riwayat novel-first source migrated to JavaScript",
+                                                          "changelog":  "Initial JS implementation with text cleaner and image fallback"
+                                                      }
+                                     },
+                    "nadi_al_riwayt":  {
+                                           "id":  "nadi_al_riwayt",
+                                           "name":  "نادي الروايات (Nadi Al Riwayat)",
+                                           "version":  "1.0.0",
+                                           "enabled":  true,
+                                           "status":  "beta",
+                                           "base_url":  "https://rewayat.club",
+                                           "website_url":  "https://rewayat.club",
+                                           "icon_url":  "https://www.google.com/s2/favicons?sz=64\u0026domain=rewayat.club",
+                                           "requires_cf":  false,
+                                           "image_referer":  "https://rewayat.club/",
+                                           "headers":  {
+                                                           "User-Agent":  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                                                           "Accept":  "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                                                           "Accept-Language":  "ar,en-US;q=0.9,en;q=0.8",
+                                                           "Referer":  "https://rewayat.club/"
+                                                       },
+                                           "script":  {
+                                                          "url":  "sources/nadi_al_riwayt/source.js",
+                                                          "sha256":  "4b8e399865d5d6220ee63f2a2bf71306252cb9c23af794663085a3110d6fef53",
+                                                          "entry":  "createSource"
+                                                      },
+                                           "capabilities":  {
+                                                                "content_types":  [
+                                                                                      "novel"
+                                                                                  ],
+                                                                "supports_search":  true,
+                                                                "supports_filters":  false,
+                                                                "supports_lazy_chapters":  true,
+                                                                "supports_download":  true,
+                                                                "requires_cloudflare":  false
+                                                            },
+                                           "compatibility":  {
+                                                                 "min_app_version":  "1.4.0",
+                                                                 "runtime_api_version":  "1.0"
+                                                             },
+                                           "metadata":  {
+                                                            "language":  "ar",
+                                                            "adult":  false,
+                                                            "author":  "HunterToon Team",
+                                                            "description":  "Nadi Al Riwayat novel-only source migrated to JavaScript",
+                                                            "changelog":  "Initial JS implementation with novel-only content and lazy chapter pages"
+                                                        }
+                                       }
                 }
 }
