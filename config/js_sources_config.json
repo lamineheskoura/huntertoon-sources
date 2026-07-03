@@ -511,7 +511,7 @@
             },
             "script": {
                 "url": "sources/mangatek/source.js",
-                "sha256": "5a69a9d9118abe81c890f4f5f5c77cd7dbd23bc630341e0a468c53be530c8f5b",
+                "sha256": "b6804361c0a8641205763cab2a45d36a4ead19b31b772f725369b8c1009dbe02",
                 "entry": "createSource"
             },
             "capabilities": {
