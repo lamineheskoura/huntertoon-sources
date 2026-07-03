@@ -17,28 +17,21 @@ function createSource(api, config) {
 
   var genreSlugMap = {
     "أكشن": "action",
-    "مغامرة": "adventure",
-    "خيال": "fantasy",
+    "إيتشي": "ecchi",
+    "القتال": "fighting",
+    "بنات": "girl",
     "دراما": "drama",
-    "رومانسي": "romance",
-    "شونين": "shounen",
-    "سينين": "seinen",
-    "شريحة من الحياة": "slice-of-life",
-    "نفسي": "psychological",
-    "غموض": "mystery",
-    "إثارة": "thriller",
-    "رعب": "horror",
-    "فنون قتالية": "martial-arts",
-    "مأساة": "tragedy",
-    "تاريخي": "historical",
-    "رياضي": "sports",
-    "مدرسي": "school-life",
-    "شياطين": "demons",
-    "سحر": "magic",
-    "كوميديا": "comedy",
-    "تناسخ": "reincarnation",
-    "خارق للطبيعة": "supernatural",
-    "عسكري": "military"
+    "رعب": "horrow",
+    "صغار": "boys",
+    "صيني": "chinese",
+    "مضحك": "fun",
+    "مفامرة": "adventure"
+  };
+
+  var typeSlugMap = {
+    "manga": "مانجا",
+    "manhwa": "manhwa",
+    "manhua": "مانها"
   };
 
   var defaultHeaders = {
@@ -241,8 +234,7 @@ function createSource(api, config) {
     async getHomepageManga(args) {
       try {
         var page = (args && args.page) || 1;
-        var url = baseUrl + "/?s=&post_type=wp-manga";
-        if (page > 1) url += "&paged=" + page;
+        var url = page === 1 ? baseUrl + "/new/" : baseUrl + "/new/page/" + page + "/";
         return await parseCards(await fetchHtml(url));
       } catch (e) {
         return [];
@@ -253,8 +245,7 @@ function createSource(api, config) {
         var query = (args && args.query) || "";
         if (!query.trim()) return [];
         var page = (args && args.page) || 1;
-        var url = baseUrl + "/?s=" + encodeURIComponent(query) + "&post_type=wp-manga";
-        if (page > 1) url += "&paged=" + page;
+        var url = baseUrl + "/page/" + page + "/?s=" + encodeURIComponent(query) + "&post_type=wp-manga";
         return await parseCards(await fetchHtml(url));
       } catch (e) {
         return [];
@@ -330,10 +321,9 @@ function createSource(api, config) {
         var page = (args && args.page) || 1;
         var genre = (args && args.genre) || "";
         var type = (args && args.type) || "";
-        var typeSlugMap = { "manga": "مانجا", "manhwa": "مانهوا", "manhua": "مانها" };
         var url;
         if (genre) {
-          var slug = genreSlugMap[genre] || genre.toLowerCase().replace(/ /g, "-");
+          var slug = genreSlugMap[genre] || genre.replace(/ /g, "-");
           url = baseUrl + "/manga-genre/" + slug + "/";
           if (page > 1) url += "page/" + page + "/";
         } else if (type) {
@@ -341,8 +331,7 @@ function createSource(api, config) {
           url = baseUrl + "/manga-genre/" + encodeURIComponent(tSlug) + "/";
           if (page > 1) url += "page/" + page + "/";
         } else {
-          url = baseUrl + "/?s=&post_type=wp-manga";
-          if (page > 1) url += "&paged=" + page;
+          url = page === 1 ? baseUrl + "/new/" : baseUrl + "/new/page/" + page + "/";
         }
         return await parseCards(await fetchHtml(url));
       } catch (e) {

@@ -779,7 +779,7 @@
             },
             "script": {
                 "url": "sources/mnga4all/source.js",
-                "sha256": "7c130b9f3a88c076e12de371216112e4433e06bb7cfba68314ac57c2c1d44678",
+                "sha256": "570b183926ca6cb7704e5197735f8a960a5c3acf075febb4b0a45b4586dc33bc",
                 "entry": "createSource"
             },
             "capabilities": {
