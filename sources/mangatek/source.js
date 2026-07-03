@@ -2,7 +2,8 @@ function createSource(api, config) {
   var baseUrl = ((config && config.base_url) || "https://mangatek.com").replace(/\/+$/, "");
   var selectors = (config && config.selectors) || {};
   var other = (config && config.other) || {};
-  var userAgent = (config && config.user_agent) || "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
+  var configHeaders = (config && config.headers) || {};
+  var userAgent = (config && config.user_agent) || configHeaders["User-Agent"] || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
   var overlayKeyHex = "ff453871399fe268588a0936b45376022d85ed0fd1292001d5102f6a30291dc1";
   var lastChapterUrl = baseUrl + "/";
 
@@ -16,7 +17,7 @@ function createSource(api, config) {
     "Sec-Fetch-Mode": "navigate",
     "Sec-Fetch-Site": "same-origin",
     "Upgrade-Insecure-Requests": "1"
-  }, (config && config.headers) || {});
+  }, configHeaders);
 
   var defaultGenres = [
     "أكشن", "مغامرة", "كوميدي", "خيال", "دراما", "رومانسي", "شوجو", "شونين", "إثارة", "رعب", "فنون قتال", "مأساة"
@@ -91,11 +92,9 @@ function createSource(api, config) {
   function isValidImageUrl(url) {
     if (!url) return false;
     var lower = url.toLowerCase();
-    if (lower.indexOf("data:image") === 0) return false;
-    if (lower.indexOf(".svg") !== -1) return false;
-    if (lower.indexOf("logo") !== -1 || lower.indexOf("avatar") !== -1 || lower.indexOf("icon") !== -1) return false;
-    if (lower.indexOf("trap") !== -1) return false;
-    return lower.indexOf(".jpg") !== -1 || lower.indexOf(".jpeg") !== -1 || lower.indexOf(".png") !== -1 || lower.indexOf(".webp") !== -1 || lower.indexOf("/api/") !== -1;
+    if (lower.indexOf("data:") === 0 && lower.indexOf("data:image") !== 0) return false;
+    if (lower.endsWith(".svg") || (lower.endsWith(".gif") && lower.indexOf("icon") !== -1)) return false;
+    return lower.indexOf("http://") === 0 || lower.indexOf("https://") === 0 || lower.indexOf("//") === 0 || lower.charAt(0) === "/";
   }
 
   function processImageUrl(url) {

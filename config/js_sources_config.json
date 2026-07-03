@@ -27,7 +27,7 @@
             "base_url": "https://azorafly.com",
             "website_url": "https://azorafly.com",
             "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=azorafly.com",
-            "requires_cf": true,
+            "requires_cf": false,
             "image_referer": "https://azorafly.com/",
             "headers": {
                 "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
@@ -161,7 +161,7 @@
             "base_url": "https://3asq.org",
             "website_url": "https://3asq.org",
             "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=3asq.org",
-            "requires_cf": true,
+            "requires_cf": false,
             "image_referer": "https://3asq.org/",
             "headers": {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -205,7 +205,7 @@
             "base_url": "https://hijala.com",
             "website_url": "https://hijala.com",
             "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=hijala.com",
-            "requires_cf": true,
+            "requires_cf": false,
             "image_referer": "https://hijala.com/",
             "headers": {
                 "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
@@ -249,7 +249,7 @@
             "base_url": "https://dilar.tube",
             "website_url": "https://dilar.tube",
             "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=dilar.tube",
-            "requires_cf": true,
+            "requires_cf": false,
             "image_referer": "https://dilar.tube/",
             "headers": {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -294,7 +294,7 @@
             "base_url": "https://lek-manga.net",
             "website_url": "https://lek-manga.net",
             "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=lek-manga.net",
-            "requires_cf": true,
+            "requires_cf": false,
             "image_referer": "https://lek-manga.net/",
             "headers": {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -339,7 +339,7 @@
             "base_url": "https://manga-starz.net",
             "website_url": "https://manga-starz.net",
             "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=manga-starz.net",
-            "requires_cf": true,
+            "requires_cf": false,
             "image_referer": "https://manga-starz.net/",
             "headers": {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -383,7 +383,7 @@
             "base_url": "https://lavascans.com",
             "website_url": "https://lavascans.com",
             "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=lavascans.com",
-            "requires_cf": true,
+            "requires_cf": false,
             "image_referer": "https://lavascans.com/",
             "headers": {
                 "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
@@ -471,17 +471,47 @@
             "base_url": "https://mangatek.com",
             "website_url": "https://mangatek.com",
             "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=mangatek.com",
-            "requires_cf": true,
+            "requires_cf": false,
             "image_referer": "https://mangatek.com/",
             "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
                 "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
                 "Referer": "https://mangatek.com/"
             },
+            "selectors": {
+                "homepage_list": "a[href^='/manga/'], .manga-card, .listupd .bs",
+                "homepage_url": "a",
+                "homepage_cover": "img",
+                "homepage_title": "h3, .manga-title, .tt",
+                "search_list": "a[href^='/manga/'], .manga-card, .listupd .bs",
+                "search_url": "a",
+                "search_cover": "img",
+                "search_title": "h3, .manga-title, .tt",
+                "manga_title": "h1, .manga-title, .entry-title, meta[property='og:title']",
+                "manga_cover": ".manga-cover img, .thumb img, meta[property='og:image']",
+                "manga_description": ".manga-description, .entry-content p, .entry-content",
+                "manga_genres": ".genre-link, .mgen a, .genres a",
+                "chapter_list": "a[href*='/reader/'], a[href*='/chapter/'], .chapter-item, #chapterlist li, .eplister li",
+                "chapter_number_attr": "data-num",
+                "chapter_date": ".chapter-date, .chapterdate",
+                "chapter_locked": ".fa-lock, .paywall, .locked",
+                "chapter_reader_container": ".reader-area, #readerarea, .reading-content",
+                "filter_list": "a[href^='/manga/'], .manga-card, .listupd .bs",
+                "filter_url": "a",
+                "filter_cover": "img",
+                "filter_title": "h3, .manga-title, .tt",
+                "chapter_page_image": "#readerarea img, .reading-content img, .page-break img"
+            },
+            "other": {
+                "icon_asset": "assets/icons/mangatek.png",
+                "reader_fallback_strategy": "selector,noscript,regex,ts_reader",
+                "chapter_image_extensions": ".webp,.jpg,.jpeg,.png",
+                "is_nsfw": false
+            },
             "script": {
                 "url": "sources/mangatek/source.js",
-                "sha256": "b99cf43487527bcebeef4a1c3b1783fb9c5ba445dcfe58c4be497570a563b1d3",
+                "sha256": "613b749d292cec966bf0cbec931fec4bcc0505b87be7999dbb73ec42e0abd27d",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -516,7 +546,7 @@
             "base_url": "https://mangasid.com",
             "website_url": "https://mangasid.com",
             "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=mangasid.com",
-            "requires_cf": true,
+            "requires_cf": false,
             "image_referer": "https://mangasid.com/",
             "headers": {
                 "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
@@ -526,7 +556,7 @@
             },
             "script": {
                 "url": "sources/mangasid/source.js",
-                "sha256": "cb5e08e4c050d980b74b273e84bb80d91177cb258b04988c7a46b41cbec48113",
+                "sha256": "0606ba196e297983ab35ea5bdbd6a6dc5616dd93935f969c7dec8d8f1a3736d8",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -616,7 +646,7 @@
             },
             "script": {
                 "url": "sources/fada_riwayat/source.js",
-                "sha256": "6daec76db2324246f741d7da47681acabd8c9f21ee5b5691d8380bc9609bf16b",
+                "sha256": "e3a70859a321559d6a1fd1a760d7b92532dcab7495830e7dcd284b81dc0e7e52",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -661,7 +691,7 @@
             },
             "script": {
                 "url": "sources/nadi_al_riwayt/source.js",
-                "sha256": "4b8e399865d5d6220ee63f2a2bf71306252cb9c23af794663085a3110d6fef53",
+                "sha256": "6362f2eb6903ed69cf36d2b067369b4ce5de82740132086ba1aed0c9743170eb",
                 "entry": "createSource"
             },
             "capabilities": {
