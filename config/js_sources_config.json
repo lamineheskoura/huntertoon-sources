@@ -465,7 +465,7 @@
         "mangatek": {
             "id": "mangatek",
             "name": "مانجاتك (Mangatek)",
-            "version": "1.0.0",
+            "version": "1.0.1",
             "enabled": true,
             "status": "beta",
             "base_url": "https://mangatek.com",
