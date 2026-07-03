@@ -601,7 +601,7 @@
             },
             "script": {
                 "url": "sources/hizo_manga/source.js",
-                "sha256": "53c0dfad79a60c84c854f25ca1a6d187d39105bb0b41fb2eb40dd0f147f8490d",
+                "sha256": "998eccfcd110e2974ce0734c03c9c7966163534fc83ee3e607a652d49e5cc93c",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -646,7 +646,7 @@
             },
             "script": {
                 "url": "sources/fada_riwayat/source.js",
-                "sha256": "e3a70859a321559d6a1fd1a760d7b92532dcab7495830e7dcd284b81dc0e7e52",
+                "sha256": "4f71a05770ea8cb42e2cb54bf890ffbfad413707394bdd84234b96f98b097286",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -691,7 +691,7 @@
             },
             "script": {
                 "url": "sources/nadi_al_riwayt/source.js",
-                "sha256": "6362f2eb6903ed69cf36d2b067369b4ce5de82740132086ba1aed0c9743170eb",
+                "sha256": "82d34b93b7636a1d1ba3861caa271c48d7c4041feda67bc012f3b8adf923e892",
                 "entry": "createSource"
             },
             "capabilities": {
