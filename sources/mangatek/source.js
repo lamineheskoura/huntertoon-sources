@@ -50,17 +50,22 @@ function createSource(api, config) {
 
   // ────────────────── HTML entity decode ──────────────────
   function htmlDecode(value) {
-    return String(value || "")
-      .replace(/&/g, "&")
-      .replace(/"/g, '"')
-      .replace(/&#34;/g, '"')
-      .replace(/&#39;/g, "'")
-      .replace(/'/g, "'")
-      .replace(/</g, "<")
-      .replace(/>/g, ">")
-      .replace(/&#x27;/g, "'")
-      .replace(/\\\//g, "/")
-      .trim();
+    var s = String(value || "");
+    // Decode named & numeric entities BEFORE &amp; (must be last)
+    s = s.replace(/&quot;/g, '"');
+    s = s.replace(/&#34;/g, '"');
+    s = s.replace(/&#39;/g, "'");
+    s = s.replace(/&#x27;/g, "'");
+    s = s.replace(/&apos;/g, "'");
+    s = s.replace(/&lt;/g, "<");
+    s = s.replace(/&#60;/g, "<");
+    s = s.replace(/&gt;/g, ">");
+    s = s.replace(/&#62;/g, ">");
+    s = s.replace(/&#x2F;/g, "/");
+    s = s.replace(/&#47;/g, "/");
+    s = s.replace(/\\\//g, "/");
+    s = s.replace(/&amp;/g, "&");
+    return s.trim();
   }
 
   // ────────────────── URL helpers (match Dart _makeAbsoluteUrl) ──────────────────
