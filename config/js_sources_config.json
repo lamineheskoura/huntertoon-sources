@@ -1,5 +1,5 @@
 {
-    "version": "1.4.3",
+    "version": "1.4.4",
     "schema_version": 3,
     "runtime_api_version": "1.0",
     "manifest_version": "2026.07.01-dev.3",
@@ -714,6 +714,50 @@
                 "author": "HunterToon Team",
                 "description": "Nadi Al Riwayat novel-only source migrated to JavaScript",
                 "changelog": "Initial JS implementation with novel-only content and lazy chapter pages"
+            }
+        },
+        "despair_manga": {
+            "id": "despair_manga",
+            "name": "ديسبر مانجا (Despair Manga)",
+            "version": "1.0.0",
+            "enabled": true,
+            "status": "beta",
+            "base_url": "https://despair-manga.net",
+            "website_url": "https://despair-manga.net",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=despair-manga.net",
+            "requires_cf": false,
+            "image_referer": "https://despair-manga.net/",
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+                "Referer": "https://despair-manga.net/"
+            },
+            "script": {
+                "url": "sources/despair_manga/source.js",
+                "sha256": "0e331dad90777feb5bd02aa77e5eb097cb9bc2aa965ee90a2d1f6be38314515d",
+                "entry": "createSource"
+            },
+            "capabilities": {
+                "content_types": [
+                    "manga"
+                ],
+                "supports_search": true,
+                "supports_filters": true,
+                "supports_lazy_chapters": false,
+                "supports_download": true,
+                "requires_cloudflare": false
+            },
+            "compatibility": {
+                "min_app_version": "1.4.0",
+                "runtime_api_version": "1.0"
+            },
+            "metadata": {
+                "language": "ar",
+                "adult": false,
+                "author": "HunterToon Team",
+                "description": "Despair Manga WordPress source - new JS-only source",
+                "changelog": "Initial JS implementation for despair-manga.net"
             }
         }
     }
