@@ -2,6 +2,7 @@ function createSource(api, config) {
   var baseUrl = (config && config.base_url) || "https://hijala.com";
   var selectors = (config && config.selectors) || {};
   var userAgent = (config && config.user_agent) || "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
+  var cloudflareUserAgent = "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
   var defaultHeaders = {
     "User-Agent": userAgent,
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
@@ -284,7 +285,7 @@ function createSource(api, config) {
   }
 
   return {
-    requiresCloudflare: false,
+    requiresCloudflare: true,
 
     async getHomepageManga(args) {
       try {
@@ -383,8 +384,8 @@ function createSource(api, config) {
 
     getImageHeaders() {
       return {
-        "User-Agent": userAgent,
-        "Referer": lastChapterUrl || baseUrl + "/",
+        "User-Agent": cloudflareUserAgent,
+        "Referer": baseUrl + "/",
         "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
         "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
         "Sec-Fetch-Dest": "image",

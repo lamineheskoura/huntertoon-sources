@@ -215,7 +215,7 @@
             },
             "script": {
                 "url": "sources/hijala/source.js",
-                "sha256": "b164e940675b713ef951801ea6883dee5c863d6d6433db2f0bf64bd1c65fb749",
+                "sha256": "2ec3259234fa70465d9659ea6f92667f3d28ce96eba7f5052857e480d2512282",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -305,7 +305,7 @@
             },
             "script": {
                 "url": "sources/lekmanga/source.js",
-                "sha256": "f12511ada2259f93a0cc4e60755c9198a0e3b9b350f22781731c66df16ee0dd3",
+                "sha256": "3236da09b22b9e2f3816e46eeec0811bee238950148e42b5b921cf01e1f375e5",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -349,7 +349,7 @@
             },
             "script": {
                 "url": "sources/mangastarz/source.js",
-                "sha256": "e1b9e4ce24ecca1f6a73a9da5c82abae7f97bad48b5a94281bc21ae8c5870ece",
+                "sha256": "d3d1c6b294939bff6de78f4ee12a6a03b54fa88b146ac8cf24ddbdc46b4ae1f5",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -511,7 +511,7 @@
             },
             "script": {
                 "url": "sources/mangatek/source.js",
-                "sha256": "613b749d292cec966bf0cbec931fec4bcc0505b87be7999dbb73ec42e0abd27d",
+                "sha256": "5a69a9d9118abe81c890f4f5f5c77cd7dbd23bc630341e0a468c53be530c8f5b",
                 "entry": "createSource"
             },
             "capabilities": {

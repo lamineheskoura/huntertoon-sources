@@ -3,7 +3,7 @@ function createSource(api, config) {
   var selectors = (config && config.selectors) || {};
   var other = (config && config.other) || {};
   var configHeaders = (config && config.headers) || {};
-  var userAgent = (config && config.user_agent) || configHeaders["User-Agent"] || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+  var userAgent = configHeaders["User-Agent"] || (config && config.user_agent) || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
   var overlayKeyHex = "ff453871399fe268588a0936b45376022d85ed0fd1292001d5102f6a30291dc1";
   var lastChapterUrl = baseUrl + "/";
 
