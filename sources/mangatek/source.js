@@ -136,7 +136,7 @@ function createSource(api, config) {
 
   // Extract astro-island props from raw HTML by needle search
   function extractAstroProps(html, needle) {
-    var regex = /<astro-island\b[^>]*\sprops=(['"])([\s\S]*?)\1[^>]*>/gi;
+    var regex = /<astro-island\b[^>]*props=(['"])([\s\S]*?)\1[^>]*>/gi;
     var match;
     while ((match = regex.exec(html)) !== null) {
       var rawProps = match[2];
@@ -245,23 +245,12 @@ function createSource(api, config) {
       if (!detailUrl || seen[detailUrl]) continue;
       seen[detailUrl] = true;
 
-      // Cover — find img
+      // Cover — find img (match Dart _extractImageUrl: data-src → data-lazy-src → src)
       var cover = "";
-      var imgAttrs = null;
-      var imgHtml = await api.cssHtml(itemHtml, "img");
-      if (imgHtml) {
-        var imgTagMatch = imgHtml.match(/<img[^>]*>/i);
-        if (imgTagMatch) {
-          var attrs = {};
-          var attrRegex = /(\w[\w-]*)\s*=\s*["']([^"']*)["']/gi;
-          var am;
-          while ((am = attrRegex.exec(imgTagMatch[0])) !== null) {
-            attrs[am[1].toLowerCase()] = am[2];
-          }
-          var raw = extractImageUrlFromAttrs(attrs);
-          cover = processImageUrl(raw);
-        }
-      }
+      var src = await api.cssAttr(itemHtml, "img", "data-src");
+      if (!src || src.indexOf("data:image/") === 0) src = await api.cssAttr(itemHtml, "img", "data-lazy-src");
+      if (!src || src.indexOf("data:image/") === 0) src = await api.cssAttr(itemHtml, "img", "src");
+      cover = processImageUrl(src);
 
       // Title — h4.chapter-title first, then img alt/title fallback
       var title = await api.cssText(itemHtml, "h4.chapter-title");
@@ -346,7 +335,7 @@ function createSource(api, config) {
 
     for (var i = 0; i < rawList.length; i++) {
       var c = rawList[i] || {};
-      var num = String(c.chapter_number || c.number || "");
+      var num = String(c.chapter_number || "");
       if (!num || num === "0") continue;
       var title = String(c.title || "") || "فصل " + num;
       var rawDate = String(c.created_at || c.createdAt || "");
@@ -673,10 +662,12 @@ function createSource(api, config) {
         "بدون عنوان";
 
       var coverFallback =
-        (await api.cssAttr(html, ".manga-cover img", "src")) ||
         (await api.cssAttr(html, ".manga-cover img", "data-src")) ||
-        (await api.cssAttr(html, ".thumb img", "src")) ||
+        (await api.cssAttr(html, ".manga-cover img", "data-lazy-src")) ||
+        (await api.cssAttr(html, ".manga-cover img", "src")) ||
         (await api.cssAttr(html, ".thumb img", "data-src")) ||
+        (await api.cssAttr(html, ".thumb img", "data-lazy-src")) ||
+        (await api.cssAttr(html, ".thumb img", "src")) ||
         (await api.cssAttr(html, "meta[property='og:image']", "content")) ||
         "";
       coverFallback = processImageUrl(coverFallback);
