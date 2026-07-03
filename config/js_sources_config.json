@@ -1,5 +1,5 @@
 {
-    "version": "1.4.4",
+    "version": "1.4.5",
     "schema_version": 3,
     "runtime_api_version": "1.0",
     "manifest_version": "2026.07.01-dev.3",
@@ -758,6 +758,50 @@
                 "author": "HunterToon Team",
                 "description": "Despair Manga WordPress source - new JS-only source",
                 "changelog": "Initial JS implementation for despair-manga.net"
+            }
+        },
+        "mnga4all": {
+            "id": "mnga4all",
+            "name": "Mnga4all",
+            "version": "1.0.0",
+            "enabled": true,
+            "status": "beta",
+            "base_url": "https://mnga4all.com",
+            "website_url": "https://mnga4all.com",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=mnga4all.com",
+            "requires_cf": false,
+            "image_referer": "https://mnga4all.com/",
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+                "Referer": "https://mnga4all.com/"
+            },
+            "script": {
+                "url": "sources/mnga4all/source.js",
+                "sha256": "7c130b9f3a88c076e12de371216112e4433e06bb7cfba68314ac57c2c1d44678",
+                "entry": "createSource"
+            },
+            "capabilities": {
+                "content_types": [
+                    "manga"
+                ],
+                "supports_search": true,
+                "supports_filters": true,
+                "supports_lazy_chapters": false,
+                "supports_download": true,
+                "requires_cloudflare": false
+            },
+            "compatibility": {
+                "min_app_version": "1.4.0",
+                "runtime_api_version": "1.0"
+            },
+            "metadata": {
+                "language": "ar",
+                "adult": false,
+                "author": "HunterToon Team",
+                "description": "Mnga4all WordPress Madara source - new JS-only source",
+                "changelog": "Initial JS implementation for mnga4all.com"
             }
         }
     }
