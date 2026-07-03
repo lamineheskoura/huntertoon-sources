@@ -421,23 +421,23 @@
         "mangatime": {
             "id": "mangatime",
             "name": "مانجا تايم (MangaTime)",
-            "version": "1.0.0",
+            "version": "1.1.0",
             "enabled": true,
-            "status": "beta",
+            "status": "stable",
             "base_url": "https://mangatime.org",
             "website_url": "https://mangatime.org",
             "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=mangatime.org",
             "requires_cf": false,
             "image_referer": "https://mangatime.org/",
             "headers": {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
                 "Accept": "application/json, text/html, */*",
                 "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
                 "Referer": "https://mangatime.org/"
             },
             "script": {
                 "url": "sources/mangatime/source.js",
-                "sha256": "a2914e349bdff63a19ed99c00f6f01b5fb7eb910aaf21309e12e58fc2c7d6cb0",
+                "sha256": "81f3f1692d2611358ccb1f543fec1d4ba41e671db725124d811390f200abc1ee",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -458,8 +458,8 @@
                 "language": "ar",
                 "adult": false,
                 "author": "HunterToon Team",
-                "description": "MangaTime tRPC/API source migrated to JavaScript",
-                "changelog": "Initial JS implementation preserving JSON chapter references and image page generation"
+                "description": "MangaTime source using homepage.getHomepage, search.searchSeries, content.getSeriesBySlug, content.getChapters, and content.getChapterPages tRPC APIs",
+                "changelog": "Rewrite: homepage uses homepage.getHomepage API; chapters fetched via seriesId; chapter pages use seriesSlug+chapterNumber params; sortBy values corrected to recent/popularity/rating/alphabetical; filters use array format for type/genre/status"
             }
         },
         "mangatek": {
