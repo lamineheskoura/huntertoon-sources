@@ -51,7 +51,31 @@ function createSource(api, config) {
     async getFilteredManga(args) { return await this.getHomepageManga(args); },
     async getMangaDetails(args) { var url = abs((args && args.url) || ""); var page = await html(url); var title = await api.cssText(page, ".post-title h1, h1, .entry-title") || await api.cssAttr(page, "meta[property='og:title']", "content") || "بدون عنوان"; var cover = await api.cssAttr(page, ".summary_image img, .thumb img", "data-src") || await api.cssAttr(page, ".summary_image img, .thumb img", "src") || await api.cssAttr(page, "meta[property='og:image']", "content") || ""; var description = await api.cssText(page, ".description-summary .summary__content, .description-summary, .entry-content") || ""; var genres = await api.cssList(page, ".genres-content a, .mgen a, .genres a"); return { title: strip(title), coverUrl: validImage(cover), description: strip(description), genres: genres.map(strip).filter(Boolean), chapters: await parseChapters(page), originalUrl: url, hasMoreChapters: false, lastFetchedPage: 1, contentType: isMangaMarker(page) ? "manga" : "novel" }; },
     async getChapterPages(args) { var content = await this.getChapterContent(args); return content.kind === "image" ? content.imageUrls : []; },
-    async getChapterContent(args) { var url = abs((args && args.url) || ""); lastChapterUrl = url; var page = await html(url); var body = await api.cssHtml(page, ".reading-content, .entry-content, .chapter-content, .text-left, .content") || ""; if (!isMangaMarker(page) || strip(body).length > 300) return { kind: "text", chapterTitle: strip(await api.cssText(page, "h1, .entry-title") || ""), textContent: cleanNovelHtml(body) || strip(page) }; var imgs = await api.cssAll(page, ".reading-content img, #readerarea img, .page-break img, img"); var urls = []; for (var i = 0; i < imgs.length; i++) { var a = imgs[i].attrs || {}; var src = validImage(a["data-src"] || a["data-lazy-src"] || a.src || ""); if (src && urls.indexOf(src) === -1) urls.push(src); } return { kind: "image", imageUrls: urls }; },
+    async getChapterContent(args) { 
+        var url = abs((args && args.url) || ""); 
+        lastChapterUrl = url; 
+        var page = await html(url); 
+        var body = (await api.cssHtml(page, ".reading-content.current .text-left")) || 
+                   (await api.cssHtml(page, ".text-left")) || 
+                   (await api.cssHtml(page, ".reading-content")) || 
+                   (await api.cssHtml(page, ".entry-content")) || 
+                   (await api.cssHtml(page, ".chapter-content")) || 
+                   (await api.cssHtml(page, ".content")) || ""; 
+        if (!isMangaMarker(page) || strip(body).length > 300) 
+            return { 
+                kind: "text", 
+                chapterTitle: strip(await api.cssText(page, "h1") || await api.cssText(page, ".entry-title") || ""), 
+                textContent: cleanNovelHtml(body) || strip(page) 
+            }; 
+        var imgs = await api.cssAll(page, ".reading-content img, #readerarea img, .page-break img, img"); 
+        var urls = []; 
+        for (var i = 0; i < imgs.length; i++) { 
+            var a = imgs[i].attrs || {}; 
+            var src = validImage(a["data-src"] || a["data-lazy-src"] || a.src || ""); 
+            if (src && urls.indexOf(src) === -1) urls.push(src); 
+        } 
+        return { kind: "image", imageUrls: urls }; 
+    },
     async fetchMoreChapters() { return null; },
     async getGenresAndTypes() { return { genres: [], types: ["novel", "manga"] }; },
     getImageHeaders() { return { "User-Agent": userAgent, "Referer": lastChapterUrl || baseUrl + "/", "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8" }; },

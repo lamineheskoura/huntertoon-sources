@@ -60,7 +60,19 @@ function createSource(api, config) {
     async getMangaDetails(args) { var url = abs((args && args.url) || ""); var slug = slugFromUrl(url); var pageHtml = await html(url); var title = await api.cssText(pageHtml, "h1, .v-card-title, .novel-title") || await api.cssAttr(pageHtml, "meta[property='og:title']", "content") || slug; var cover = await api.cssAttr(pageHtml, "meta[property='og:image']", "content") || await api.cssAttr(pageHtml, "img", "src") || extractCoverFromPayload(pageHtml, slug); var description = await api.cssText(pageHtml, ".description, .summary, .v-card-text, .novel-description") || ""; var chapters = await fetchChapterPage(slug, 1); return { title: strip(title), coverUrl: abs(cover), description: strip(description), genres: [], chapters: chapters, originalUrl: url, hasMoreChapters: true, lastFetchedPage: 1, contentType: "novel" }; },
     async fetchMoreChapters(args) { var url = abs((args && args.url) || ""); var nextPage = (args && args.nextPage) || 2; var slug = slugFromUrl(url); var chapters = await fetchChapterPage(slug, nextPage); return { title: "", coverUrl: "", description: "", genres: [], chapters: chapters, originalUrl: url, hasMoreChapters: chapters.length > 0, lastFetchedPage: nextPage, contentType: "novel" }; },
     async getChapterPages() { return []; },
-    async getChapterContent(args) { var url = abs((args && args.url) || ""); var pageHtml = await html(url); var body = await api.cssHtml(pageHtml, ".v-card__text, .chapter-content, .content, article") || pageHtml; return { kind: "text", chapterTitle: strip(await api.cssText(pageHtml, "h1, .chapter-title") || ""), textContent: cleanText(body) }; },
+    async getChapterContent(args) { 
+        var url = abs((args && args.url) || ""); 
+        var pageHtml = await html(url); 
+        var body = (await api.cssHtml(pageHtml, ".v-card__text")) || 
+                   (await api.cssHtml(pageHtml, ".chapter-content")) || 
+                   (await api.cssHtml(pageHtml, ".content")) || 
+                   (await api.cssHtml(pageHtml, "article")) || pageHtml; 
+        return { 
+            kind: "text", 
+            chapterTitle: strip(await api.cssText(pageHtml, "h1") || await api.cssText(pageHtml, ".chapter-title") || ""), 
+            textContent: cleanText(body) 
+        }; 
+    },
     async getGenresAndTypes() { return { genres: [], types: ["novel"] }; },
     getImageHeaders(args) { var url = args && args.url || ""; var referer = url.indexOf("api.reway") !== -1 ? baseUrl + "/" : baseUrl + "/"; return { "User-Agent": userAgent, "Referer": referer, "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8", "Cache-Control": "no-cache" }; },
     sanitizeCoverUrl(args) { return abs((args && args.url) || ""); }

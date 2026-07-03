@@ -220,15 +220,11 @@ function createSource(api, config) {
   }
 
   async function decryptOverlayBlob(blob) {
-    var subtle = globalThis.crypto && globalThis.crypto.subtle;
-    if (!subtle) return null;
-    var parts = String(blob || "").split(":");
-    if (parts.length < 2) return null;
-    var iv = hexToBytes(parts[0]);
-    var cipherText = parts.length === 2 ? hexToBytes(parts[1]) : joinBytes(hexToBytes(parts[1]), hexToBytes(parts[2]));
-    var key = await subtle.importKey("raw", hexToBytes(overlayKeyHex), { name: "AES-GCM" }, false, ["decrypt"]);
-    var plain = await subtle.decrypt({ name: "AES-GCM", iv: iv, tagLength: 128 }, key, cipherText);
-    return JSON.parse(decodeUtf8(new Uint8Array(plain)));
+    // Use the Dart bridge for AES-GCM decryption (crypto.subtle is not available in flutter_js)
+    if (api.decryptAesGcm) {
+      return await api.decryptAesGcm(blob, overlayKeyHex);
+    }
+    return null;
   }
 
   function buildOverlayContent(imageUrls, overlayData, overlayPageOffset) {

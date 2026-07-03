@@ -107,71 +107,60 @@ function createSource(api, config) {
     return mangas;
   }
 
-  async function fetchAllChapters(detailUrl) {
+  async function fetchChapterPage(detailUrl, page) {
     var allChapters = [];
     var seenUrls = {};
-    var page = 1;
-    var maxPages = 100;
+    var url = page === 1 ? detailUrl : detailUrl + "?page=" + page;
+    var html;
+    try {
+      html = await fetchHtml(url);
+    } catch (e) {
+      return allChapters;
+    }
 
-    while (page <= maxPages) {
-      var url = page === 1 ? detailUrl : detailUrl + "?page=" + page;
-      var html;
+    var listSel = sel("chapter_list", ".chapter-card, .wp-manga-chapter, .chapter-item, .list-chapter li");
+    var cards = await api.cssAll(html, listSel);
+    if (!cards || cards.length === 0) return allChapters;
+
+    for (var c = 0; c < cards.length; c++) {
       try {
-        html = await fetchHtml(url);
-      } catch (e) {
-        break;
-      }
+        var card = cards[c];
+        var link = await tryAttr(card.html, "a", "href");
+        var chapterUrl = makeAbsolute(link);
+        if (!chapterUrl || seenUrls[chapterUrl]) continue;
+        seenUrls[chapterUrl] = true;
 
-      var listSel = sel("chapter_list", ".chapter-card, .wp-manga-chapter, .chapter-item, .list-chapter li");
-      var cards = await api.cssAll(html, listSel);
-      if (!cards || cards.length === 0) break;
+        var numAttr = sel("chapter_number_attr", "data-number");
+        var chapterNumber = card.attrs[numAttr] || "0";
 
-      var addedThisPage = 0;
+        var viewsAttr = sel("chapter_views_attr", "data-views");
+        var viewsStr = card.attrs[viewsAttr] || "0";
+        var views = parseInt(viewsStr, 10) || 0;
 
-      for (var c = 0; c < cards.length; c++) {
-        try {
-          var card = cards[c];
-          var link = await tryAttr(card.html, "a", "href");
-          var chapterUrl = makeAbsolute(link);
-          if (!chapterUrl || seenUrls[chapterUrl]) continue;
-          seenUrls[chapterUrl] = true;
+        var dateSel = sel("chapter_date", ".chapter-date, .date, .meta-date");
+        var date = "";
+        if (dateSel) date = await tryText(card.html, dateSel);
 
-          var numAttr = sel("chapter_number_attr", "data-number");
-          var chapterNumber = card.attrs[numAttr] || "0";
+        var lockSel = sel("chapter_locked", ".locked, .fa-lock, .paywall, .premium, .status-badge.locked");
+        var isLocked = false;
+        if (lockSel) {
+          var locked = await api.cssText(card.html, lockSel);
+          isLocked = !!locked;
+        }
+        if (!isLocked) {
+          var buyTarget = await api.cssAttr(card.html, "a", "data-bs-target");
+          isLocked = buyTarget === "#buyModel";
+        }
 
-          var viewsAttr = sel("chapter_views_attr", "data-views");
-          var viewsStr = card.attrs[viewsAttr] || "0";
-          var views = parseInt(viewsStr, 10) || 0;
-
-          var dateSel = sel("chapter_date", ".chapter-date, .date, .meta-date");
-          var date = "";
-          if (dateSel) date = await tryText(card.html, dateSel);
-
-          var lockSel = sel("chapter_locked", ".locked, .fa-lock, .paywall, .premium, .status-badge.locked");
-          var isLocked = false;
-          if (lockSel) {
-            var locked = await api.cssText(card.html, lockSel);
-            isLocked = !!locked;
-          }
-          if (!isLocked) {
-            var buyTarget = await api.cssAttr(card.html, "a", "data-bs-target");
-            isLocked = buyTarget === "#buyModel";
-          }
-
-          allChapters.push({
-            number: chapterNumber,
-            title: "",
-            views: views,
-            url: chapterUrl,
-            isLocked: isLocked,
-            date: date,
-          });
-          addedThisPage++;
-        } catch (e) {}
-      }
-
-      if (addedThisPage === 0 || cards.length < 5) break;
-      page++;
+        allChapters.push({
+          number: chapterNumber,
+          title: "",
+          views: views,
+          url: chapterUrl,
+          isLocked: isLocked,
+          date: date,
+        });
+      } catch (e) {}
     }
 
     allChapters.sort(function (a, b) {
@@ -243,7 +232,7 @@ function createSource(api, config) {
         if (g) genres.push(g);
       }
 
-      var chapters = await fetchAllChapters(url);
+      var chapters = await fetchChapterPage(url, 1);
 
       return {
         title: title,
@@ -252,7 +241,7 @@ function createSource(api, config) {
         genres: genres,
         chapters: chapters,
         originalUrl: url,
-        hasMoreChapters: false,
+        hasMoreChapters: chapters.length > 0,
         lastFetchedPage: 1,
         contentType: "manga",
       };
@@ -291,8 +280,21 @@ function createSource(api, config) {
       }
     },
 
-    async fetchMoreChapters() {
-      return null;
+    async fetchMoreChapters(args) {
+      var url = (args && args.url) || "";
+      var nextPage = (args && args.nextPage) || 2;
+      var chapters = await fetchChapterPage(url, nextPage);
+      return {
+        title: "",
+        coverUrl: "",
+        description: "",
+        genres: [],
+        chapters: chapters,
+        originalUrl: url,
+        hasMoreChapters: chapters.length > 0,
+        lastFetchedPage: nextPage,
+        contentType: "manga"
+      };
     },
 
     async getFilteredManga(args) {
