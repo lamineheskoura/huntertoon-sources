@@ -632,22 +632,22 @@
             "name": "كواي مانجا (Kawaii Manga)",
             "version": "1.0.0",
             "enabled": true,
-            "status": "beta",
+            "status": "stable",
             "base_url": "https://kawaiimanga.org",
             "website_url": "https://kawaiimanga.org",
             "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=kawaiimanga.org",
             "requires_cf": false,
             "image_referer": "https://kawaiimanga.org/",
             "headers": {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                "Accept": "application/json",
                 "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
                 "Referer": "https://kawaiimanga.org/",
-                "Origin": "https://kawaiimanga.org"
+                "x-app-key": "km_2026_live"
             },
             "script": {
                 "url": "sources/kawaii/source.js",
-                "sha256": "ef5c12a7fcdb1c32505c3661adb469169bd43eae4c7fb95002b1d0722f6c8b3b",
+                "sha256": "0fc5822cdddb0ed7a87cfacff6ae31868d3a49aa9d0598f721537d9ff45c3de5",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -668,8 +668,8 @@
                 "language": "ar",
                 "adult": false,
                 "author": "HunterToon Team",
-                "description": "Kawaii Manga Next.js source with API-based details and HTML scraping for listings",
-                "changelog": "Initial JS implementation using Next.js API and CDN image URLs"
+                "description": "Kawaii Manga source using the manga-api.kawaii-anime.com API for browse, search, details, and reader pages",
+                "changelog": "Full rewrite: uses the real browse/search/series/pages API with CDN fallback for reader images"
             }
         },
         "fada_riwayat": {
