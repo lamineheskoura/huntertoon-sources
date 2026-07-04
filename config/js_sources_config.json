@@ -63,6 +63,50 @@
                 "changelog": "Fix details resilience and reader extraction by parsing raw reader HTML like the built-in source"
             }
         },
+        "sunovels": {
+            "id": "sunovels",
+            "name": "Sunovels",
+            "version": "1.0.0",
+            "enabled": true,
+            "status": "beta",
+            "base_url": "https://sunovels.com",
+            "website_url": "https://sunovels.com",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=sunovels.com",
+            "requires_cf": false,
+            "image_referer": "https://sunovels.com/",
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+                "Referer": "https://sunovels.com/"
+            },
+            "script": {
+                "url": "sources/sunovels/source.js",
+                "sha256": "a2ad527a9b306c377fabd18b57d6f3e77f36c77ae27ecd791d2cb8f5e0595298",
+                "entry": "createSource"
+            },
+            "capabilities": {
+                "content_types": [
+                    "novel"
+                ],
+                "supports_search": true,
+                "supports_filters": true,
+                "supports_lazy_chapters": true,
+                "supports_download": true,
+                "requires_cloudflare": false
+            },
+            "compatibility": {
+                "min_app_version": "1.4.0",
+                "runtime_api_version": "1.0"
+            },
+            "metadata": {
+                "language": "ar",
+                "adult": false,
+                "author": "HunterToon Team",
+                "description": "Sunovels novel source with lazy chapter generation from JSON-LD page count",
+                "changelog": "Initial JS implementation with sequential chapter generation and anti-scrape text filtering"
+            }
+        },
         "swat": {
             "id": "swat",
             "name": "سوات مانجا (Swat Manga)",
