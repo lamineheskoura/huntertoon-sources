@@ -241,15 +241,37 @@ function createSource(api, config) {
   function buildOverlayContent(imageUrls, overlayData, overlayPageOffset) {
     var pages = (overlayData && Array.isArray(overlayData.pages)) ? overlayData.pages : [];
     var pageMap = {};
+    var widthCounts = {};
+    var heightCounts = {};
+    for (var ii = 0; ii < pages.length; ii++) {
+      var pg = pages[ii] || {};
+      if (pg.image_width) widthCounts[pg.image_width] = (widthCounts[pg.image_width] || 0) + 1;
+      if (pg.image_height) heightCounts[pg.image_height] = (heightCounts[pg.image_height] || 0) + 1;
+    }
+    var naturalW = 0, maxCount = 0;
+    for (var w in widthCounts) { if (widthCounts[w] > maxCount) { maxCount = widthCounts[w]; naturalW = Number(w); } }
+    var naturalH = 0; maxCount = 0;
+    for (var hh in heightCounts) { if (heightCounts[hh] > maxCount) { maxCount = heightCounts[hh]; naturalH = Number(hh); } }
+    var firstPg = pages[0] || {};
+    if (!naturalW) naturalW = overlayData.natural_image_width || overlayData.naturalImageWidth || firstPg.image_width || firstPg.imageWidth || 800;
+    if (!naturalH) naturalH = overlayData.natural_image_height || overlayData.naturalImageHeight || firstPg.image_height || firstPg.imageHeight || 1200;
+
     for (var i = 0; i < pages.length; i++) {
       var page = pages[i] || {};
       var pageNum = page.page_number || page.pageNumber || 0;
       var rawOverlays = Array.isArray(page.overlays) ? page.overlays : [];
       var normalizedOverlays = [];
+      var pageW = Number(page.image_width || page.imageWidth || naturalW) || naturalW;
+      var s = pageW !== naturalW ? naturalW / pageW : 1;
       for (var j = 0; j < rawOverlays.length; j++) {
         var ov = rawOverlays[j];
         if (ov && typeof ov === "object") {
-          normalizedOverlays.push(normalizeOverlayItem(ov));
+          var norm = normalizeOverlayItem(ov);
+          norm.x = Number((norm.x * s).toFixed(2));
+          norm.y = Number((norm.y * s).toFixed(2));
+          norm.w = Number((norm.w * s).toFixed(2));
+          norm.h = Number((norm.h * s).toFixed(2));
+          normalizedOverlays.push(norm);
         }
       }
       pageMap[pageNum] = normalizedOverlays;
@@ -259,13 +281,12 @@ function createSource(api, config) {
     for (var p = 0; p < imageUrls.length; p++) {
       pageOverlays.push(pageMap[p - offset + 1] || []);
     }
-    var first = pages[0] || {};
     return {
       kind: "overlay",
       imageUrls: imageUrls,
       pageOverlays: pageOverlays,
-      naturalImageWidth: overlayData.natural_image_width || overlayData.naturalImageWidth || first.image_width || first.imageWidth || first.natural_image_width || first.naturalImageWidth || 800,
-      naturalImageHeight: overlayData.natural_image_height || overlayData.naturalImageHeight || first.image_height || first.imageHeight || first.natural_image_height || first.naturalImageHeight || 1200
+      naturalImageWidth: naturalW,
+      naturalImageHeight: naturalH
     };
   }
 

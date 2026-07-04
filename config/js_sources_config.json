@@ -1,10 +1,10 @@
 {
-    "version": "1.4.6",
+    "version": "1.4.7",
     "schema_version": 3,
     "runtime_api_version": "1.0",
     "manifest_version": "2026.07.04-dev.1",
-    "generated_at": "2026-07-04T23:00:00Z",
-    "last_updated": "2026-07-04T23:00:00Z",
+    "generated_at": "2026-07-04T23:45:00Z",
+    "last_updated": "2026-07-04T23:45:00Z",
     "min_app_version": "1.4.0",
     "repository": {
         "owner": "lamineheskoura",
@@ -465,7 +465,7 @@
         "mangatek": {
             "id": "mangatek",
             "name": "مانجاتك (Mangatek)",
-            "version": "1.0.2",
+            "version": "1.0.3",
             "enabled": true,
             "status": "beta",
             "base_url": "https://mangatek.com",
@@ -511,7 +511,7 @@
             },
             "script": {
                 "url": "sources/mangatek/source.js",
-                "sha256": "ef9e74b910706e38fd68500143eede7cf06a3169e480104452bd4500d0cb3ff3",
+                "sha256": "2c652504cfe88dde018c9ebcffa5eddf369ed7ef7a8c1c2f516f430c69d415db",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -534,13 +534,13 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Mangatek Astro/overlay-capable source migrated to JavaScript",
-                "changelog": "Fix overlay: remove image dedup (match Dart), remove broken offset fallback, normalize overlay items"
+                "changelog": "Fix overlay Y coordinate: use width-only scaling for all coords (images preserve aspect ratio) to fix text bubble positioning on pages with different image_width"
             }
         },
         "mangasid": {
             "id": "mangasid",
             "name": "مانجا سيد (Mangasid)",
-            "version": "1.0.1",
+            "version": "1.0.2",
             "enabled": true,
             "status": "beta",
             "base_url": "https://mangasid.com",
@@ -556,7 +556,7 @@
             },
             "script": {
                 "url": "sources/mangasid/source.js",
-                "sha256": "ec8e50120914d9109fa4b3e3666986ede0a3419904eddbdd5717ec536ab18832",
+                "sha256": "c480ec850c1af1803a7c200b981af66218ed0712c6e1accbc4b4a0d97de403bb",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -579,7 +579,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Mangasid Astro/overlay-capable source migrated to JavaScript",
-                "changelog": "Fix overlay: remove image dedup (match Dart), remove broken offset fallback, normalize overlay items"
+                "changelog": "Fix overlay Y coordinate: use width-only scaling for all coords (images preserve aspect ratio) to fix text bubble positioning on pages with different image_width"
             }
         },
         "hizo_manga": {
