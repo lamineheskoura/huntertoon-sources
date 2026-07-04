@@ -179,7 +179,6 @@ function createSource(api, config) {
     var raw = props && props.imageUrls;
     if (!Array.isArray(raw)) return [];
     var urls = [];
-    var seen = {};
     for (var i = 0; i < raw.length; i++) {
       var item = raw[i];
       var src = "";
@@ -189,10 +188,7 @@ function createSource(api, config) {
         src = item.url || item.src || "";
       }
       var url = processImageUrl(src);
-      if (url && !seen[url]) {
-        seen[url] = true;
-        urls.push(url);
-      }
+      if (url) urls.push(url);
     }
     return urls;
   }
@@ -238,6 +234,7 @@ function createSource(api, config) {
     out.y = Number(out.y) || 0;
     out.w = Number(out.w) || 0;
     out.h = Number(out.h) || 0;
+    out.angle = Number(out.angle) || 0;
     return out;
   }
 
@@ -260,12 +257,7 @@ function createSource(api, config) {
     var pageOverlays = [];
     var offset = Number(overlayPageOffset) || 0;
     for (var p = 0; p < imageUrls.length; p++) {
-      var overlayPageIdx = p - offset + 1;
-      var overlays = pageMap[overlayPageIdx];
-      if (!overlays && offset > 0) {
-        overlays = pageMap[p + offset];
-      }
-      pageOverlays.push(overlays || []);
+      pageOverlays.push(pageMap[p - offset + 1] || []);
     }
     var first = pages[0] || {};
     return {

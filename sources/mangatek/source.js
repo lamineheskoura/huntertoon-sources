@@ -172,7 +172,6 @@ function createSource(api, config) {
     var raw = props && props.imageUrls;
     if (!Array.isArray(raw)) return [];
     var out = [];
-    var seen = {};
     for (var i = 0; i < raw.length; i++) {
       var item = raw[i];
       var src = "";
@@ -182,10 +181,7 @@ function createSource(api, config) {
         src = item.url || item.src || "";
       }
       var url = processImageUrl(src);
-      if (url && !seen[url]) {
-        seen[url] = true;
-        out.push(url);
-      }
+      if (url) out.push(url);
     }
     return out;
   }
@@ -201,17 +197,15 @@ function createSource(api, config) {
   function normalizeOverlayItem(item) {
     var out = {};
     for (var k in item) out[k] = item[k];
-    // Mangatek uses 'rotate' but the app expects 'angle'
     if (out.rotate !== undefined && out.angle === undefined) {
       out.angle = out.rotate;
     }
-    // Ensure text is always a string
     if (out.text === undefined || out.text === null) out.text = "";
-    // Ensure numeric fields are valid numbers
     out.x = Number(out.x) || 0;
     out.y = Number(out.y) || 0;
     out.w = Number(out.w) || 0;
     out.h = Number(out.h) || 0;
+    out.angle = Number(out.angle) || 0;
     return out;
   }
 
@@ -219,11 +213,9 @@ function createSource(api, config) {
     var pages =
       overlayData && Array.isArray(overlayData.pages) ? overlayData.pages : [];
     var pageMap = {};
-    var maxPageNum = 0;
     for (var i = 0; i < pages.length; i++) {
       var page = pages[i] || {};
       var pageNum = page.page_number || page.pageNumber || 0;
-      if (pageNum > maxPageNum) maxPageNum = pageNum;
       var rawOverlays = Array.isArray(page.overlays) ? page.overlays : [];
       var normalizedOverlays = [];
       for (var j = 0; j < rawOverlays.length; j++) {
@@ -237,13 +229,7 @@ function createSource(api, config) {
     var pageOverlays = [];
     var offset = Number(overlayPageOffset) || 0;
     for (var p = 0; p < imageUrls.length; p++) {
-      var overlayPageIdx = p - offset + 1;
-      var overlays = pageMap[overlayPageIdx];
-      // Fallback: try p + offset (1-indexed pages, 0-indexed images)
-      if (!overlays && offset > 0) {
-        overlays = pageMap[p + offset];
-      }
-      pageOverlays.push(overlays || []);
+      pageOverlays.push(pageMap[p - offset + 1] || []);
     }
     var first = (pages.length && pages[0]) || {};
     return {
