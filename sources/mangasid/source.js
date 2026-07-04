@@ -227,24 +227,53 @@ function createSource(api, config) {
     return null;
   }
 
+  function normalizeOverlayItem(item) {
+    var out = {};
+    for (var k in item) out[k] = item[k];
+    if (out.rotate !== undefined && out.angle === undefined) {
+      out.angle = out.rotate;
+    }
+    if (out.text === undefined || out.text === null) out.text = "";
+    out.x = Number(out.x) || 0;
+    out.y = Number(out.y) || 0;
+    out.w = Number(out.w) || 0;
+    out.h = Number(out.h) || 0;
+    return out;
+  }
+
   function buildOverlayContent(imageUrls, overlayData, overlayPageOffset) {
     var pages = (overlayData && Array.isArray(overlayData.pages)) ? overlayData.pages : [];
     var pageMap = {};
     for (var i = 0; i < pages.length; i++) {
       var page = pages[i] || {};
-      pageMap[page.page_number || page.pageNumber || 0] = Array.isArray(page.overlays) ? page.overlays : [];
+      var pageNum = page.page_number || page.pageNumber || 0;
+      var rawOverlays = Array.isArray(page.overlays) ? page.overlays : [];
+      var normalizedOverlays = [];
+      for (var j = 0; j < rawOverlays.length; j++) {
+        var ov = rawOverlays[j];
+        if (ov && typeof ov === "object") {
+          normalizedOverlays.push(normalizeOverlayItem(ov));
+        }
+      }
+      pageMap[pageNum] = normalizedOverlays;
     }
     var pageOverlays = [];
+    var offset = Number(overlayPageOffset) || 0;
     for (var p = 0; p < imageUrls.length; p++) {
-      pageOverlays.push(pageMap[p - overlayPageOffset + 1] || []);
+      var overlayPageIdx = p - offset + 1;
+      var overlays = pageMap[overlayPageIdx];
+      if (!overlays && offset > 0) {
+        overlays = pageMap[p + offset];
+      }
+      pageOverlays.push(overlays || []);
     }
     var first = pages[0] || {};
     return {
       kind: "overlay",
       imageUrls: imageUrls,
       pageOverlays: pageOverlays,
-      naturalImageWidth: overlayData.natural_image_width || overlayData.naturalImageWidth || first.image_width || first.imageWidth || 800,
-      naturalImageHeight: overlayData.natural_image_height || overlayData.naturalImageHeight || first.image_height || first.imageHeight || 1200
+      naturalImageWidth: overlayData.natural_image_width || overlayData.naturalImageWidth || first.image_width || first.imageWidth || first.natural_image_width || first.naturalImageWidth || 800,
+      naturalImageHeight: overlayData.natural_image_height || overlayData.naturalImageHeight || first.image_height || first.imageHeight || first.natural_image_height || first.naturalImageHeight || 1200
     };
   }
 
