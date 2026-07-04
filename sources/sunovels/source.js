@@ -88,21 +88,10 @@ function createSource(api, config) {
   function extractRscCovers(pageHtml) {
     var covers = {};
     try {
-      var scriptTexts = pageHtml.match(/self\.__next_f\.push\(\[1,"(?:[^"\\]|\\.)*"\]\)/g) || [];
-      var fullData = "";
-      for (var s = 0; s < scriptTexts.length; s++) {
-        var m = scriptTexts[s];
-        try {
-          var parsed = JSON.parse("[" + m.substring(m.indexOf('"')) );
-        } catch (e) {
-          var extracted = m.match(/\[1,"(.*)"\]\)/);
-          if (extracted && extracted[1]) fullData += extracted[1];
-        }
-      }
-      var slugImgMatches = fullData.match(/"href":"\/novel\/([^"]+)"[^}]+?"src":"\/uploads\/([^"]+)"/g) || [];
-      for (var j = 0; j < slugImgMatches.length; j++) {
-        var sm = slugImgMatches[j].match(/"href":"\/novel\/([^"]+)"[^}]+?"src":"\/uploads\/([^"]+)"/);
-        if (sm) covers[sm[1]] = abs("/uploads/" + sm[2]);
+      var re = /\\"href\\":\\"\/novel\/([^\\"]+)\\"[^}]+?\\"src\\":\\"\/uploads\/([^\\"]+)\\"/g;
+      var m;
+      while ((m = re.exec(pageHtml)) !== null) {
+        covers[m[1]] = abs("/uploads/" + m[2]);
       }
     } catch (e) {}
     return covers;

@@ -82,7 +82,7 @@
             },
             "script": {
                 "url": "sources/sunovels/source.js",
-                "sha256": "a2ad527a9b306c377fabd18b57d6f3e77f36c77ae27ecd791d2cb8f5e0595298",
+                "sha256": "03da71a9ca6df3bcea9e54eee921443d4f348eb572c5dd6384cf44d062e9fa73",
                 "entry": "createSource"
             },
             "capabilities": {
