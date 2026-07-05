@@ -107,6 +107,50 @@
                 "changelog": "Initial JS implementation with sequential chapter generation and anti-scrape text filtering"
             }
         },
+        "seanovel": {
+            "id": "seanovel",
+            "name": "SeaNovel",
+            "version": "1.0.0",
+            "enabled": true,
+            "status": "beta",
+            "base_url": "https://seanovel.org",
+            "website_url": "https://seanovel.org",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=seanovel.org",
+            "requires_cf": false,
+            "image_referer": "https://seanovel.org/",
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                "Accept": "application/json, text/html, */*",
+                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+                "Referer": "https://seanovel.org/"
+            },
+            "script": {
+                "url": "sources/seanovel/source.js",
+                "sha256": "291d974d5a4d88058c1234b29291533ca162623278ce9b4f6abe0c72368d5323",
+                "entry": "createSource"
+            },
+            "capabilities": {
+                "content_types": [
+                    "novel"
+                ],
+                "supports_search": true,
+                "supports_filters": true,
+                "supports_lazy_chapters": true,
+                "supports_download": true,
+                "requires_cloudflare": false
+            },
+            "compatibility": {
+                "min_app_version": "1.4.0",
+                "runtime_api_version": "1.0"
+            },
+            "metadata": {
+                "language": "ar",
+                "adult": false,
+                "author": "HunterToon Team",
+                "description": "SeaNovel novel source using the seanovel.org REST API with lazy chapter generation and RSC paragraph extraction",
+                "changelog": "Initial JS implementation using /api/novels, /api/novel/{slug}, and RSC-based chapter content extraction"
+            }
+        },
         "swat": {
             "id": "swat",
             "name": "سوات مانجا (Swat Manga)",
