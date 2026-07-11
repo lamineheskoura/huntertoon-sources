@@ -1,10 +1,10 @@
 {
-    "version": "1.6.0",
+    "version": "1.7.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
     "manifest_version": "2026.07.04-dev.1",
-    "generated_at": "2026-07-11T08:00:00Z",
-    "last_updated": "2026-07-11T08:00:00Z",
+    "generated_at": "2026-07-11T08:35:00Z",
+    "last_updated": "2026-07-11T08:35:00Z",
     "min_app_version": "1.4.0",
     "repository": {
         "owner": "lamineheskoura",
@@ -1023,6 +1023,51 @@
                 "author": "HunterToon Team",
                 "description": "Rocks Manga source using wp-fire theme with Madara Core. Homepage at /manga/ with pagination; detail pages at /manga/{slug}/; reader images via direct img tags with data-src",
                 "changelog": "Initial JS implementation for rocksmanga.com"
+            }
+        },
+        "mgeko": {
+            "id": "mgeko",
+            "name": "MGeko",
+            "version": "1.0.0",
+            "enabled": true,
+            "status": "beta",
+            "base_url": "https://www.mgeko.cc",
+            "website_url": "https://www.mgeko.cc",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=www.mgeko.cc",
+            "requires_cf": false,
+            "image_referer": "https://www.mgeko.cc/",
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                "Accept": "application/json, text/html, */*",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Referer": "https://www.mgeko.cc/",
+                "Origin": "https://www.mgeko.cc"
+            },
+            "script": {
+                "url": "sources/mgeko/source.js",
+                "sha256": "7daf99f750afc2f3efd60277317fdb45dc04e6531cd006832675cae81702f3c5",
+                "entry": "createSource"
+            },
+            "capabilities": {
+                "content_types": [
+                    "manga"
+                ],
+                "supports_search": true,
+                "supports_filters": true,
+                "supports_lazy_chapters": false,
+                "supports_download": true,
+                "requires_cloudflare": false
+            },
+            "compatibility": {
+                "min_app_version": "1.4.0",
+                "runtime_api_version": "1.0"
+            },
+            "metadata": {
+                "language": "en",
+                "adult": false,
+                "author": "HunterToon Team",
+                "description": "MGeko English manga/manhwa source. Homepage and search use /browse-comics/data/ API returning JSON with results_html; reader images hosted on imgsrv4.com",
+                "changelog": "Initial JS implementation for mgeko.cc"
             }
         }
     }
