@@ -1,10 +1,10 @@
 {
-    "version": "1.7.0",
+    "version": "1.8.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
     "manifest_version": "2026.07.04-dev.1",
-    "generated_at": "2026-07-11T08:35:00Z",
-    "last_updated": "2026-07-11T08:35:00Z",
+    "generated_at": "2026-07-11T13:45:00Z",
+    "last_updated": "2026-07-11T13:45:00Z",
     "min_app_version": "1.4.0",
     "repository": {
         "owner": "lamineheskoura",
@@ -1068,6 +1068,51 @@
                 "author": "HunterToon Team",
                 "description": "MGeko English manga/manhwa source. Homepage and search use /browse-comics/data/ API returning JSON with results_html; reader images hosted on imgsrv4.com",
                 "changelog": "Initial JS implementation for mgeko.cc"
+            }
+        },
+        "manhuaus": {
+            "id": "manhuaus",
+            "name": "MANHUAUS.COM",
+            "version": "1.0.0",
+            "enabled": true,
+            "status": "beta",
+            "base_url": "https://manhuaus.com",
+            "website_url": "https://manhuaus.com",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=manhuaus.com",
+            "requires_cf": true,
+            "image_referer": "https://manhuaus.com/",
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Referer": "https://manhuaus.com/",
+                "Origin": "https://manhuaus.com"
+            },
+            "script": {
+                "url": "sources/manhuaus/source.js",
+                "sha256": "4ee84383fc07b2accb343515473c82924c41354d46b867de6aaf85d5e2eb56b5",
+                "entry": "createSource"
+            },
+            "capabilities": {
+                "content_types": [
+                    "manga"
+                ],
+                "supports_search": true,
+                "supports_filters": true,
+                "supports_lazy_chapters": false,
+                "supports_download": true,
+                "requires_cloudflare": true
+            },
+            "compatibility": {
+                "min_app_version": "1.4.0",
+                "runtime_api_version": "1.0"
+            },
+            "metadata": {
+                "language": "en",
+                "adult": false,
+                "author": "HunterToon Team",
+                "description": "MANHUAUS.COM English manhua/manga source (WordPress Madara). Protected by Cloudflare Turnstile. Homepage at /; archive at /manga/?page=N; detail at /manga/{slug}/; reader images hosted on img.manhuaus.com",
+                "changelog": "Initial JS implementation for manhuaus.com with Cloudflare support"
             }
         }
     }
