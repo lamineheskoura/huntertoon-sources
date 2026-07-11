@@ -1,10 +1,10 @@
 {
-    "version": "1.4.7",
+    "version": "1.5.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
     "manifest_version": "2026.07.04-dev.1",
-    "generated_at": "2026-07-04T23:45:00Z",
-    "last_updated": "2026-07-04T23:45:00Z",
+    "generated_at": "2026-07-11T00:00:00Z",
+    "last_updated": "2026-07-11T00:00:00Z",
     "min_app_version": "1.4.0",
     "repository": {
         "owner": "lamineheskoura",
@@ -935,6 +935,50 @@
                 "author": "HunterToon Team",
                 "description": "Mnga4all WordPress Madara source - new JS-only source",
                 "changelog": "Initial JS implementation for mnga4all.com"
+            }
+        },
+        "area_manga": {
+            "id": "area_manga",
+            "name": "أريا مانجا (AREA Manga)",
+            "version": "1.0.0",
+            "enabled": true,
+            "status": "beta",
+            "base_url": "https://ar.kenmanga.com",
+            "website_url": "https://ar.kenmanga.com",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=ar.kenmanga.com",
+            "requires_cf": false,
+            "image_referer": "https://ar.kenmanga.com/",
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+                "Referer": "https://ar.kenmanga.com/"
+            },
+            "script": {
+                "url": "sources/area_manga/source.js",
+                "sha256": "f919a159a0f7f79343c367397448259443440f7214abaea7746a62fb55658df2",
+                "entry": "createSource"
+            },
+            "capabilities": {
+                "content_types": [
+                    "manga"
+                ],
+                "supports_search": true,
+                "supports_filters": true,
+                "supports_lazy_chapters": false,
+                "supports_download": true,
+                "requires_cloudflare": false
+            },
+            "compatibility": {
+                "min_app_version": "1.4.0",
+                "runtime_api_version": "1.0"
+            },
+            "metadata": {
+                "language": "ar",
+                "adult": false,
+                "author": "HunterToon Team",
+                "description": "AREA Manga source using MangaReader Premium WordPress theme with Cloudflare HTML parsing",
+                "changelog": "Initial JS implementation for ar.kenmanga.com"
             }
         }
     }
