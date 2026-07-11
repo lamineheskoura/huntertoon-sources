@@ -1,10 +1,10 @@
 {
-    "version": "1.5.0",
+    "version": "1.5.1",
     "schema_version": 3,
     "runtime_api_version": "1.0",
     "manifest_version": "2026.07.04-dev.1",
     "generated_at": "2026-07-11T00:00:00Z",
-    "last_updated": "2026-07-11T00:00:00Z",
+    "last_updated": "2026-07-11T01:00:00Z",
     "min_app_version": "1.4.0",
     "repository": {
         "owner": "lamineheskoura",
@@ -940,7 +940,7 @@
         "area_manga": {
             "id": "area_manga",
             "name": "أريا مانجا (AREA Manga)",
-            "version": "1.0.0",
+            "version": "1.0.1",
             "enabled": true,
             "status": "beta",
             "base_url": "https://ar.kenmanga.com",
@@ -956,7 +956,7 @@
             },
             "script": {
                 "url": "sources/area_manga/source.js",
-                "sha256": "f919a159a0f7f79343c367397448259443440f7214abaea7746a62fb55658df2",
+                "sha256": "b8d137a4bf320e291b0ee640272e6649a9c87e334e8fec1c462d804dcc1d55d2",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -978,7 +978,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "AREA Manga source using MangaReader Premium WordPress theme with Cloudflare HTML parsing",
-                "changelog": "Initial JS implementation for ar.kenmanga.com"
+                "changelog": "Fix reader image extraction: add #reader-canvas img and img.size-full/wp-image/alignnone selectors; images are directly embedded in HTML, not loaded via AJAX"
             }
         }
     }

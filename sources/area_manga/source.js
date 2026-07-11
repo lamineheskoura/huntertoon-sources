@@ -161,11 +161,22 @@ function createSource(api, config) {
     }
 
     if (!urls.length) {
-      var images = await api.cssAll(html, "#readerarea img, .entry-content img, .comic-images-wrapper img, .page-break img");
+      var images = await api.cssAll(html, "#reader-canvas img, #readerarea img, .entry-content img, .comic-images-wrapper img, .page-break img");
       for (var i = 0; i < images.length; i++) {
         var attrs = (images[i] || {}).attrs || {};
         var src = attrs["data-src"] || attrs["data-lazy-src"] || attrs["src"] || "";
         if (!src || src.indexOf("data:image") === 0 || src.indexOf("readerarea.svg") !== -1) continue;
+        src = makeAbsolute(src);
+        if (src && urls.indexOf(src) === -1) urls.push(src);
+      }
+    }
+
+    if (!urls.length) {
+      var allImgs = await api.cssAll(html, "img.size-full, img.wp-image, img.alignnone");
+      for (var i = 0; i < allImgs.length; i++) {
+        var attrs = (allImgs[i] || {}).attrs || {};
+        var src = attrs["data-src"] || attrs["data-lazy-src"] || attrs["src"] || "";
+        if (!src || src.indexOf("data:image") === 0) continue;
         src = makeAbsolute(src);
         if (src && urls.indexOf(src) === -1) urls.push(src);
       }
