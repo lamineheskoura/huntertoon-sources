@@ -161,38 +161,50 @@ function createSource(api, config) {
     }
 
     if (!urls.length) {
-      var images = await api.cssAll(html, "#reader-canvas img, #readerarea img, .entry-content img, .comic-images-wrapper img, .page-break img");
+      var images = await api.cssAll(html, "#reader-canvas img");
       for (var i = 0; i < images.length; i++) {
         var attrs = (images[i] || {}).attrs || {};
         var src = attrs["data-src"] || attrs["data-lazy-src"] || attrs["src"] || "";
-        if (!src || src.indexOf("data:image") === 0 || src.indexOf("readerarea.svg") !== -1) continue;
-        src = makeAbsolute(src);
-        if (src && urls.indexOf(src) === -1) urls.push(src);
-      }
-    }
-
-    if (!urls.length) {
-      var allImgs = await api.cssAll(html, "img.size-full, img.wp-image, img.alignnone");
-      for (var i = 0; i < allImgs.length; i++) {
-        var attrs = (allImgs[i] || {}).attrs || {};
-        var src = attrs["data-src"] || attrs["data-lazy-src"] || attrs["src"] || "";
         if (!src || src.indexOf("data:image") === 0) continue;
         src = makeAbsolute(src);
         if (src && urls.indexOf(src) === -1) urls.push(src);
       }
     }
 
-    if (!urls.length) {
-      var allImgs = await api.cssAll(html, "img");
-      for (var i = 0; i < allImgs.length; i++) {
-        var attrs = (allImgs[i] || {}).attrs || {};
-        var src = attrs["data-src"] || attrs["data-lazy-src"] || attrs["src"] || "";
-        if (!src || src.indexOf("data:image") === 0) continue;
-        src = makeAbsolute(src);
-        if (src.indexOf("icon") !== -1 || src.indexOf("logo") !== -1 || src.indexOf("avatar") !== -1) continue;
-        if (src.indexOf(".svg") !== -1) continue;
-        if (src && urls.indexOf(src) === -1) urls.push(src);
-      }
+    if (!urls.length && api.http) {
+      try {
+        var chapIdMatch = html.match(/ARYA_CHAPTER_ID\s*=\s*(\d+)/);
+        if (chapIdMatch) {
+          var chapId = chapIdMatch[1];
+          var ajaxUrl = baseUrl + "/wp-admin/admin-ajax.php";
+          var ajaxHeaders = mergeHeaders(defaultHeaders, {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-Requested-With": "XMLHttpRequest",
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors"
+          });
+          var resp = await api.http(ajaxUrl, {
+            method: "POST",
+            headers: ajaxHeaders,
+            body: "action=get_secure_chapter_images&chapter_id=" + encodeURIComponent(chapId)
+          });
+          if (resp && resp.ok) {
+            try {
+              var json = JSON.parse(resp.body || "{}");
+              if (json.success && json.data && json.data.status === "unlocked" && json.data.content) {
+                var contentImgs = await api.cssAll(json.data.content, "img");
+                for (var i = 0; i < contentImgs.length; i++) {
+                  var attrs = (contentImgs[i] || {}).attrs || {};
+                  var src = attrs["data-src"] || attrs["data-lazy-src"] || attrs["src"] || "";
+                  if (!src || src.indexOf("data:image") === 0) continue;
+                  src = makeAbsolute(src);
+                  if (src && urls.indexOf(src) === -1) urls.push(src);
+                }
+              }
+            } catch (e) {}
+          }
+        }
+      } catch (e) {}
     }
 
     return urls;
