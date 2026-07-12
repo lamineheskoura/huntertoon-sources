@@ -56,63 +56,44 @@ function createSource(api, config) {
     return String(s || "").replace(/\s+/g, " ").trim();
   }
 
+  function stripLeadingRating(s) {
+    return String(s || "").replace(/^\d+(?:\.\d+)?\s*/, "").trim();
+  }
+
   function makeAbsolute(url) {
     if (!url) return "";
     url = String(url).trim();
     if (url.indexOf("http://") === 0) return "https:" + url.substring(5);
     if (url.indexOf("https://") === 0) return url;
     if (url.indexOf("//") === 0) return "https:" + url;
-    if (url.indexOf("/") === 0) return baseUrl.replace(/\/$/, "") + url;
-    return baseUrl.replace(/\/$/, "") + "/" + url;
+    if (url.indexOf("/") === 0) return baseUrl.replace(/\/+$/, "") + url;
+    return baseUrl.replace(/\/+$/, "") + "/" + url;
   }
 
   async function parseCards(html) {
-    var items = await api.cssAll(html, "div[class*='grid-cols-12'][class*='py-4']");
-    if (!items || !items.length) items = await api.cssAll(html, "div[class*='grid-cols-12'][class*='gap-2']");
-    if (!items || !items.length) items = await api.cssAll(html, "a[href*='/comics/']");
+    var items = await api.cssAll(html, "div.grid.grid-cols-12.gap-2.py-4.px-2");
     var out = [];
     var seen = {};
     for (var i = 0; i < items.length; i++) {
-      var itemHtml = (items[i] || {}).html || "";
-      var title = "";
-      var detailUrl = "";
+      var item = items[i] || {};
+      var inner = item.html || "";
 
-      if (items.length > 50 && itemHtml.indexOf("comics") === -1) continue;
+      var links = await api.cssAll(inner, "a[href*='/comics/']");
+      if (!links || links.length < 2) continue;
 
-      var links = await api.cssAll(itemHtml, "a[href*='/comics/']");
-      var link0href = "";
-      var link1href = "";
-      var link1text = "";
-
-      if (links && links.length >= 2) {
-        var l0 = (links[0] || {}).attrs || {};
-        var l1 = (links[1] || {}).attrs || {};
-        link0href = makeAbsolute(l0["href"] || "");
-        link1href = makeAbsolute(l1["href"] || "");
-        link1text = await api.cssText((links[1] || {}).html || "", "::text") || "";
-      } else if (links && links.length === 1) {
-        var l0 = (links[0] || {}).attrs || {};
-        link0href = makeAbsolute(l0["href"] || "");
-        link1href = link0href;
-        link1text = await api.cssText((links[0] || {}).html || "", "::text") || "";
-      }
-
-      if (link0href.indexOf("/chapter/") !== -1) continue;
-      detailUrl = link1href || link0href;
+      var detailUrl = makeAbsolute(((links[1] || {}).attrs || {}).href || "");
       if (!detailUrl || seen[detailUrl]) continue;
       seen[detailUrl] = true;
-      title = cleanTitle(link1text);
+
+      var title = cleanTitle(stripLeadingRating((links[1] || {}).text || ""));
       if (!title) continue;
 
-      var cover = await api.cssAttr(itemHtml, "img", "data-src")
+      var cover = await api.cssAttr(inner, "img", "data-src")
         .then(function(src) {
-          if (!src || src.indexOf("data:image") === 0) return api.cssAttr(itemHtml, "img", "src");
+          if (!src || src.indexOf("data:image") === 0) return api.cssAttr(inner, "img", "src");
           return src;
-        })
-        .then(function(src) {
-          if (!src || src.indexOf("data:image") === 0) return "";
-          return makeAbsolute(src);
         });
+      cover = makeAbsolute(cover);
 
       out.push({
         title: title,
@@ -124,42 +105,41 @@ function createSource(api, config) {
     return out;
   }
 
-  function extractChapterNumber(url, text) {
-    var combined = String(url || "") + " " + String(text || "");
-    var m = combined.match(/(?:chapter|ch|episode)[-\s_:.]*(\d+(?:\.\d+)?)/i);
-    if (m) return m[1];
-    m = url.match(/\/chapter\/(\d+(?:\.\d+)?)/);
+  function extractChapterNumber(url) {
+    var m = url.match(/\/chapter\/(\d+(?:\.\d+)?)/);
     if (m) return m[1];
     return "0";
   }
 
   async function extractChapters(html) {
-    var items = await api.cssAll(html, "div[class*='divide-y'] a[href*='chapter']");
-    if (!items || !items.length) items = await api.cssAll(html, "div[class*='divide'] a[href*='chapter']");
-    if (!items || !items.length) items = await api.cssAll(html, "a[href*='/comics/'][href*='chapter']");
+    var items = await api.cssAll(html, "div[class*='divide'] a[href*='chapter']");
+    if (!items || !items.length) items = await api.cssAll(html, "a[href*='chapter']");
     var chapters = [];
     var seen = {};
     for (var i = 0; i < items.length; i++) {
-      var item = items[i] || {};
-      var itemHtml = item.html || "";
-      var itemAttrs = item.attrs || {};
-      var href = itemAttrs["href"] || "";
+      var it = items[i] || {};
+      var attrs = it.attrs || {};
+      var href = attrs.href || "";
       if (!href) continue;
       var chapterUrl = makeAbsolute(href);
       if (!chapterUrl || seen[chapterUrl]) continue;
       seen[chapterUrl] = true;
-      var text = await api.cssText(itemHtml, "::text") || chapterUrl;
-      text = cleanTitle(text);
-      var chNum = extractChapterNumber(chapterUrl, text);
-      var isLocked = (chapterUrl.toLowerCase().indexOf("chapter/0") !== -1) ||
-                     (itemHtml && itemHtml.toLowerCase().indexOf("lock") !== -1);
+
+      var chNum = extractChapterNumber(chapterUrl);
+      var ine = it.html || "";
+      var isLocked = ine.toLowerCase().indexOf("lock") !== -1;
+
+      var dateStr = "";
+      var dateRes = ine.match(/(\d+\s+(?:hour|day|week|month|minute|second|year)s?\s+ago)/i);
+      if (dateRes) dateStr = cleanTitle(dateRes[1]);
+
       chapters.push({
         number: chNum,
         title: "",
         url: chapterUrl,
         views: 0,
         isLocked: isLocked,
-        date: ""
+        date: dateStr
       });
     }
     chapters.sort(function(a, b) {
@@ -170,36 +150,30 @@ function createSource(api, config) {
 
   async function extractReaderImages(html) {
     var urls = [];
+    var seen = {};
 
-    var images = await api.cssAll(html, "img[src*='chapters'], img[src*='chapter']");
-    if (!images || !images.length) images = await api.cssAll(html, "main img, .chapter-content img, .reading-content img, #readerarea img");
-    if (!images || !images.length) images = await api.cssAll(html, "img");
+    var images = await api.cssAll(html, "img.w-full.block");
+    if (!images || !images.length) {
+      images = await api.cssAll(html, "main img");
+      if (!images || !images.length) images = await api.cssAll(html, "img");
+    }
 
     for (var i = 0; i < images.length; i++) {
       var attrs = (images[i] || {}).attrs || {};
       var src = attrs["data-src"] || attrs["src"] || "";
       if (!src || src.indexOf("data:image") === 0) continue;
-      if (src.indexOf("logo") !== -1 || src.indexOf("icon") !== -1) continue;
       src = makeAbsolute(src);
-      if (src && src.indexOf(cdnBase) !== -1 && urls.indexOf(src) === -1) {
-        urls.push(src);
+      if (src.indexOf("logo") !== -1 || src.indexOf("icon") !== -1 || src.indexOf("avatar") !== -1) continue;
+      if (src.indexOf("/covers/") !== -1) continue;
+      var isChapterImage = src.indexOf("/chapters/") !== -1 || src.indexOf("asura-images") !== -1;
+      if (!isChapterImage) {
+        var ext = src.split("?").shift().split(".").pop().toLowerCase();
+        if (["jpg", "jpeg", "png", "webp", "gif", "avif"].indexOf(ext) === -1) continue;
       }
+      if (seen[src]) continue;
+      seen[src] = true;
+      urls.push(src);
     }
-
-    if (!urls.length) {
-      var allImages = await api.cssAll(html, "img");
-      for (var i = 0; i < allImages.length; i++) {
-        var attrs = (allImages[i] || {}).attrs || {};
-        var src = attrs["data-src"] || attrs["src"] || "";
-        if (!src || src.indexOf("data:image") === 0) continue;
-        if (src.indexOf("logo") !== -1 || src.indexOf("icon") !== -1) continue;
-        src = makeAbsolute(src);
-        if (src && src.indexOf(cdnBase) !== -1 && urls.indexOf(src) === -1) {
-          urls.push(src);
-        }
-      }
-    }
-
     return urls;
   }
 
