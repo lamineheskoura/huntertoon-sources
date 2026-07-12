@@ -1,10 +1,10 @@
 {
-    "version": "1.8.0",
+    "version": "1.9.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
     "manifest_version": "2026.07.04-dev.1",
-    "generated_at": "2026-07-11T13:45:00Z",
-    "last_updated": "2026-07-11T13:45:00Z",
+    "generated_at": "2026-07-12T19:10:00Z",
+    "last_updated": "2026-07-12T19:10:00Z",
     "min_app_version": "1.4.0",
     "repository": {
         "owner": "lamineheskoura",
@@ -1113,6 +1113,51 @@
                 "author": "HunterToon Team",
                 "description": "MANHUAUS.COM English manhua/manga source (WordPress Madara). Protected by Cloudflare Turnstile. Homepage at /; archive at /manga/?page=N; detail at /manga/{slug}/; reader images hosted on img.manhuaus.com",
                 "changelog": "Initial JS implementation for manhuaus.com with Cloudflare support"
+            }
+        },
+        "asurascans": {
+            "id": "asurascans",
+            "name": "Asura Scans",
+            "version": "1.0.0",
+            "enabled": true,
+            "status": "beta",
+            "base_url": "https://asurascans.com",
+            "website_url": "https://asurascans.com",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=asurascans.com",
+            "requires_cf": false,
+            "image_referer": "https://asurascans.com/",
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Referer": "https://asurascans.com/",
+                "Origin": "https://asurascans.com"
+            },
+            "script": {
+                "url": "sources/asurascans/source.js",
+                "sha256": "431c9fb91771a18595b862af71573a18b6764b1c653676ca7815957652b102ac",
+                "entry": "createSource"
+            },
+            "capabilities": {
+                "content_types": [
+                    "manga"
+                ],
+                "supports_search": true,
+                "supports_filters": true,
+                "supports_lazy_chapters": false,
+                "supports_download": true,
+                "requires_cloudflare": false
+            },
+            "compatibility": {
+                "min_app_version": "1.4.0",
+                "runtime_api_version": "1.0"
+            },
+            "metadata": {
+                "language": "en",
+                "adult": false,
+                "author": "HunterToon Team",
+                "description": "Asura Scans English manga/manhwa source (Astro.js SSR). Homepage at /; browse at /browse?page=N; detail at /comics/{slug}; reader at /comics/{slug}/chapter/{num}; images on cdn.asurascans.com. Supports locked chapter detection.",
+                "changelog": "Initial JS implementation for asurascans.com with locked chapter detection"
             }
         }
     }
