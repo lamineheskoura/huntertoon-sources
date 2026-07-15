@@ -72,6 +72,11 @@ function createSource(api, config) {
 
   async function parseCards(html) {
     var items = await api.cssAll(html, "div.grid.grid-cols-12.gap-2.py-4.px-2");
+    var isBrowse = false;
+    if (!items || !items.length) {
+      items = await api.cssAll(html, ".series-card");
+      isBrowse = true;
+    }
     var out = [];
     var seen = {};
     for (var i = 0; i < items.length; i++) {

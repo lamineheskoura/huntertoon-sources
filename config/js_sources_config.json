@@ -1,10 +1,10 @@
 {
-    "version": "1.9.1",
+    "version": "1.9.2",
     "schema_version": 3,
     "runtime_api_version": "1.0",
     "manifest_version": "2026.07.04-dev.1",
-    "generated_at": "2026-07-12T19:10:00Z",
-    "last_updated": "2026-07-12T19:10:00Z",
+    "generated_at": "2026-07-15T19:30:00Z",
+    "last_updated": "2026-07-15T19:30:00Z",
     "min_app_version": "1.4.0",
     "repository": {
         "owner": "lamineheskoura",
@@ -1118,7 +1118,7 @@
         "asurascans": {
             "id": "asurascans",
             "name": "Asura Scans",
-            "version": "1.0.0",
+            "version": "1.0.1",
             "enabled": true,
             "status": "beta",
             "base_url": "https://asurascans.com",
@@ -1135,7 +1135,7 @@
             },
             "script": {
                 "url": "sources/asurascans/source.js",
-                "sha256": "7c08243b9e00082d3dfd097f4ccd42c9f14db0d1bbd7047f35149a8245a14769",
+                "sha256": "1464d36b9aa2d48859a49adb1df7d1e9840186169d2b7e29f063be29711655ce",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1157,7 +1157,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Asura Scans English manga/manhwa source (Astro.js SSR). Homepage at /; browse at /browse?page=N; detail at /comics/{slug}; reader at /comics/{slug}/chapter/{num}; images on cdn.asurascans.com. Supports locked chapter detection.",
-                "changelog": "Fix: rewrite parseCards with proper selector div.grid.grid-cols-12.gap-2.py-4.px-2; fix extractChapters to use divide container and extract dates; fix extractReaderImages with w-full.block filter"
+                "changelog": "Fix parseCards: add fallback .series-card selector for browse/search page (was using only homepage grid selector); browse/search now shows correct manga list"
             }
         }
     }
