@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "manifest_version": "2026.07.16.1",
+  "generated_at": "2026-07-16T00:00:00Z",
+  "repository": {
+    "owner": "lamineheskoura",
+    "repo": "huntertoon-sources",
+    "branch": "main",
+    "raw_base_url": "https://raw.githubusercontent.com/lamineheskoura/huntertoon-sources/main"
+  },
+  "sources": {
+    "team_x": {
+      "id": "team_x",
+      "name": "تيم إكس (Team-X)",
+      "enabled": true,
+      "version": "1.1.2",
+      "base_url": "https://olympustaff.com",
+      "script": {
+        "url": "sources/team_x/source.js",
+        "sha256": "4a4f6eec428d6592edc9ae472ea44284925383190a9cfeb80ac3e2c2a8fe641b",
+        "entry": "createSource"
+      },
+      "allowed_hosts": ["olympustaff.com", "*.olympustaff.com"],
+      "runtime_allowed_hosts": ["olympustaff.com", "*.olympustaff.com"],
+      "request_header_names": ["User-Agent", "Accept", "Accept-Language", "Referer"],
+      "image_referer": "https://olympustaff.com/"
+    },
+    "swat": {
+      "id": "swat",
+      "name": "مانجا سوات (Swat Manga)",
+      "enabled": true,
+      "version": "1.1.1",
+      "base_url": "https://appswat.com",
+      "script": {
+        "url": "sources/swat/source.js",
+        "sha256": "89c90ebe6881db22389b85a39ebf5203f07f954bf13c1fa54d4e7ee812b63824",
+        "entry": "createSource"
+      },
+      "allowed_hosts": ["appswat.com", "*.appswat.com"],
+      "runtime_allowed_hosts": ["appswat.com", "*.appswat.com"],
+      "request_header_names": ["User-Agent", "Accept", "Accept-Language", "Referer", "Origin"],
+      "image_referer": "https://appswat.com/"
+    },
+    "azora": {
+      "id": "azora",
+      "name": "أزورا مانجا (Azora Manga)",
+      "enabled": true,
+      "version": "1.0.1",
+      "base_url": "https://azorafly.com",
+      "script": {
+        "url": "sources/azora/source.js",
+        "sha256": "6ff10dc37e154e02e3bb3cac30fd812a3084da876fca2fd1d58343680f2eb590",
+        "entry": "createSource"
+      },
+      "allowed_hosts": ["azorafly.com", "*.azorafly.com", "azoramoon.com", "*.azoramoon.com"],
+      "runtime_allowed_hosts": ["azorafly.com", "*.azorafly.com", "api.azorafly.com"],
+      "request_header_names": ["User-Agent", "Accept", "Accept-Language", "Referer", "Origin"],
+      "image_referer": "https://azorafly.com/"
+    },
+    "dilar": {
+      "id": "dilar",
+      "name": "ديلار (Dilar)",
+      "enabled": true,
+      "version": "1.0.0",
+      "base_url": "https://dilar.tube",
+      "script": {
+        "url": "sources/dilar/source.js",
+        "sha256": "771317aafa6f676cda9c1b310c76c92e1ce92267e50df86ff8eabb4470ed87bd",
+        "entry": "createSource"
+      },
+      "allowed_hosts": ["dilar.tube", "*.dilar.tube"],
+      "runtime_allowed_hosts": ["dilar.tube", "*.dilar.tube"],
+      "request_header_names": ["User-Agent", "Accept", "Accept-Language", "Referer"],
+      "image_referer": "https://dilar.tube/"
+    }
+  }
+}
