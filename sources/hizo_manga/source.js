@@ -274,7 +274,53 @@ function createSource(api, config) {
     },
 
     async getFilteredManga(args) {
-      return await this.getHomepageManga(args);
+      try {
+        var page = (args && args.page) || 1;
+        var url;
+        if (args && args.genre) {
+          var genreSlug = String(args.genre).toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9\u0621-\u064a-]+/g, "");
+          url = page === 1
+            ? baseUrl + "/genre/" + encodeURIComponent(genreSlug) + "/"
+            : baseUrl + "/genre/" + encodeURIComponent(genreSlug) + "/page/" + page + "/";
+        } else {
+          var params = ["m_orderby=latest"];
+          if (args && args.type) params.push("type=" + encodeURIComponent(args.type));
+          url = page === 1
+            ? baseUrl + "/series/?" + params.join("&")
+            : baseUrl + "/series/page/" + page + "/?" + params.join("&");
+        }
+        return await listCards(await html(url));
+      } catch (e) {
+        return await this.getHomepageManga(args);
+      }
+    },
+
+    async getGenresAndTypes() {
+      try {
+        var pageHtml = await html(baseUrl + "/series/");
+        var genreEls = await api.cssList(pageHtml, ".genres-list a, .genres-list ul > li > a, .sidebar .genres li a, ul.genres a, .post-title .genres a, .genres-content a");
+        var genres = [];
+        var seen = {};
+        for (var i = 0; i < (genreEls || []).length; i++) {
+          var g = String(genreEls[i] || "").trim();
+          if (g && !seen[g]) { seen[g] = true; genres.push(g); }
+        }
+        if (genres.length === 0) {
+          var genreLinks = await api.cssAll(pageHtml, "a[href*='/genre/']");
+          for (var i = 0; i < (genreLinks || []).length; i++) {
+            var link = genreLinks[i];
+            var text = link.text || link.html || "";
+            text = strip(text);
+            if (text && !seen[text]) { seen[text] = true; genres.push(text); }
+          }
+        }
+        return {
+          genres: genres,
+          types: ["manga", "manhwa", "manhua", "novel"]
+        };
+      } catch (e) {
+        return { genres: [], types: ["manga", "novel"] };
+      }
     },
 
     async getMangaDetails(args) {
@@ -391,8 +437,6 @@ function createSource(api, config) {
     },
 
     async fetchMoreChapters() { return null; },
-
-    async getGenresAndTypes() { return { genres: [], types: ["manga", "novel"] }; },
 
     getImageHeaders(args) {
       return {

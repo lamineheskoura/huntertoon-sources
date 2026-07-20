@@ -673,7 +673,7 @@
         "hizo_manga": {
             "id": "hizo_manga",
             "name": "Hizo Manga",
-            "version": "1.0.0",
+            "version": "1.1.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://hizomanga.net",
@@ -689,7 +689,7 @@
             },
             "script": {
                 "url": "sources/hizo_manga/source.js",
-                "sha256": "998eccfcd110e2974ce0734c03c9c7966163534fc83ee3e607a652d49e5cc93c",
+                "sha256": "6e41da1263fd6f14fcca8697ed41448d93f9078dc18d91d93d817117fdace852",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -698,7 +698,7 @@
                     "novel"
                 ],
                 "supports_search": true,
-                "supports_filters": false,
+                "supports_filters": true,
                 "supports_lazy_chapters": false,
                 "supports_download": true,
                 "requires_cloudflare": false
