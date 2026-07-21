@@ -1,5 +1,5 @@
 function createSource(api, config) {
-  var baseUrl = (config && config.base_url) || "https://sparkmanga.net";
+  var baseUrl = (config && config.base_url) || "https://manga-lionz.org";
   var selectors = (config && config.selectors) || {};
 
   var userAgent = (config && config.user_agent) || "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
@@ -17,9 +17,9 @@ function createSource(api, config) {
 
   var lastChapterUrl = baseUrl + "/";
   var defaultGenres = [
-    "اكشن", "مغامرة", "فانتازا", "دراما", "رومانسي", "كوميدي", "شونين",
-    "رعب", "خارق للطبيعة", "نفسي", "غموض", "حياة مدرسية", "تاريخي",
-    "نظام", "جنس", "ايتشي", "ميكا", "رياضة"
+    "اكشن", "مغامرة", "فانتازيا", "دراما", "رومانسي", "كوميدي", "شونين",
+    "رعب", "خارق للطبيعة", "نفسي", "غموض", "حياة مدرسية", "تاريخي", "سحر",
+    "فنون قتالية", "اثارة", "خيال", "زمكانى"
   ];
   var defaultTypes = ["manga", "manhwa", "manhua"];
 
@@ -79,29 +79,44 @@ function createSource(api, config) {
       .trim();
   }
 
-  async function toMangaList(html, listSel, opts) {
-    opts = opts || {};
-    var items = await api.cssMap(html, listSel, {
-      title: { selector: opts.titleSel, type: "text" },
-      href: { selector: opts.urlSel || opts.titleSel, type: "attr", attr: "href" },
-      cover: { selector: opts.coverSel, type: "attr", attr: "src" },
-      coverLazy: { selector: opts.coverSel, type: "attr", attr: "data-src" },
-      coverSrc: { selector: opts.coverSel, type: "attr", attr: "data-lazy-src" }
-    });
-    var results = [];
+  // ────────────── Card parsing ──────────────
+
+  async function parseList(html, listSel) {
+    var cards = await api.cssAll(html, listSel);
+    var out = [];
     var seen = {};
-    for (var i = 0; i < items.length; i++) {
-      var item = items[i];
-      var title = (item.title || "").trim();
-      var detailUrl = makeAbsolute(item.href || "");
-      if (!title || !detailUrl || seen[detailUrl]) continue;
-      seen[detailUrl] = true;
-      var cover = item.cover || item.coverLazy || item.coverSrc || "";
+    for (var i = 0; i < cards.length; i++) {
+      var c = cards[i] || {};
+      var h = c.html || "";
+      var href =
+        (await api.cssAttr(h, ".item-thumb a, .post-title a", "href")) ||
+        (await api.cssAttr(h, "a", "href")) ||
+        (c.attrs && c.attrs.href) ||
+        "";
+      var detail = makeAbsolute(href);
+      if (!detail || seen[detail]) continue;
+      seen[detail] = true;
+      var title =
+        (await api.cssText(h, ".post-title a")) ||
+        (await api.cssText(h, "a")) ||
+        (await api.cssAttr(h, "img", "alt")) ||
+        c.text ||
+        "";
+      title = title.trim();
+      var cover =
+        (await api.cssAttr(h, ".item-thumb img", "src")) ||
+        (await api.cssAttr(h, ".item-thumb img", "data-src")) ||
+        (await api.cssAttr(h, "img", "src")) ||
+        "";
       cover = validImage(cover);
-      results.push({ title: title, detailUrl: detailUrl, coverUrl: cover, contentType: "manga" });
+      if (title && detail) {
+        out.push({ title: title, detailUrl: detail, coverUrl: cover, contentType: "manga" });
+      }
     }
-    return results;
+    return out;
   }
+
+  // ────────────── Chapter extraction ──────────────
 
   async function extractChapters(html) {
     var nodes = await api.cssAll(html, ".wp-manga-chapter, li.wp-manga-chapter");
@@ -139,11 +154,7 @@ function createSource(api, config) {
         var url = page === 1
           ? baseUrl + "/manga/?m_orderby=latest"
           : baseUrl + "/manga/page/" + page + "/?m_orderby=latest";
-        return await toMangaList(await fetchHtml(url), sel("homepage_list", ".page-item-detail"), {
-          titleSel: sel("homepage_title", ".post-title a"),
-          coverSel: sel("homepage_cover", ".item-thumb img"),
-          urlSel: sel("homepage_url", ".item-thumb a, .post-title a")
-        });
+        return await parseList(await fetchHtml(url), ".page-item-detail");
       } catch (e) {
         return [];
       }
@@ -157,12 +168,7 @@ function createSource(api, config) {
         var url = page === 1
           ? baseUrl + "/?s=" + encodeURIComponent(query) + "&post_type=wp-manga"
           : baseUrl + "/page/" + page + "/?s=" + encodeURIComponent(query) + "&post_type=wp-manga";
-        var html = await fetchHtml(url);
-        return await toMangaList(html, sel("search_list", ".c-tabs-item__content"), {
-          titleSel: sel("search_title", ".post-title a"),
-          coverSel: sel("search_cover", ".tab-thumb img, .item-thumb img"),
-          urlSel: sel("search_url", ".post-title a")
-        });
+        return await parseList(await fetchHtml(url), ".c-tabs-item__content");
       } catch (e) {
         return [];
       }
@@ -184,21 +190,14 @@ function createSource(api, config) {
             ? baseUrl + "/manga/?" + params.join("&")
             : baseUrl + "/manga/page/" + page + "/?" + params.join("&");
         }
-        return await toMangaList(await fetchHtml(url), sel("filter_list", ".page-item-detail"), {
-          titleSel: sel("filter_title", ".post-title a"),
-          coverSel: sel("filter_cover", ".item-thumb img"),
-          urlSel: sel("filter_url", ".item-thumb a, .post-title a")
-        });
+        return await parseList(await fetchHtml(url), ".page-item-detail");
       } catch (e) {
         return await this.getHomepageManga(args);
       }
     },
 
     async getGenresAndTypes() {
-      return {
-        genres: defaultGenres,
-        types: defaultTypes
-      };
+      return { genres: defaultGenres, types: defaultTypes };
     },
 
     async getMangaDetails(args) {

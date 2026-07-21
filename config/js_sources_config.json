@@ -1,5 +1,5 @@
 {
-    "version": "1.9.4",
+    "version": "1.9.5",
     "schema_version": 3,
     "runtime_api_version": "1.0",
     "manifest_version": "2026.07.04-dev.1",
@@ -718,7 +718,7 @@
         "sparkmanga": {
             "id": "sparkmanga",
             "name": "Spark Manga",
-            "version": "1.0.1",
+            "version": "1.0.2",
             "enabled": true,
             "status": "beta",
             "base_url": "https://sparkmanga.net",
@@ -734,7 +734,7 @@
             },
             "script": {
                 "url": "sources/sparkmanga/source.js",
-                "sha256": "a054488ce3cb3ee494988f12cd1154e2b1fc41f5a44c59d65b9eb8e5a19fe8b4",
+                "sha256": "8d8e459b732faa14b649d5fb342580faa7335506339254158da52d790aa04215",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -758,6 +758,52 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Spark Manga - Madara-based English manga source with Cloudflare protection on browse/detail/search pages",
+                "changelog": "Initial release"
+            }
+        },
+        "mangalionz": {
+            "id": "mangalionz",
+            "name": "Manga Lionz",
+            "version": "1.0.0",
+            "enabled": true,
+            "status": "beta",
+            "base_url": "https://manga-lionz.org",
+            "website_url": "https://manga-lionz.org",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=manga-lionz.org",
+            "requires_cf": true,
+            "image_referer": "https://manga-lionz.org/",
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
+                "Referer": "https://manga-lionz.org/"
+            },
+            "script": {
+                "url": "sources/mangalionz/source.js",
+                "sha256": "dc5de508cb18c44e9c8aa0c261612340006e24d296a35e9bd15301596dcc6b00",
+                "entry": "createSource"
+            },
+            "capabilities": {
+                "content_types": [
+                    "manga",
+                    "manhwa",
+                    "manhua"
+                ],
+                "supports_search": true,
+                "supports_filters": true,
+                "supports_lazy_chapters": false,
+                "supports_download": true,
+                "requires_cloudflare": true
+            },
+            "compatibility": {
+                "min_app_version": "1.4.0",
+                "runtime_api_version": "1.0"
+            },
+            "metadata": {
+                "language": "en",
+                "adult": false,
+                "author": "HunterToon Team",
+                "description": "Manga Lionz - Madara-based English manga source with Cloudflare protection",
                 "changelog": "Initial release"
             }
         },
