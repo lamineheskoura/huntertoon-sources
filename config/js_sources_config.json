@@ -1,5 +1,5 @@
 {
-    "version": "1.9.3",
+    "version": "1.9.4",
     "schema_version": 3,
     "runtime_api_version": "1.0",
     "manifest_version": "2026.07.04-dev.1",
@@ -713,6 +713,52 @@
                 "author": "HunterToon Team",
                 "description": "Hizo Manga mixed manga/novel source migrated to JavaScript",
                 "changelog": "Initial JS implementation with novel text detection and image fallback"
+            }
+        },
+        "sparkmanga": {
+            "id": "sparkmanga",
+            "name": "Spark Manga",
+            "version": "1.0.0",
+            "enabled": true,
+            "status": "beta",
+            "base_url": "https://sparkmanga.net",
+            "website_url": "https://sparkmanga.net",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=sparkmanga.net",
+            "requires_cf": true,
+            "image_referer": "https://sparkmanga.net/",
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
+                "Referer": "https://sparkmanga.net/"
+            },
+            "script": {
+                "url": "sources/sparkmanga/source.js",
+                "sha256": "c0dc32fbc991701e0acffecce3e34d249ae520afb6226657fc32d7012dc8f4af",
+                "entry": "createSource"
+            },
+            "capabilities": {
+                "content_types": [
+                    "manga",
+                    "manhwa",
+                    "manhua"
+                ],
+                "supports_search": true,
+                "supports_filters": true,
+                "supports_lazy_chapters": false,
+                "supports_download": true,
+                "requires_cloudflare": true
+            },
+            "compatibility": {
+                "min_app_version": "1.4.0",
+                "runtime_api_version": "1.0"
+            },
+            "metadata": {
+                "language": "en",
+                "adult": false,
+                "author": "HunterToon Team",
+                "description": "Spark Manga - Madara-based English manga source with Cloudflare protection on browse/detail/search pages",
+                "changelog": "Initial release"
             }
         },
         "kawaii": {
