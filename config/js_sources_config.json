@@ -3,8 +3,8 @@
     "schema_version": 3,
     "runtime_api_version": "1.0",
     "manifest_version": "2026.07.04-dev.1",
-    "generated_at": "2026-07-21T12:00:00Z",
-    "last_updated": "2026-07-21T12:00:00Z",
+    "generated_at": "2026-07-21T17:00:00Z",
+    "last_updated": "2026-07-21T17:00:00Z",
     "min_app_version": "1.4.0",
     "repository": {
         "owner": "lamineheskoura",
@@ -718,7 +718,7 @@
         "sparkmanga": {
             "id": "sparkmanga",
             "name": "Spark Manga",
-            "version": "1.0.5",
+            "version": "1.0.7",
             "enabled": true,
             "status": "beta",
             "base_url": "https://sparkmanga.net",
@@ -734,7 +734,7 @@
             },
             "script": {
                 "url": "sources/sparkmanga/source.js",
-                "sha256": "282a162c03a48d97e21b735229ea1fbbcaE23620e043ef715c06626d07fc3e62",
+                "sha256": "5ff42c23800dc39eb97371fe2eca9e3569ae450318398f77d11c5c7742432642",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -754,11 +754,11 @@
                 "runtime_api_version": "1.0"
             },
             "metadata": {
-                "language": "en",
+                "language": "ar",
                 "adult": false,
                 "author": "HunterToon Team",
-                "description": "Spark Manga - Madara-based English manga source with Cloudflare protection on browse/detail/search pages",
-                "changelog": "Initial release"
+                "description": "Spark Manga - Madara-based Arabic manga source with Cloudflare protection on browse/detail/search pages",
+                "changelog": "v1.0.7: Same structure as mangalionz (cssAll .wp-manga-chapter) + retry fetch if HTML missing chapters"
             }
         },
         "mangalionz": {
@@ -800,10 +800,10 @@
                 "runtime_api_version": "1.0"
             },
             "metadata": {
-                "language": "en",
+                "language": "ar",
                 "adult": false,
                 "author": "HunterToon Team",
-                "description": "Manga Lionz - Madara-based English manga source with Cloudflare protection",
+                "description": "Manga Lionz - Madara-based Arabic manga source with Cloudflare protection",
                 "changelog": "Initial release"
             }
         },
