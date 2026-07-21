@@ -1,10 +1,10 @@
 {
-    "version": "1.9.7",
+    "version": "1.9.8",
     "schema_version": 3,
     "runtime_api_version": "1.0",
     "manifest_version": "2026.07.04-dev.1",
-    "generated_at": "2026-07-20T12:00:00Z",
-    "last_updated": "2026-07-20T12:00:00Z",
+    "generated_at": "2026-07-21T12:00:00Z",
+    "last_updated": "2026-07-21T12:00:00Z",
     "min_app_version": "1.4.0",
     "repository": {
         "owner": "lamineheskoura",
@@ -718,7 +718,7 @@
         "sparkmanga": {
             "id": "sparkmanga",
             "name": "Spark Manga",
-            "version": "1.0.4",
+            "version": "1.0.5",
             "enabled": true,
             "status": "beta",
             "base_url": "https://sparkmanga.net",
@@ -734,7 +734,7 @@
             },
             "script": {
                 "url": "sources/sparkmanga/source.js",
-                "sha256": "346caf3f3ca808c96c800322a8e9e4690c12048c49d0938aeada2852f6bb354d",
+                "sha256": "7b50b76d569bf8f9fc30231287f244838bcc60b71effa90ea798821293de48ba",
                 "entry": "createSource"
             },
             "capabilities": {
