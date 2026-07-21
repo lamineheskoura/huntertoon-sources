@@ -139,7 +139,9 @@ function createSource(api, config) {
     async getHomepageManga(args) {
       try {
         var page = (args && args.page) || 1;
-        var url = baseUrl + "/";
+        var url = page === 1
+          ? baseUrl + "/manga/?m_orderby=latest"
+          : baseUrl + "/manga/page/" + page + "/?m_orderby=latest";
         return await toMangaList(await fetchHtml(url), sel("homepage_list", ".page-item-detail"), {
           titleSel: sel("homepage_title", ".post-title a"),
           coverSel: sel("homepage_cover", ".item-thumb img"),
