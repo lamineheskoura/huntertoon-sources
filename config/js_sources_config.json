@@ -734,7 +734,7 @@
             },
             "script": {
                 "url": "sources/sparkmanga/source.js",
-                "sha256": "7b50b76d569bf8f9fc30231287f244838bcc60b71effa90ea798821293de48ba",
+                "sha256": "282a162c03a48d97e21b735229ea1fbbcaE23620e043ef715c06626d07fc3e62",
                 "entry": "createSource"
             },
             "capabilities": {

@@ -1,5 +1,5 @@
 function createSource(api, config) {
-  // v1.0.5 — retry fetch with cssAll + regex fallback
+  // v1.0.5 — cssAll + regex chapter extraction, try-catch fallback
   var baseUrl = (config && config.base_url) || "https://sparkmanga.net";
   var selectors = (config && config.selectors) || {};
 
@@ -78,12 +78,6 @@ function createSource(api, config) {
       .replace(/[ \t]+/g, " ")
       .replace(/\n{3,}/g, "\n\n")
       .trim();
-  }
-
-  function delay(ms) {
-    return new Promise(function (resolve) {
-      api.timer(ms, resolve);
-    });
   }
 
   async function toMangaList(html, listSel, opts) {
@@ -241,9 +235,9 @@ function createSource(api, config) {
 
     async getMangaDetails(args) {
       var url = makeAbsolute((args && args.url) || "");
-
-      async function tryFetch() {
+      try {
         var html = await fetchHtml(url);
+
         var title =
           (await api.cssText(html, ".post-title h1")) ||
           (await api.cssAttr(html, "meta[property='og:title']", "content")) ||
@@ -282,15 +276,6 @@ function createSource(api, config) {
           lastFetchedPage: 1,
           contentType: contentType
         };
-      }
-
-      try {
-        var result = await tryFetch();
-        if (result.chapters.length === 0) {
-          await delay(1000);
-          result = await tryFetch();
-        }
-        return result;
       } catch (e) {
         return {
           title: "بدون عنوان",
