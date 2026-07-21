@@ -1,5 +1,5 @@
 {
-    "version": "1.9.5",
+    "version": "1.9.6",
     "schema_version": 3,
     "runtime_api_version": "1.0",
     "manifest_version": "2026.07.04-dev.1",
@@ -718,7 +718,7 @@
         "sparkmanga": {
             "id": "sparkmanga",
             "name": "Spark Manga",
-            "version": "1.0.2",
+            "version": "1.0.3",
             "enabled": true,
             "status": "beta",
             "base_url": "https://sparkmanga.net",
@@ -734,7 +734,7 @@
             },
             "script": {
                 "url": "sources/sparkmanga/source.js",
-                "sha256": "8d8e459b732faa14b649d5fb342580faa7335506339254158da52d790aa04215",
+                "sha256": "d617d7d194841327e2521235020c77e5d0684160f09fccc42912403b63ee9346",
                 "entry": "createSource"
             },
             "capabilities": {

@@ -104,27 +104,30 @@ function createSource(api, config) {
   }
 
   async function extractChapters(html) {
-    var nodes = await api.cssAll(html, ".wp-manga-chapter, li.wp-manga-chapter");
+    var listSel = sel("chapter_list", ".wp-manga-chapter, li.wp-manga-chapter");
+    var dateSel = sel("chapter_date", ".chapter-release-date i, .chapter-release-date");
+    var lockSel = sel("chapter_locked", ".premium-chapter, .c-premium, .fa-lock, .premium-block");
+    var items = await api.cssMap(html, listSel, {
+      title: { selector: "a", type: "text" },
+      href: { selector: "a", type: "attr", attr: "href" },
+      date: { selector: dateSel, type: "text" },
+      locked: { selector: lockSel, type: "html" }
+    });
     var chapters = [];
     var seen = {};
-    for (var i = 0; i < nodes.length; i++) {
-      var n = nodes[i] || {};
-      var h = n.html || "";
-      var href = (await api.cssAttr(h, "a", "href")) || (n.attrs && n.attrs.href) || "";
-      var chapterUrl = makeAbsolute(href);
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var chapterUrl = makeAbsolute(item.href || "");
       if (!chapterUrl || seen[chapterUrl]) continue;
       seen[chapterUrl] = true;
-      var title = (await api.cssText(h, "a")) || n.text || "";
-      title = title.trim();
-      var date = (await api.cssText(h, ".chapter-release-date i, .chapter-release-date")) || "";
-      var isLocked = !!(await api.cssHtml(h, ".premium-chapter, .c-premium, .fa-lock, .premium-block"));
+      var title = (item.title || "").trim();
       chapters.push({
         number: extractNumber(chapterUrl, title),
         title: title,
         views: 0,
         url: chapterUrl,
-        isLocked: isLocked,
-        date: date.trim()
+        isLocked: !!(item.locked && item.locked.trim()),
+        date: (item.date || "").trim()
       });
     }
     return chapters;
