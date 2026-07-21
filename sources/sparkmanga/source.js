@@ -103,31 +103,26 @@ function createSource(api, config) {
     return results;
   }
 
-  async function extractChapters(html) {
-    var listSel = sel("chapter_list", ".wp-manga-chapter, li.wp-manga-chapter");
-    var dateSel = sel("chapter_date", ".chapter-release-date i, .chapter-release-date");
-    var lockSel = sel("chapter_locked", ".premium-chapter, .c-premium, .fa-lock, .premium-block");
-    var items = await api.cssMap(html, listSel, {
-      title: { selector: "a", type: "text" },
-      href: { selector: "a", type: "attr", attr: "href" },
-      date: { selector: dateSel, type: "text" },
-      locked: { selector: lockSel, type: "html" }
-    });
+  async function extractChapters(pageHtml) {
     var chapters = [];
     var seen = {};
-    for (var i = 0; i < items.length; i++) {
-      var item = items[i];
-      var chapterUrl = makeAbsolute(item.href || "");
+    var regex = /<li[^>]*class=["'][^"']*wp-manga-chapter[^"']*["'][^>]*>[\s\S]*?<a\s+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>[\s\S]*?<\/li>/gi;
+    var match;
+    while ((match = regex.exec(pageHtml)) !== null) {
+      var chapterUrl = makeAbsolute(match[1].trim());
       if (!chapterUrl || seen[chapterUrl]) continue;
       seen[chapterUrl] = true;
-      var title = (item.title || "").trim();
+      var title = match[2].trim();
+      var dateMatch = pageHtml.substring(match.index).match(/<span[^>]*class=["'][^"']*chapter-release-date[^"']*["'][^>]*>[\s\S]*?<\/span>/i);
+      var date = dateMatch ? strip(dateMatch[0]) : "";
+      var isLocked = /premium-chapter|fa-lock|premium-block/i.test(match[0]);
       chapters.push({
         number: extractNumber(chapterUrl, title),
         title: title,
         views: 0,
         url: chapterUrl,
-        isLocked: !!(item.locked && item.locked.trim()),
-        date: (item.date || "").trim()
+        isLocked: isLocked,
+        date: date
       });
     }
     return chapters;
