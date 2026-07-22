@@ -3,8 +3,8 @@
     "schema_version": 3,
     "runtime_api_version": "1.0",
     "manifest_version": "2026.07.04-dev.1",
-    "generated_at": "2026-07-22T15:00:00Z",
-    "last_updated": "2026-07-22T15:00:00Z",
+    "generated_at": "2026-07-22T16:00:00Z",
+    "last_updated": "2026-07-22T16:00:00Z",
     "min_app_version": "1.4.0",
     "repository": {
         "owner": "lamineheskoura",
@@ -810,7 +810,7 @@
         "manhasama": {
             "id": "manhasama",
             "name": "منهى السماء (Manha Alsamaa)",
-            "version": "1.0.1",
+            "version": "1.0.2",
             "enabled": true,
             "status": "beta",
             "base_url": "https://realmnovel.com",
@@ -850,7 +850,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Manha Alsamaa - Arabic manga/novel source using realmnovel.com API with guest auth",
-                "changelog": "v1.0.1: Fix covers (use cdn.realmnovel.com), fix chapter count (limit=200), add overlay support via bubbles API"
+                "changelog": "v1.0.2: Force source re-fetch for CDN cover fix"
             }
         },
         "kawaii": {
@@ -1296,6 +1296,49 @@
                 "author": "HunterToon Team",
                 "description": "Asura Scans English manga/manhwa source (Astro.js SSR). Homepage at /; browse at /browse?page=N; detail at /comics/{slug}; reader at /comics/{slug}/chapter/{num}; images on cdn.asurascans.com. Supports locked chapter detection.",
                 "changelog": "Fix parseCards: add fallback .series-card selector for browse/search page (was using only homepage grid selector); browse/search now shows correct manga list"
+            }
+        },
+        "realmnovel": {
+            "id": "realmnovel",
+            "name": "عالم الروايات (RealmNovel)",
+            "version": "1.0.0",
+            "enabled": true,
+            "status": "beta",
+            "base_url": "https://www.realmnovel.com",
+            "website_url": "https://www.realmnovel.com",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=realmnovel.com",
+            "requires_cf": false,
+            "image_referer": "https://www.realmnovel.com/",
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8"
+            },
+            "script": {
+                "url": "sources/realmnovel/source.js",
+                "sha256": "39986a08b81190799d7ce23d882905b13b77e9deaa8d82b34de96a56ab7a8158",
+                "entry": "createSource"
+            },
+            "capabilities": {
+                "content_types": [
+                    "novel"
+                ],
+                "supports_search": true,
+                "supports_filters": true,
+                "supports_lazy_chapters": false,
+                "supports_download": true,
+                "requires_cloudflare": false
+            },
+            "compatibility": {
+                "min_app_version": "1.4.0",
+                "runtime_api_version": "1.0"
+            },
+            "metadata": {
+                "language": "ar",
+                "adult": false,
+                "author": "HunterToon Team",
+                "description": "RealmNovel (عالم الروايات) Arabic novel source. Homepage at /?page=N; detail at /novel/{id}; reader at /novel/{id}/chapter/{num}; text-based novel content.",
+                "changelog": "Initial release: HTML scraping of realmnovel.com"
             }
         }
     }
