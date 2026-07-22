@@ -132,24 +132,12 @@ function createSource(api, config) {
       var genres = novel.tags || [];
       var status = novel.status || "مستمرة";
 
-      var chapters = [];
-      var chPage = 1;
-      var chLimit = 100;
-      var hasMore = true;
-      var maxPages = 100;
-      while (hasMore && chPage <= maxPages) {
-        var chData = await apiGet("/novels/" + novelId + "/chapters?limit=" + chLimit + "&page=" + chPage);
-        var chItems = chData.data || [];
-        chapters = chapters.concat(chItems.map(function(c) {
-          return chapterToItem(c, novelId);
-        }));
-        var pag = chData.pagination || {};
-        if (pag.hasNextPage) {
-          chPage++;
-        } else {
-          hasMore = false;
-        }
-      }
+      var chData = await apiGet("/novels/" + novelId + "/chapters?limit=100&page=1");
+      var chItems = chData.data || [];
+      var pag = chData.pagination || {};
+      var chapters = chItems.map(function(c) {
+        return chapterToItem(c, novelId);
+      });
 
       return {
         title: title,
@@ -159,7 +147,7 @@ function createSource(api, config) {
         status: status,
         chapters: chapters,
         originalUrl: rawUrl || (baseUrl + "/novels/" + novelId),
-        hasMoreChapters: false,
+        hasMoreChapters: pag.hasNextPage === true,
         lastFetchedPage: 1,
         contentType: "novel"
       };
@@ -192,8 +180,33 @@ function createSource(api, config) {
       };
     },
 
-    async fetchMoreChapters() {
-      return null;
+    async fetchMoreChapters(args) {
+      try {
+        var prev = (args && args.previousResult) || {};
+        var rawUrl = prev.originalUrl || "";
+        var novelId = "";
+        var m = rawUrl.match(/\/novels\/([a-f0-9]+)/);
+        if (m) novelId = m[1];
+        if (!novelId) return null;
+
+        var nextPage = (prev.lastFetchedPage || 1) + 1;
+        var chData = await apiGet("/novels/" + novelId + "/chapters?limit=100&page=" + nextPage);
+        var chItems = chData.data || [];
+        var pag = chData.pagination || {};
+        var chapters = chItems.map(function(c) {
+          return chapterToItem(c, novelId);
+        });
+
+        if (chapters.length === 0) return null;
+
+        return {
+          chapters: chapters,
+          hasMoreChapters: pag.hasNextPage === true,
+          lastFetchedPage: nextPage
+        };
+      } catch (e) {
+        return null;
+      }
     },
 
     getImageHeaders(args) {

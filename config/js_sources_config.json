@@ -1301,7 +1301,7 @@
         "realmnovel": {
             "id": "realmnovel",
             "name": "عالم الروايات (RealmNovel)",
-            "version": "2.0.1",
+            "version": "2.0.2",
             "enabled": true,
             "status": "stable",
             "base_url": "http://62.171.141.197:5007",
@@ -1316,7 +1316,7 @@
             },
             "script": {
                 "url": "sources/realmnovel/source.js",
-                "sha256": "743689eb3c0686665562a6a72a73175f810928e279315ebfa632b007536c2979",
+                "sha256": "5f37b9c1fc74ef97b025bcafa5698c5eec4fedf29507fdfd6fe8e08f644bc793",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1338,7 +1338,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "RealmNovel (عالم الروايات) Arabic novel source using the Novels Sky mobile app REST API for list, search, detail, chapters, and chapter text content.",
-                "changelog": "v2.0.1: Fix cover images (use realmnovel.com/img/novel/{id}.jpg) and fetch all chapters via pagination (100 per page)."
+                "changelog": "v2.0.2: Fix cover images (use realmnovel.com/img/novel/{id}.jpg), chapter lazy pagination via fetchMoreChapters."
             }
         }
     }
