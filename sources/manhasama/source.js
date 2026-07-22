@@ -19,6 +19,12 @@ function createSource(api, config) {
     return baseUrl + url;
   }
 
+  function makeCdnUrl(url) {
+    if (!url) return "";
+    if (url.indexOf("http") === 0) return url;
+    return "https://cdn.realmnovel.com" + url;
+  }
+
   function extractNumber(str) {
     var m = String(str || "").match(/(\d+(?:\.\d+)?)/);
     return m ? m[1] : "0";
@@ -59,7 +65,7 @@ function createSource(api, config) {
     return {
       title: item.arabicTitle || item.englishTitle || "",
       detailUrl: baseUrl + "/manga/" + (item.slug || item._id || ""),
-      coverUrl: validImage(cover),
+      coverUrl: makeCdnUrl(cover),
       contentType: "manga"
     };
   }
@@ -128,12 +134,13 @@ function createSource(api, config) {
       if (!manga || !manga._id) throw new Error("Manga not found: " + slug);
 
       var title = manga.arabicTitle || manga.englishTitle || "بدون عنوان";
-      var cover = manga.cover || manga.coverThumb || "";
+      var coverRaw = manga.cover || manga.coverThumb || "";
+      var cover = makeCdnUrl(coverRaw);
       var desc = manga.description || "";
       var genres = (manga.categories || []).map(function (c) { return c.name || ""; }).filter(Boolean);
       var status = manga.status || "ongoing";
 
-      var chData = await apiGet("/manga/" + slug + "/chapters");
+      var chData = await apiGet("/manga/" + slug + "/chapters?limit=200");
       var chItems = chData.items || [];
       var chapters = chItems.map(function (c) {
         return {
@@ -148,7 +155,7 @@ function createSource(api, config) {
 
       return {
         title: title,
-        coverUrl: validImage(cover),
+        coverUrl: cover,
         description: strip(desc),
         genres: genres,
         chapters: chapters,
@@ -161,7 +168,9 @@ function createSource(api, config) {
 
     async getChapterPages(args) {
       var content = await this.getChapterContent(args);
-      return content.kind === "image" ? content.imageUrls : [];
+      if (content.kind === "image") return content.imageUrls || [];
+      if (content.kind === "overlay") return content.imageUrls || [];
+      return [];
     },
 
     async getChapterContent(args) {
@@ -175,11 +184,49 @@ function createSource(api, config) {
         return { kind: "image", imageUrls: [] };
       }
 
-      var urls = (chapter.pages || []).map(function (p) {
+      var pages = chapter.pages || [];
+      var urls = pages.map(function (p) {
         return validImage(p.image || p.url || "");
       }).filter(Boolean);
 
-      return { kind: "image", imageUrls: urls };
+      var hasOverlay = pages.some(function (p) { return p.hasOverlay === true; });
+
+      if (!hasOverlay) {
+        return { kind: "image", imageUrls: urls };
+      }
+
+      var pageOverlays = pages.map(function (p, idx) {
+        var bubbles = p.bubbles || [];
+        var overlays = bubbles.map(function (b) {
+          var box = b.box || [0, 0, 0, 0];
+          return {
+            text: b.text || "",
+            x: box[0] || 0,
+            y: box[1] || 0,
+            w: box[2] || 0,
+            h: box[3] || 0,
+            angle: 0
+          };
+        });
+        return overlays;
+      });
+
+      var naturalImageWidth = 0;
+      var naturalImageHeight = 0;
+      for (var i = 0; i < pages.length; i++) {
+        var pw = Number(pages[i].width) || 0;
+        var ph = Number(pages[i].height) || 0;
+        if (pw > naturalImageWidth) naturalImageWidth = pw;
+        if (ph > naturalImageHeight) naturalImageHeight = ph;
+      }
+
+      return {
+        kind: "overlay",
+        imageUrls: urls,
+        pageOverlays: pageOverlays,
+        naturalImageWidth: naturalImageWidth,
+        naturalImageHeight: naturalImageHeight
+      };
     },
 
     async fetchMoreChapters() { return null; },
@@ -193,7 +240,7 @@ function createSource(api, config) {
     },
 
     sanitizeCoverUrl(args) {
-      return validImage((args && args.url) || "") || ((args && args.url) || "");
+      return makeCdnUrl((args && args.url) || "") || ((args && args.url) || "");
     }
   };
 }

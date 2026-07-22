@@ -810,7 +810,7 @@
         "manhasama": {
             "id": "manhasama",
             "name": "منهى السماء (Manha Alsamaa)",
-            "version": "1.0.0",
+            "version": "1.0.1",
             "enabled": true,
             "status": "beta",
             "base_url": "https://realmnovel.com",
@@ -827,12 +827,13 @@
             },
             "script": {
                 "url": "sources/manhasama/source.js",
-                "sha256": "49e8a1a2d1757f39a5f1367a8f4b9b7bd5cdf119cb4a9471d844c0e8535194d1",
+                "sha256": "251cbe810b128eeebb1e94d6ebd8250656b382c9ab811434f47aa25122acba44",
                 "entry": "createSource"
             },
             "capabilities": {
                 "content_types": [
-                    "manga"
+                    "manga",
+                    "overlay"
                 ],
                 "supports_search": true,
                 "supports_filters": true,
@@ -849,7 +850,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Manha Alsamaa - Arabic manga/novel source using realmnovel.com API with guest auth",
-                "changelog": "Initial release using realmnovel.com REST API"
+                "changelog": "v1.0.1: Fix covers (use cdn.realmnovel.com), fix chapter count (limit=200), add overlay support via bubbles API"
             }
         },
         "kawaii": {
