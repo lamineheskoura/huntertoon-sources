@@ -1316,7 +1316,7 @@
             },
             "script": {
                 "url": "sources/realmnovel/source.js",
-                "sha256": "ca529840b8bab9150d723fc431df438181bf5f4219f795cd1fb2ffdfe005fc33",
+                "sha256": "743689eb3c0686665562a6a72a73175f810928e279315ebfa632b007536c2979",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1338,7 +1338,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "RealmNovel (عالم الروايات) Arabic novel source using the Novels Sky mobile app REST API for list, search, detail, chapters, and chapter text content.",
-                "changelog": "v2.0.0: Rewrite to use Novels Sky API (http://62.171.141.197:5007) with x-app-version: 10.0.0 bypass. Eliminates login requirement for chapter content."
+                "changelog": "v2.0.1: Fix cover images (use realmnovel.com/img/novel/{id}.jpg) and fetch all chapters via pagination (100 per page)."
             }
         }
     }

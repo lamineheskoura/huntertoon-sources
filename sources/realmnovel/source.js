@@ -10,6 +10,10 @@ function createSource(api, config) {
 
   var pageLimit = 20;
 
+  function coverUrl(novelId) {
+    return "https://realmnovel.com/img/novel/" + novelId + ".jpg";
+  }
+
   function abs(url) {
     if (!url) return "";
     url = String(url).trim();
@@ -17,17 +21,6 @@ function createSource(api, config) {
     if (url.indexOf("//") === 0) return "https:" + url;
     if (url.charAt(0) === "/") return baseUrl + url;
     return baseUrl + "/" + url;
-  }
-
-  function cleanCover(cover) {
-    if (!cover) return "";
-    if (cover.indexOf("data:image") === 0) {
-      var parts = cover.split(",");
-      if (parts.length > 1) {
-        return "data:image/webp;base64," + parts[1];
-      }
-    }
-    return cover;
   }
 
   function strip(s) {
@@ -50,7 +43,7 @@ function createSource(api, config) {
   function novelToItem(novel) {
     return {
       title: novel.title || novel.titleEn || "",
-      coverUrl: cleanCover(novel.coverImage),
+      coverUrl: coverUrl(novel._id),
       detailUrl: baseUrl + "/novels/" + novel._id,
       contentType: "novel"
     };
@@ -134,16 +127,29 @@ function createSource(api, config) {
       if (!novel || !novel._id) throw new Error("Novel not found: " + novelId);
 
       var title = novel.title || novel.titleEn || "بدون عنوان";
-      var cover = cleanCover(novel.coverImage);
+      var cover = coverUrl(novelId);
       var desc = novel.description || "";
       var genres = novel.tags || [];
       var status = novel.status || "مستمرة";
 
-      var chData = await apiGet("/novels/" + novelId + "/chapters?limit=200");
-      var chItems = chData.data || [];
-      var chapters = chItems.map(function(c) {
-        return chapterToItem(c, novelId);
-      });
+      var chapters = [];
+      var chPage = 1;
+      var chLimit = 100;
+      var hasMore = true;
+      var maxPages = 100;
+      while (hasMore && chPage <= maxPages) {
+        var chData = await apiGet("/novels/" + novelId + "/chapters?limit=" + chLimit + "&page=" + chPage);
+        var chItems = chData.data || [];
+        chapters = chapters.concat(chItems.map(function(c) {
+          return chapterToItem(c, novelId);
+        }));
+        var pag = chData.pagination || {};
+        if (pag.hasNextPage) {
+          chPage++;
+        } else {
+          hasMore = false;
+        }
+      }
 
       return {
         title: title,
@@ -199,7 +205,10 @@ function createSource(api, config) {
     },
 
     sanitizeCoverUrl(args) {
-      return cleanCover((args && args.url) || "");
+      var url = (args && args.url) || "";
+      var m = url.match(/\/novels\/([a-f0-9]+)/);
+      if (m) return coverUrl(m[1]);
+      return url;
     }
   };
 }
