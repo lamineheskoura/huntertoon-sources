@@ -1,0 +1,201 @@
+function createSource(api, config) {
+  var baseUrl = (config && config.base_url) || "https://realmnovel.com";
+  var apiUrl = baseUrl + "/api";
+  var userAgent = (config && config.user_agent) || "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
+
+  var defaultHeaders = {
+    "User-Agent": userAgent,
+    "Accept": "application/json",
+    "Authorization": "Bearer guest"
+  };
+
+  var defaultGenres = [];
+  var defaultTypes = ["manga", "manhwa", "manhua"];
+
+  function makeAbsolute(url) {
+    if (!url) return "";
+    if (url.indexOf("http") === 0) return url;
+    if (url.indexOf("//") === 0) return "https:" + url;
+    return baseUrl + url;
+  }
+
+  function extractNumber(str) {
+    var m = String(str || "").match(/(\d+(?:\.\d+)?)/);
+    return m ? m[1] : "0";
+  }
+
+  function validImage(src) {
+    src = makeAbsolute(src);
+    if (!src || src.indexOf("data:image") === 0) return "";
+    return src;
+  }
+
+  function strip(s) {
+    return String(s || "")
+      .replace(/<br\s*\/?\s*>/gi, "\n")
+      .replace(/<\/p>/gi, "\n\n")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&quot;/g, "\"")
+      .replace(/&#39;/g, "'")
+      .replace(/[ \t]+/g, " ")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  }
+
+  async function apiGet(path) {
+    var url = apiUrl + path;
+    var res = await api.http(url, {
+      method: "GET",
+      headers: defaultHeaders
+    });
+    if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : 0) + " for " + url);
+    return JSON.parse(res.body || "{}");
+  }
+
+  function toManga(item) {
+    var cover = item.cover || item.coverThumb || "";
+    return {
+      title: item.arabicTitle || item.englishTitle || "",
+      detailUrl: baseUrl + "/manga/" + (item.slug || item._id || ""),
+      coverUrl: validImage(cover),
+      contentType: "manga"
+    };
+  }
+
+  return {
+    requiresCloudflare: false,
+
+    async getHomepageManga(args) {
+      try {
+        var page = (args && args.page) || 1;
+        var data = await apiGet("/manga?page=" + page + "&limit=20");
+        var items = data.items || [];
+        return items.map(toManga);
+      } catch (e) {
+        return [];
+      }
+    },
+
+    async search(args) {
+      try {
+        var query = (args && args.query) || "";
+        if (!query.trim()) return [];
+        var data = await apiGet("/manga?search=" + encodeURIComponent(query) + "&limit=20");
+        var items = data.items || [];
+        return items.map(toManga);
+      } catch (e) {
+        return [];
+      }
+    },
+
+    async getFilteredManga(args) {
+      try {
+        var page = (args && args.page) || 1;
+        var params = ["page=" + page, "limit=20"];
+        if (args && args.genre) {
+          params.push("cat=" + encodeURIComponent(args.genre));
+        }
+        if (args && args.status) {
+          params.push("status=" + encodeURIComponent(args.status));
+        }
+        var data = await apiGet("/manga?" + params.join("&"));
+        var items = data.items || [];
+        return items.map(toManga);
+      } catch (e) {
+        return [];
+      }
+    },
+
+    async getGenresAndTypes() {
+      try {
+        var data = await apiGet("/categories");
+        var items = data.items || [];
+        defaultGenres = items.map(function (c) { return c.name || ""; }).filter(Boolean);
+      } catch (e) {}
+      return { genres: defaultGenres, types: defaultTypes };
+    },
+
+    async getMangaDetails(args) {
+      var slug = "";
+      var rawUrl = (args && args.url) || "";
+      var m = rawUrl.match(/\/manga\/([^/?#]+)/);
+      if (m) slug = m[1];
+
+      var data = await apiGet("/manga/" + slug);
+      var manga = data.manga || data;
+      if (!manga || !manga._id) throw new Error("Manga not found: " + slug);
+
+      var title = manga.arabicTitle || manga.englishTitle || "بدون عنوان";
+      var cover = manga.cover || manga.coverThumb || "";
+      var desc = manga.description || "";
+      var genres = (manga.categories || []).map(function (c) { return c.name || ""; }).filter(Boolean);
+      var status = manga.status || "ongoing";
+
+      var chData = await apiGet("/manga/" + slug + "/chapters");
+      var chItems = chData.items || [];
+      var chapters = chItems.map(function (c) {
+        return {
+          number: extractNumber(c.number),
+          title: c.title || c.number || "",
+          views: 0,
+          url: baseUrl + "/chapters/" + c._id,
+          isLocked: false,
+          date: (c.createdAt || "").split("T")[0]
+        };
+      });
+
+      return {
+        title: title,
+        coverUrl: validImage(cover),
+        description: strip(desc),
+        genres: genres,
+        chapters: chapters,
+        originalUrl: rawUrl || (baseUrl + "/manga/" + slug),
+        hasMoreChapters: false,
+        lastFetchedPage: 1,
+        contentType: "manga"
+      };
+    },
+
+    async getChapterPages(args) {
+      var content = await this.getChapterContent(args);
+      return content.kind === "image" ? content.imageUrls : [];
+    },
+
+    async getChapterContent(args) {
+      var rawUrl = (args && args.url) || "";
+      var m = rawUrl.match(/\/chapters\/([^/?#]+)/);
+      var chapterId = m ? m[1] : "";
+
+      var data = await apiGet("/chapters/" + chapterId);
+      var chapter = data.chapter || data;
+      if (!chapter || !chapter.pages) {
+        return { kind: "image", imageUrls: [] };
+      }
+
+      var urls = (chapter.pages || []).map(function (p) {
+        return validImage(p.image || p.url || "");
+      }).filter(Boolean);
+
+      return { kind: "image", imageUrls: urls };
+    },
+
+    async fetchMoreChapters() { return null; },
+
+    getImageHeaders(args) {
+      return {
+        "User-Agent": userAgent,
+        Referer: baseUrl + "/",
+        Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+      };
+    },
+
+    sanitizeCoverUrl(args) {
+      return validImage((args && args.url) || "") || ((args && args.url) || "");
+    }
+  };
+}
+
+if (typeof module !== "undefined") module.exports = { createSource: createSource };
