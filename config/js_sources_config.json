@@ -1301,7 +1301,7 @@
         "realmnovel": {
             "id": "realmnovel",
             "name": "عالم الروايات (RealmNovel)",
-            "version": "2.0.0",
+            "version": "2.0.1",
             "enabled": true,
             "status": "stable",
             "base_url": "http://62.171.141.197:5007",
