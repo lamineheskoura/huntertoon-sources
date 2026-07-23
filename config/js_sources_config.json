@@ -1298,6 +1298,53 @@
                 "changelog": "Fix parseCards: add fallback .series-card selector for browse/search page (was using only homepage grid selector); browse/search now shows correct manga list"
             }
         },
+        "stellarsaber": {
+            "id": "stellarsaber",
+            "name": "ستيلار سابير (Stellar Saber)",
+            "version": "1.0.0",
+            "enabled": true,
+            "status": "beta",
+            "base_url": "https://stellarsaber.pro",
+            "website_url": "https://stellarsaber.pro",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=stellarsaber.pro",
+            "requires_cf": true,
+            "image_referer": "https://stellarsaber.pro/",
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+                "Referer": "https://stellarsaber.pro/"
+            },
+            "script": {
+                "url": "sources/stellarsaber/source.js",
+                "sha256": "b15cfad7f608991a7e3a5dc6ce0b07a61be40f933d834b04aa4afe06cacf69a4",
+                "entry": "createSource"
+            },
+            "capabilities": {
+                "content_types": [
+                    "manga",
+                    "manhua",
+                    "anime",
+                    "novel"
+                ],
+                "supports_search": true,
+                "supports_filters": true,
+                "supports_lazy_chapters": false,
+                "supports_download": true,
+                "requires_cloudflare": true
+            },
+            "compatibility": {
+                "min_app_version": "1.4.0",
+                "runtime_api_version": "1.0"
+            },
+            "metadata": {
+                "language": "ar",
+                "adult": false,
+                "author": "HunterToon Team",
+                "description": "Stellar Saber (ستيلار سابير) - Arabic manga/manhwa/anime/novel WordPress source. Homepage at /manga/ and /manga/page/N/; search via ?s=; detail at /manga/{slug}/; reader extracts data-cdn-url from chapter page; images on cdn-stellarsaber.com.",
+                "changelog": "v1.0.0: Initial release - HTML scraping-based source supporting manga listing, search, detail, chapter images, and genre/type/status filtering."
+            }
+        },
         "realmnovel": {
             "id": "realmnovel",
             "name": "عالم الروايات (RealmNovel)",
