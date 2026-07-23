@@ -1,10 +1,10 @@
 {
-    "version": "1.9.8",
+    "version": "1.9.9",
     "schema_version": 3,
     "runtime_api_version": "1.0",
     "manifest_version": "2026.07.04-dev.1",
-    "generated_at": "2026-07-22T16:00:00Z",
-    "last_updated": "2026-07-22T16:00:00Z",
+    "generated_at": "2026-07-24T00:00:00Z",
+    "last_updated": "2026-07-24T00:00:00Z",
     "min_app_version": "1.4.0",
     "repository": {
         "owner": "lamineheskoura",
