@@ -1317,7 +1317,7 @@
             },
             "script": {
                 "url": "sources/stellarsaber/source.js",
-                "sha256": "b15cfad7f608991a7e3a5dc6ce0b07a61be40f933d834b04aa4afe06cacf69a4",
+                "sha256": "0186711c2f54437143198803fb584fcfd688367f36f9c48afb23b05987fc40eb",
                 "entry": "createSource"
             },
             "capabilities": {

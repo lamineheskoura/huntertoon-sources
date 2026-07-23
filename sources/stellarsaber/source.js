@@ -5,7 +5,6 @@ function createSource(api, config) {
     configHeaders["User-Agent"] ||
     "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
   var lastChapterUrl = baseUrl + "/";
-  var cdnBase = "https://cdn-stellarsaber.com";
 
   var typeBadgeMap = {
     "\u0645\u0627\u0646\u062C\u0627": "manga",
@@ -24,34 +23,16 @@ function createSource(api, config) {
   ];
 
   var genreSlugMap = {
-    "action": "action",
-    "thriller": "thriller",
-    "isekai": "isekai",
-    "historical": "historical",
-    "josei": "josei",
-    "harem": "harem",
-    "school life": "school-life",
-    "supernatural": "supernatural",
-    "sci-fi": "sci-fi",
-    "drama": "drama",
-    "horror": "horror",
-    "romance": "romance",
-    "sports": "sports",
-    "seinen": "seinen",
-    "slice of life": "slice-of-life",
-    "shoujo": "shoujo",
-    "shounen": "shounen",
-    "mystery": "mystery",
-    "fantasy": "fantasy",
-    "martial arts": "martial-arts",
-    "comedy": "comedy",
-    "adult": "adult",
-    "tragedy": "tragedy",
-    "manhua": "manhua",
-    "adventure": "adventure",
-    "mecha": "mecha",
-    "mature": "mature",
-    "psychological": "psychological"
+    "action": "action", "thriller": "thriller", "isekai": "isekai",
+    "historical": "historical", "josei": "josei", "harem": "harem",
+    "school life": "school-life", "supernatural": "supernatural",
+    "sci-fi": "sci-fi", "drama": "drama", "horror": "horror",
+    "romance": "romance", "sports": "sports", "seinen": "seinen",
+    "slice of life": "slice-of-life", "shoujo": "shoujo", "shounen": "shounen",
+    "mystery": "mystery", "fantasy": "fantasy", "martial arts": "martial-arts",
+    "comedy": "comedy", "adult": "adult", "tragedy": "tragedy",
+    "manhua": "manhua", "adventure": "adventure", "mecha": "mecha",
+    "mature": "mature", "psychological": "psychological"
   };
 
   var defaultTypes = ["manga", "manhua", "anime", "novel", "movie"];
@@ -115,6 +96,14 @@ function createSource(api, config) {
     return "0";
   }
 
+  var statusMap = {
+    "\u0645\u0633\u062A\u0645\u0631\u0629": "ongoing",
+    "\u0645\u0643\u062A\u0645\u0644\u0629": "completed",
+    "\u0645\u062A\u0648\u0642\u0641\u0629": "hiatus",
+    "\u0642\u0627\u062F\u0645\u0629": "upcoming",
+    "\u0645\u0644\u063A\u0627\u0629": "cancelled"
+  };
+
   async function parseCards(html) {
     var items = await api.cssAll(html, "a.card");
     var out = [];
@@ -154,35 +143,36 @@ function createSource(api, config) {
   }
 
   async function extractChapters(html) {
-    var items = await api.cssAll(html, "a[href*='/chapter/']");
+    var items = await api.cssAll(html, "a.chapter-item");
     var chapters = [];
     var seen = {};
     for (var i = 0; i < items.length; i++) {
-      var it = items[i] || {};
-      var attrs = it.attrs || {};
+      var item = items[i] || {};
+      var attrs = item.attrs || {};
+      var inner = item.html || "";
       var href = attrs.href || "";
       if (!href) continue;
       var chapterUrl = makeAbsolute(href);
       if (!chapterUrl || seen[chapterUrl]) continue;
       seen[chapterUrl] = true;
 
-      var chNum = extractChapterNumber(chapterUrl);
-      var ine = it.html || "";
+      var numText = await api.cssText(inner, ".chapter-item__number") || "";
+      var chNum = numText.replace(/\u0627\u0644\u0641\u0635\u0644\s*/i, "").trim();
+      if (!chNum) chNum = extractChapterNumber(chapterUrl);
 
-      var titleMatch = ine.match(/\u0627\u0644\u0641\u0635\u0644\s+\d+[\s:]*([^<]*)/);
-      var title = titleMatch ? cleanTitle(titleMatch[1]) : "";
+      var titleText = await api.cssText(inner, ".chapter-item__title") || "";
+      var title = titleText.replace(/^\u0627\u0644\u0641\u0635\u0644\s+\d+[\s:]*/, "").trim();
+      if (!title) title = titleText;
 
-      var dateStr = "";
-      var dateRes = ine.match(/\u0645\u0646\u0630\s+(.+?)(?:<|$)/);
-      if (dateRes) dateStr = cleanTitle(dateRes[1]);
+      var dateStr = await api.cssText(inner, ".chapter-item__date") || "";
 
       chapters.push({
         number: chNum,
-        title: title,
+        title: cleanTitle(title),
         url: chapterUrl,
         views: 0,
         isLocked: false,
-        date: dateStr
+        date: cleanTitle(dateStr)
       });
     }
     chapters.sort(function(a, b) {
@@ -203,6 +193,34 @@ function createSource(api, config) {
       urls.push(dataCdnUrl);
     }
     return urls;
+  }
+
+  async function extractStatus(html) {
+    try {
+      var jsonLd = await api.cssText(html, "script[type='application/ld+json']");
+      if (jsonLd) {
+        var m = jsonLd.match(/"creativeWorkStatus"\s*:\s*"([^"]+)"/);
+        if (m && m[1]) {
+          var ar = m[1].trim();
+          return statusMap[ar] || ar;
+        }
+      }
+    } catch (e) {}
+
+    try {
+      var labels = await api.cssAll(html, ".detail-meta__label");
+      var values = await api.cssAll(html, ".detail-meta__value");
+      if (labels && labels.length && values && values.length) {
+        for (var li = 0; li < labels.length && li < values.length; li++) {
+          var lbl = cleanTitle(labels[li].text || "");
+          if (lbl.indexOf("\u0627\u0644\u062D\u0627\u0644\u0629") !== -1) {
+            var val = cleanTitle(values[li].text || "");
+            return statusMap[val] || val;
+          }
+        }
+      }
+    } catch (e) {}
+    return "";
   }
 
   return {
@@ -235,63 +253,52 @@ function createSource(api, config) {
     },
 
     async getMangaDetails(args) {
-      var url = makeAbsolute((args && args.url) || "");
-      var html = await fetchHtml(url);
+      try {
+        var url = makeAbsolute((args && args.url) || "");
+        var html = await fetchHtml(url);
 
-      var title = await api.cssText(html, "h1") || "";
-      if (!title) title = await api.cssAttr(html, "meta[property='og:title']", "content") || "";
-      title = cleanTitle(title);
+        var title = await api.cssText(html, "h1") || "";
+        if (!title) title = await api.cssAttr(html, "meta[property='og:title']", "content") || "";
+        title = cleanTitle(title);
 
-      var cover = await api.cssAttr(html, "meta[property='og:image']", "content");
-      if (!cover) cover = await api.cssAttr(html, "img[src*='/content/cover-']", "src");
-      cover = cover ? makeAbsolute(cover) : "";
+        var cover = await api.cssAttr(html, "meta[property='og:image']", "content");
+        cover = cover ? makeAbsolute(cover) : "";
 
-      var description = "";
-      var descEl = await api.cssAll(html, "p:not(:has(*))");
-      for (var i = 0; i < descEl.length; i++) {
-        var text = cleanTitle(descEl[i].text || "");
-        if (text.length > 100) { description = text; break; }
+        var description = await api.cssAttr(html, "meta[name='description']", "content") || "";
+        description = cleanTitle(description);
+
+        var genres = await api.cssList(html, "a[href*='/genre/']") || [];
+        genres = genres.map(cleanTitle).filter(Boolean);
+
+        var statusText = await extractStatus(html);
+        var chapters = await extractChapters(html);
+
+        return {
+          title: title || "Unknown",
+          coverUrl: cover,
+          description: description,
+          genres: genres,
+          status: statusText,
+          chapters: chapters,
+          originalUrl: url,
+          hasMoreChapters: false,
+          lastFetchedPage: 1,
+          contentType: "manga"
+        };
+      } catch (e) {
+        return {
+          title: "Error",
+          coverUrl: "",
+          description: "",
+          genres: [],
+          status: "",
+          chapters: [],
+          originalUrl: (args && args.url) || "",
+          hasMoreChapters: false,
+          lastFetchedPage: 1,
+          contentType: "manga"
+        };
       }
-      if (!description) description = await api.cssAttr(html, "meta[name='description']", "content") || "";
-      description = cleanTitle(description);
-
-      var genres = await api.cssList(html, "a[href*='/genre/']") || [];
-      genres = genres.map(cleanTitle).filter(Boolean);
-
-      var statusText = "";
-      var statusEl = await api.cssAll(html, "*:contains('\u0627\u0644\u062D\u0627\u0644\u0629')");
-      for (var si = 0; si < statusEl.length; si++) {
-        var nextText = statusEl[si].text || "";
-        var lines = nextText.split("\n");
-        for (var li = 0; li < lines.length; li++) {
-          var line = cleanTitle(lines[li]);
-          if (line.indexOf("\u0645\u0633\u062A\u0645\u0631\u0629") !== -1) { statusText = "ongoing"; break; }
-          if (line.indexOf("\u0645\u0643\u062A\u0645\u0644\u0629") !== -1) { statusText = "completed"; break; }
-          if (line.indexOf("\u0645\u062A\u0648\u0642\u0641\u0629") !== -1) { statusText = "hiatus"; break; }
-          if (line.indexOf("\u0642\u0627\u062F\u0645\u0629") !== -1) { statusText = "upcoming"; break; }
-          if (line.indexOf("\u0645\u0644\u063A\u0627\u0629") !== -1) { statusText = "cancelled"; break; }
-        }
-        if (statusText) break;
-      }
-      if (!statusText) {
-        var statusLink = await api.cssText(html, "a[href*='status=']") || "";
-        statusText = cleanTitle(statusLink);
-      }
-
-      var chapters = await extractChapters(html);
-
-      return {
-        title: title || "Unknown",
-        coverUrl: cover || "",
-        description: description,
-        genres: genres,
-        status: statusText,
-        chapters: chapters,
-        originalUrl: url,
-        hasMoreChapters: false,
-        lastFetchedPage: 1,
-        contentType: "manga"
-      };
     },
 
     async getChapterPages(args) {
@@ -319,12 +326,8 @@ function createSource(api, config) {
           var slug = genreSlugMap[genre] || genre.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
           params.push("genre[0]=" + encodeURIComponent(slug));
         }
-        if (type) {
-          params.push("type=" + encodeURIComponent(type));
-        }
-        if (status) {
-          params.push("status=" + encodeURIComponent(status));
-        }
+        if (type) params.push("type=" + encodeURIComponent(type));
+        if (status) params.push("status=" + encodeURIComponent(status));
 
         var url = baseListing;
         if (params.length > 0) {
