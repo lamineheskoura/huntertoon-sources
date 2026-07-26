@@ -82,7 +82,7 @@
             },
             "script": {
                 "url": "sources/brownmanga/source.js",
-                "sha256": "EB508AC3DE4833F99C0DB9F65989F9243D99144536CBB084342EFF834A77F90A",
+                "sha256": "898D7B3949BFA19622543903440389E6095D9DD353A2455543C2255FA1A03233",
                 "entry": "createSource"
             },
             "capabilities": {
