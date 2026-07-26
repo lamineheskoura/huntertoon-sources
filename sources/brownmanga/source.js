@@ -223,26 +223,70 @@ function createSource(api, config) {
     return cards;
   }
 
-  // Extract chapters from the detail page's RSC payload
-  function parseChapters(rscPayload) {
+  // Extract chapters from the detail page's RSC payload and HTML
+  function parseChapters(rscPayload, html) {
     var sd = parseServerData(rscPayload);
-    var chapters = [];
-    if (sd && sd.manhwa) {
-      // initialChapters might be available
-      var initialChapters = sd.initialChapters || [];
-      for (var i = 0; i < initialChapters.length; i++) {
-        var ch = initialChapters[i];
-        chapters.push({
-          number: String(ch.chapter_number || "0"),
-          title: cleanTitle(ch.title || "Chapter " + (ch.chapter_number || "0")),
-          url: "",
-          views: ch.views || 0,
-          isLocked: !!ch.is_locked,
-          date: ch.created_at || ""
-        });
+    var manhwa = (sd && sd.manhwa) || {};
+    var slug = manhwa.slug || "";
+
+    // Build metadata map from initialChapters (chapter_number → data)
+    var metaMap = {};
+    if (sd && sd.initialChapters) {
+      for (var mi = 0; mi < sd.initialChapters.length; mi++) {
+        var c = sd.initialChapters[mi];
+        metaMap[String(c.chapter_number)] = c;
       }
     }
+
+    // Extract all chapter links from HTML: /series/{slug}/chapter/{number}
+    var chapters = [];
+    var seen = {};
+    var chPattern = new RegExp('href="([^"]*/series/' + slug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/chapter/(\\d+\\.?\\d*))"', 'g');
+    var chMatch;
+    while ((chMatch = chPattern.exec(html)) !== null) {
+      var chUrl = makeAbsolute(chMatch[1]);
+      if (seen[chUrl]) continue;
+      seen[chUrl] = true;
+      var chNum = chMatch[2];
+      var chMeta = metaMap[chNum] || {};
+      chapters.push({
+        number: chNum,
+        title: cleanTitle(chMeta.title || "Chapter " + chNum),
+        url: chUrl,
+        views: chMeta.views || 0,
+        isLocked: !!(chMeta.is_locked),
+        date: chMeta.created_at || ""
+      });
+    }
+
+    // Sort descending by chapter number
+    chapters.sort(function(a, b) {
+      return (parseFloat(b.number) || 0) - (parseFloat(a.number) || 0);
+    });
     return chapters;
+  }
+
+  // Parse chapter pages from the chapter page RSC payload
+  function parseChapterPages(rscPayload) {
+    // Look for "pages":[{...}] array in the payload
+    var marker = '"pages":[';
+    var pIdx = rscPayload.indexOf(marker);
+    if (pIdx === -1) return [];
+    var listStart = pIdx + marker.length - 1;
+    var listStr = extractBalanced(rscPayload, listStart, "[", "]");
+    if (!listStr) return [];
+    try {
+      var pages = JSON.parse(listStr);
+      var urls = [];
+      for (var pi = 0; pi < pages.length; pi++) {
+        if (pages[pi] && pages[pi].image_url) {
+          urls.push(makeAbsolute(pages[pi].image_url));
+        }
+      }
+      return urls;
+    } catch (e) {
+      return [];
+    }
   }
 
   // Try to extract status from detail page serverData
@@ -329,7 +373,7 @@ function createSource(api, config) {
         var statusText = manhwa.status || "";
 
         // Extract chapters from the page if available
-        var chapters = parseChapters(payload);
+        var chapters = parseChapters(payload, html);
 
         return {
           title: title || "Unknown",
@@ -360,11 +404,20 @@ function createSource(api, config) {
     },
 
     async getChapterPages(args) {
-      return [];
+      try {
+        var chapterUrl = makeAbsolute((args && args.url) || "");
+        if (!chapterUrl) return [];
+        var html = await fetchHtml(chapterUrl);
+        var payload = extractRscPayload(html);
+        return parseChapterPages(payload);
+      } catch (e) {
+        return [];
+      }
     },
 
     async getChapterContent(args) {
-      return { kind: "image", imageUrls: [] };
+      var urls = await this.getChapterPages(args);
+      return { kind: "image", imageUrls: urls };
     },
 
     async getFilteredManga(args) {
