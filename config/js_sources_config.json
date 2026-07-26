@@ -66,7 +66,7 @@
         "brownmanga": {
             "id": "brownmanga",
             "name": "Brown Manga",
-            "version": "1.0.0",
+            "version": "2.0.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://brownmanga.site",
@@ -82,7 +82,7 @@
             },
             "script": {
                 "url": "sources/brownmanga/source.js",
-                "sha256": "1B9E94AA8032DCC5164C8C4B666020133F7040D08283D14DC3A3932F4830811E",
+                "sha256": "EB508AC3DE4833F99C0DB9F65989F9243D99144536CBB084342EFF834A77F90A",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -107,7 +107,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Brown Manga - Next.js SSR Arabic manga/manhwa/novel source",
-                "changelog": "Initial JS implementation for brownmanga.site with card/chapter/reader parsing"
+                "changelog": "v2.0.0: Rewrite to Next.js RSC payload extraction — site uses CSR, not SSR"
             }
         },
         "sunovels": {
