@@ -1,10 +1,10 @@
 {
-    "version": "1.9.9",
+    "version": "1.10.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
     "manifest_version": "2026.07.04-dev.1",
-    "generated_at": "2026-07-24T00:00:00Z",
-    "last_updated": "2026-07-24T00:00:00Z",
+    "generated_at": "2026-07-26T00:00:00Z",
+    "last_updated": "2026-07-26T00:00:00Z",
     "min_app_version": "1.4.0",
     "repository": {
         "owner": "lamineheskoura",
@@ -61,6 +61,53 @@
                 "author": "HunterToon Team",
                 "description": "Azora Manga source using the current azorafly.com API and resilient reader HTML parsing",
                 "changelog": "Fix details resilience and reader extraction by parsing raw reader HTML like the built-in source"
+            }
+        },
+        "brownmanga": {
+            "id": "brownmanga",
+            "name": "Brown Manga",
+            "version": "1.0.0",
+            "enabled": true,
+            "status": "beta",
+            "base_url": "https://brownmanga.site",
+            "website_url": "https://brownmanga.site",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=brownmanga.site",
+            "requires_cf": false,
+            "image_referer": "https://brownmanga.site/",
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+                "Referer": "https://brownmanga.site/"
+            },
+            "script": {
+                "url": "sources/brownmanga/source.js",
+                "sha256": "1B9E94AA8032DCC5164C8C4B666020133F7040D08283D14DC3A3932F4830811E",
+                "entry": "createSource"
+            },
+            "capabilities": {
+                "content_types": [
+                    "manga",
+                    "manhwa",
+                    "manhua",
+                    "novel"
+                ],
+                "supports_search": true,
+                "supports_filters": true,
+                "supports_lazy_chapters": false,
+                "supports_download": true,
+                "requires_cloudflare": false
+            },
+            "compatibility": {
+                "min_app_version": "1.4.0",
+                "runtime_api_version": "1.0"
+            },
+            "metadata": {
+                "language": "ar",
+                "adult": false,
+                "author": "HunterToon Team",
+                "description": "Brown Manga - Next.js SSR Arabic manga/manhwa/novel source",
+                "changelog": "Initial JS implementation for brownmanga.site with card/chapter/reader parsing"
             }
         },
         "sunovels": {
