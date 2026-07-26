@@ -5,30 +5,6 @@ function createSource(api, config) {
     configHeaders["User-Agent"] ||
     "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
 
-  var typeMap = {
-    "manhwa": "manhwa",
-    "manhua": "manhua",
-    "manga": "manga",
-    "comics": "comics",
-    "novel": "novel",
-    "مانهوا": "manhwa",
-    "مانها": "manhua",
-    "مانجا": "manga",
-    "كوميكس": "comics",
-    "رواية": "novel"
-  };
-
-  var statusMap = {
-    "ongoing": "ongoing",
-    "completed": "completed",
-    "hiatus": "hiatus",
-    "dropped": "dropped",
-    "مستمر": "ongoing",
-    "مكتمل": "completed",
-    "متوقف": "hiatus",
-    "ملغي": "dropped"
-  };
-
   var defaultGenres = [
     "Action", "Adventure", "Comedy", "Drama", "Fantasy", "Horror",
     "Isekai", "Martial Arts", "Mystery", "Romance", "School Life",
@@ -99,207 +75,182 @@ function createSource(api, config) {
     return baseUrl.replace(/\/+$/, "") + "/" + url;
   }
 
-  function mapStatus(text) {
-    var t = cleanTitle(text).toLowerCase();
-    return statusMap[t] || t;
+  // Extract the RSC payload from Next.js __next_f.push script tags
+  function extractRscPayload(html) {
+    // Find all script tags
+    var startMarker = "self.__next_f.push([";
+    var payloads = [];
+    var idx = 0;
+    while (true) {
+      var si = html.indexOf(startMarker, idx);
+      if (si === -1) break;
+      // Find the actual string content after the array start
+      var arrStart = si + startMarker.length;
+      // Skip the entry number (e.g. "1," or "0,")
+      var comma = html.indexOf(",", arrStart);
+      if (comma === -1) break;
+      var strStart = html.indexOf("\"", comma + 1);
+      if (strStart === -1) break;
+      strStart += 1;
+      // Find the closing quote (account for escape sequences)
+      var strEnd = -1;
+      var escape = false;
+      for (var pi = strStart; pi < html.length; pi++) {
+        var pc = html.charAt(pi);
+        if (escape) { escape = false; continue; }
+        if (pc === "\\") { escape = true; continue; }
+        if (pc === "\"") { strEnd = pi; break; }
+      }
+      if (strEnd === -1) break;
+      var content = html.substring(strStart, strEnd);
+      // Unescape the JSON string
+      content = content.replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+      payloads.push(content);
+      idx = strEnd + 1;
+    }
+    return payloads.join("");
   }
 
-  function mapType(text) {
-    var t = cleanTitle(text).toLowerCase();
-    return typeMap[t] || t;
+  // Find JSON value starting at position in a JSON string, tracking bracket depth
+  function extractJsonValue(str, startPos) {
+    if (startPos >= str.length) return null;
+    var firstChar = str.charAt(startPos);
+    if (firstChar === "{") return extractBalanced(str, startPos, "{", "}");
+    if (firstChar === "[") return extractBalanced(str, startPos, "[", "]");
+    return null;
   }
 
-  // Parse cards from browse, home, or search results
-  // Browse/home use: a.group.block with badge spans
-  // Search uses: simpler a links with img + text
-  async function parseCards(html) {
-    // Try the standard card selector first (browse/home)
-    var items = await api.cssAll(html, "a.group.block");
+  function extractBalanced(str, startPos, openChar, closeChar) {
+    var depth = 0;
+    var inStr = false;
+    var esc = false;
+    var end = -1;
+    for (var i = startPos; i < str.length; i++) {
+      var c = str.charAt(i);
+      if (esc) { esc = false; continue; }
+      if (c === "\\") { esc = true; continue; }
+      if (c === "\"") { inStr = !inStr; continue; }
+      if (!inStr) {
+        if (c === openChar) {
+          depth++;
+          if (depth === 1 && i !== startPos) return null;
+        } else if (c === closeChar) {
+          depth--;
+          if (depth === 0) { end = i + 1; break; }
+        }
+      }
+    }
+    if (end === -1) return null;
+    return str.substring(startPos, end);
+  }
+
+  // Parse manga items from the manhwaList in the RSC payload
+  function parseMangaList(rscPayload) {
+    // Look for "manhwaList":[ array
+    var marker = '"manhwaList":[';
+    var mhIdx = rscPayload.indexOf(marker);
+    if (mhIdx === -1) return [];
+    var listStart = mhIdx + marker.length - 1; // point to [
+    var listStr = extractBalanced(rscPayload, listStart, "[", "]");
+    if (!listStr) return [];
+    try {
+      return JSON.parse(listStr);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // Parse serverData for detail page
+  function parseServerData(rscPayload) {
+    var marker = '"serverData":';
+    var sdIdx = rscPayload.indexOf(marker);
+    if (sdIdx === -1) return null;
+    var valStart = sdIdx + marker.length;
+    var valStr = extractJsonValue(rscPayload, valStart);
+    if (!valStr) return null;
+    try {
+      return JSON.parse(valStr);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Build card objects from manhwaList JSON items
+  function buildCards(manhwaList) {
     var out = [];
     var seen = {};
-
-    for (var i = 0; i < items.length; i++) {
-      var item = items[i] || {};
-      var inner = item.html || "";
-      var attrs = item.attrs || {};
-      var detailUrl = makeAbsolute(attrs.href || "");
-      if (!detailUrl || detailUrl.indexOf("/series/") === -1 && detailUrl.indexOf("/novel/") === -1) continue;
+    for (var i = 0; i < manhwaList.length; i++) {
+      var item = manhwaList[i];
+      if (!item) continue;
+      var slug = item.slug || "";
+      if (!slug) continue;
+      var detailUrl = makeAbsolute("/series/" + slug);
       if (seen[detailUrl]) continue;
       seen[detailUrl] = true;
 
-      var title = "";
-      var titleEl = await api.cssText(inner, "h3");
-      if (titleEl) title = cleanTitle(titleEl);
-      if (!title) {
-        var imgAlt = await api.cssAttr(inner, "img", "alt");
-        if (imgAlt) title = cleanTitle(imgAlt);
-      }
+      var title = cleanTitle(item.title || item.title_ar || "");
       if (!title) continue;
 
-      var cover = await api.cssAttr(inner, "img", "src");
+      var cover = item.cover_url || "";
       if (cover) cover = makeAbsolute(cover);
 
-      // Extract status and type from badge spans
-      var allSpans = await api.cssList(inner, "span");
-      var statusText = "";
-      var typeText = "";
-      for (var si = 0; si < allSpans.length; si++) {
-        var st = cleanTitle(allSpans[si]);
-        if (!st) continue;
-        var stl = st.toLowerCase();
-        if (stl === "ongoing" || stl === "completed" || stl === "hiatus" || stl === "dropped" ||
-            stl === "مستمر" || stl === "مكتمل" || stl === "متوقف" || stl === "ملغي") {
-          statusText = st;
-        } else if (stl === "manhwa" || stl === "manhua" || stl === "manga" || stl === "comics" || stl === "novel" ||
-                   stl === "مانهوا" || stl === "مانها" || stl === "مانجا" || stl === "كوميكس" || stl === "رواية") {
-          typeText = st;
-        }
-      }
+      var contentType = item.type || "manga";
 
-      // Try to get rating from star svg parent
+      var status = item.status || "";
+
       var rating = "";
-      try {
-        var starDiv = await api.cssText(inner, "div.flex.items-center.gap-1");
-        if (starDiv) {
-          var rm = starDiv.match(/(\d+\.?\d*)/);
-          if (rm) rating = rm[1];
-        }
-      } catch (e) {}
+      if (item.average_rating !== null && item.average_rating !== undefined) {
+        rating = String(item.average_rating);
+      }
 
       out.push({
         title: title,
         coverUrl: cover || "",
         detailUrl: detailUrl,
-        contentType: mapType(typeText) || "manga",
-        status: mapStatus(statusText),
+        contentType: contentType,
+        status: status,
         rating: rating
       });
     }
-
-    // If no cards found with standard selector, try search result format
-    if (out.length === 0) {
-      var searchItems = await api.cssAll(html, "a[href*='/series/'], a[href*='/novel/']");
-      for (var si2 = 0; si2 < searchItems.length; si2++) {
-        var sItem = searchItems[si2] || {};
-        var sInner = sItem.html || "";
-        var sAttrs = sItem.attrs || {};
-        var sUrl = makeAbsolute(sAttrs.href || "");
-        if (!sUrl || seen[sUrl]) continue;
-
-        // Filter out nav/footer links
-        if (sUrl.indexOf("/series/") === -1 && sUrl.indexOf("/novel/") === -1) continue;
-        // Skip non-card links (header nav, footer, etc.)
-        if (sUrl === baseUrl + "/series/" || sUrl === baseUrl + "/novel/") continue;
-
-        var sTitle = "";
-        var sImgAlt = await api.cssAttr(sInner, "img", "alt");
-        if (sImgAlt) sTitle = cleanTitle(sImgAlt);
-        if (!sTitle) {
-          var sText = cleanTitle(sInner.replace(/<[^>]+>/g, ""));
-          if (sText && sText.length > 1) sTitle = sText;
-        }
-        if (!sTitle) continue;
-
-        var sCover = await api.cssAttr(sInner, "img", "src");
-        if (sCover) sCover = makeAbsolute(sCover);
-
-        out.push({
-          title: sTitle,
-          coverUrl: sCover || "",
-          detailUrl: sUrl,
-          contentType: "manga",
-          status: "",
-          rating: ""
-        });
-      }
-    }
-
     return out;
   }
 
-  async function extractChapters(html) {
-    var items = await api.cssAll(html, "a[href*='/chapter/']");
+  // Parse cards from browse/home/search pages using RSC payload
+  async function parseCards(html) {
+    var payload = extractRscPayload(html);
+    var list = parseMangaList(payload);
+    var cards = buildCards(list);
+    return cards;
+  }
+
+  // Extract chapters from the detail page's RSC payload
+  function parseChapters(rscPayload) {
+    var sd = parseServerData(rscPayload);
     var chapters = [];
-    var seen = {};
-    for (var i = 0; i < items.length; i++) {
-      var item = items[i] || {};
-      var attrs = item.attrs || {};
-      var inner = item.html || "";
-      var href = attrs.href || "";
-      if (!href) continue;
-      var chapterUrl = makeAbsolute(href);
-      if (!chapterUrl || seen[chapterUrl]) continue;
-      seen[chapterUrl] = true;
-
-      // Extract chapter number from URL
-      var numMatch = chapterUrl.match(/\/chapter\/(\d+\.?\d*)\/?$/);
-      var chNum = numMatch ? numMatch[1] : "0";
-
-      // Extract chapter title from the first font-semibold span
-      var chTitle = await api.cssText(inner, "span.font-semibold") || "";
-      if (!chTitle) chTitle = await api.cssText(inner, "span.text-xs") || "";
-      chTitle = cleanTitle(chTitle);
-
-      // Extract date from last span
-      var allSpans = await api.cssAll(inner, "span");
-      var dateStr = "";
-      if (allSpans && allSpans.length > 0) {
-        var lastSpan = allSpans[allSpans.length - 1];
-        dateStr = cleanTitle(lastSpan.text || "");
+    if (sd && sd.manhwa) {
+      // initialChapters might be available
+      var initialChapters = sd.initialChapters || [];
+      for (var i = 0; i < initialChapters.length; i++) {
+        var ch = initialChapters[i];
+        chapters.push({
+          number: String(ch.chapter_number || "0"),
+          title: cleanTitle(ch.title || "Chapter " + (ch.chapter_number || "0")),
+          url: "",
+          views: ch.views || 0,
+          isLocked: !!ch.is_locked,
+          date: ch.created_at || ""
+        });
       }
-
-      chapters.push({
-        number: chNum,
-        title: chTitle || "Chapter " + chNum,
-        url: chapterUrl,
-        views: 0,
-        isLocked: false,
-        date: dateStr
-      });
     }
-    // Sort descending by chapter number
-    chapters.sort(function(a, b) {
-      return (parseFloat(b.number) || 0) - (parseFloat(a.number) || 0);
-    });
     return chapters;
   }
 
-  async function extractReaderImages(html) {
-    var urls = [];
-    var seen = {};
-    var images = await api.cssAll(html, "img[src*='/chapters/']");
-    for (var i = 0; i < images.length; i++) {
-      var attrs = (images[i] || {}).attrs || {};
-      var src = attrs.src || "";
-      if (!src || seen[src]) continue;
-      seen[src] = true;
-      urls.push(makeAbsolute(src));
+  // Try to extract status from detail page serverData
+  function extractStatus(html, rscPayload) {
+    var sd = parseServerData(rscPayload);
+    if (sd && sd.manhwa && sd.manhwa.status) {
+      return sd.manhwa.status;
     }
-    return urls;
-  }
-
-  // Try to extract status from the detail page
-  async function extractStatus(html) {
-    // Try to find status in the JSON-LD or embedded data
-    try {
-      var jsonScripts = await api.cssAll(html, "script[type='application/ld+json']");
-      for (var j = 0; j < jsonScripts.length; j++) {
-        var jsonText = jsonScripts[j].text || "";
-        if (jsonText) {
-          var m = jsonText.match(/"creativeWorkStatus"\s*:\s*"([^"]+)"/);
-          if (m && m[1]) return mapStatus(m[1]);
-        }
-      }
-    } catch (e) {}
-
-    // Try to find status from the page text area near the cover
-    // The status is shown as "Ongoing" or "Completed" in the summary
-    try {
-      var allText = await api.cssText(html, "main") || "";
-      var stMatch = allText.match(/\b(Ongoing|Completed|Hiatus|Dropped|مستمر|مكتمل|متوقف|ملغي)\b/i);
-      if (stMatch) return mapStatus(stMatch[1]);
-    } catch (e) {}
-
     return "";
   }
 
@@ -310,7 +261,8 @@ function createSource(api, config) {
       try {
         var page = (args && args.page) || 1;
         var url = page === 1 ? baseUrl + "/browse" : baseUrl + "/browse?page=" + page;
-        return await parseCards(await fetchHtml(url));
+        var html = await fetchHtml(url);
+        return await parseCards(html);
       } catch (e) {
         return [];
       }
@@ -320,25 +272,13 @@ function createSource(api, config) {
       try {
         var query = (args && args.query) || "";
         if (!query.trim()) return [];
-        var url = baseUrl + "/search?q=" + encodeURIComponent(query);
-        var html = "";
-        try {
-          html = await fetchHtml(url);
-        } catch (e) {
-          return [];
-        }
-        var result = await parseCards(html);
-        if (!result || !result.length) {
-          // Fallback: fetch browse and filter locally
-          url = baseUrl + "/browse";
-          html = await fetchHtml(url);
-          result = await parseCards(html);
-          var ql = query.toLowerCase();
-          result = result.filter(function(c) {
-            return c.title.toLowerCase().indexOf(ql) !== -1;
-          });
-        }
-        return result;
+        var url = baseUrl + "/browse";
+        var html = await fetchHtml(url);
+        var items = await parseCards(html);
+        var ql = query.toLowerCase();
+        return items.filter(function(c) {
+          return c.title.toLowerCase().indexOf(ql) !== -1;
+        });
       } catch (e) {
         return [];
       }
@@ -348,24 +288,48 @@ function createSource(api, config) {
       try {
         var url = makeAbsolute((args && args.url) || "");
         var html = await fetchHtml(url);
+        var payload = extractRscPayload(html);
+        var sd = parseServerData(payload);
 
-        var title = await api.cssText(html, "h1") || "";
-        if (!title) title = await api.cssAttr(html, "meta[property='og:title']", "content") || "";
-        title = cleanTitle(title);
-        // Remove site suffix from og:title if present
-        title = title.replace(/\s*\|.*$/, "").trim();
+        var manhwa = (sd && sd.manhwa) || {};
+        var title = cleanTitle(manhwa.title || manhwa.title_ar || "");
+        if (!title) {
+          title = cleanTitle((await api.cssText(html, "h1")) || "");
+        }
+        if (!title) {
+          title = cleanTitle((await api.cssAttr(html, "meta[property='og:title']", "content")) || "");
+          title = title.replace(/\s*\|.*$/, "").trim();
+        }
 
-        var cover = await api.cssAttr(html, "meta[property='og:image']", "content");
+        var cover = manhwa.cover_url || "";
+        if (!cover) {
+          cover = await api.cssAttr(html, "meta[property='og:image']", "content") || "";
+        }
         cover = cover ? makeAbsolute(cover) : "";
 
-        var description = await api.cssAttr(html, "meta[name='description']", "content") || "";
-        description = cleanTitle(description);
+        var description = cleanTitle(manhwa.description_ar || manhwa.description || "");
+        if (!description) {
+          description = await api.cssAttr(html, "meta[name='description']", "content") || "";
+          description = cleanTitle(description);
+        }
 
-        var genres = await api.cssList(html, "a[href*='/genres?g=']") || [];
-        genres = genres.map(cleanTitle).filter(Boolean);
+        var genres = [];
+        if (manhwa.manhwa_genres) {
+          // Genre IDs only, no names in the server data
+        }
+        // Try og tags for genres
+        try {
+          var genreEls = await api.cssAll(html, "a[href*='/genres?g=']");
+          for (var gi = 0; gi < genreEls.length; gi++) {
+            var gText = cleanTitle(genreEls[gi].text || "");
+            if (gText) genres.push(gText);
+          }
+        } catch (e) {}
 
-        var statusText = await extractStatus(html);
-        var chapters = await extractChapters(html);
+        var statusText = manhwa.status || "";
+
+        // Extract chapters from the page if available
+        var chapters = parseChapters(payload);
 
         return {
           title: title || "Unknown",
@@ -377,7 +341,7 @@ function createSource(api, config) {
           originalUrl: url,
           hasMoreChapters: false,
           lastFetchedPage: 1,
-          contentType: "manga"
+          contentType: manhwa.type || "manga"
         };
       } catch (e) {
         return {
@@ -396,13 +360,11 @@ function createSource(api, config) {
     },
 
     async getChapterPages(args) {
-      var chapterUrl = makeAbsolute((args && args.url) || "");
-      var html = await fetchHtml(chapterUrl);
-      return await extractReaderImages(html);
+      return [];
     },
 
     async getChapterContent(args) {
-      return { kind: "image", imageUrls: await this.getChapterPages(args) };
+      return { kind: "image", imageUrls: [] };
     },
 
     async getFilteredManga(args) {
@@ -426,7 +388,18 @@ function createSource(api, config) {
           url += (url.indexOf("?") === -1 ? "?" : "&") + params.join("&");
         }
 
-        return await parseCards(await fetchHtml(url));
+        var html = await fetchHtml(url);
+        var items = await parseCards(html);
+
+        // Client-side filtering if server doesn't support it
+        if (type) {
+          items = items.filter(function(c) { return c.contentType === type; });
+        }
+        if (status) {
+          items = items.filter(function(c) { return c.status === status; });
+        }
+
+        return items;
       } catch (e) {
         return [];
       }
