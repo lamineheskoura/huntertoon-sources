@@ -20,9 +20,9 @@
         "sha256": "4a4f6eec428d6592edc9ae472ea44284925383190a9cfeb80ac3e2c2a8fe641b",
         "entry": "createSource"
       },
-      "allowed_hosts": ["olympustaff.com", "*.olympustaff.com", "i.ibb.co"],
+      "allowed_hosts": ["olympustaff.com", "*.olympustaff.com"],
       "runtime_allowed_hosts": ["olympustaff.com", "*.olympustaff.com"],
-      "image_allowed_hosts": ["olympustaff.com", "*.olympustaff.com", "i.ibb.co"],
+      "image_allowed_hosts": ["olympustaff.com", "*.olympustaff.com"],
       "request_header_names": ["User-Agent", "Accept", "Accept-Language", "Referer"],
       "image_referer": "https://olympustaff.com/"
     },
