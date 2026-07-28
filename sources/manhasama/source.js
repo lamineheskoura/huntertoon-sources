@@ -140,7 +140,7 @@ function createSource(api, config) {
       var genres = (manga.categories || []).map(function (c) { return c.name || ""; }).filter(Boolean);
       var status = manga.status || "ongoing";
 
-      var chData = await apiGet("/manga/" + slug + "/chapters?limit=200");
+      var chData = await apiGet("/manga/" + slug + "/chapters?limit=200&page=1");
       var chItems = chData.items || [];
       var chapters = chItems.map(function (c) {
         return {
@@ -160,7 +160,7 @@ function createSource(api, config) {
         genres: genres,
         chapters: chapters,
         originalUrl: rawUrl || (baseUrl + "/manga/" + slug),
-        hasMoreChapters: false,
+        hasMoreChapters: !!chData.hasMore,
         lastFetchedPage: 1,
         contentType: "manga"
       };
@@ -229,7 +229,39 @@ function createSource(api, config) {
       };
     },
 
-    async fetchMoreChapters() { return null; },
+    async fetchMoreChapters(args) {
+      try {
+        var prev = (args && args.previousResult) || {};
+        var rawUrl = prev.originalUrl || "";
+        var m = rawUrl.match(/\/manga\/([^/?#]+)/);
+        var slug = m ? m[1] : "";
+        if (!slug) return null;
+
+        var nextPage = (prev.lastFetchedPage || 1) + 1;
+        var chData = await apiGet("/manga/" + slug + "/chapters?limit=200&page=" + nextPage);
+        var chItems = chData.items || [];
+        if (chItems.length === 0) return null;
+
+        var chapters = chItems.map(function (c) {
+          return {
+            number: extractNumber(c.number),
+            title: c.title || c.number || "",
+            views: 0,
+            url: baseUrl + "/chapters/" + c._id,
+            isLocked: false,
+            date: (c.createdAt || "").split("T")[0]
+          };
+        });
+
+        return {
+          chapters: chapters,
+          hasMoreChapters: !!chData.hasMore,
+          lastFetchedPage: nextPage
+        };
+      } catch (e) {
+        return null;
+      }
+    },
 
     getImageHeaders(args) {
       return {

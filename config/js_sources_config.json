@@ -857,7 +857,7 @@
         "manhasama": {
             "id": "manhasama",
             "name": "منهى السماء (Manha Alsamaa)",
-            "version": "1.0.2",
+            "version": "1.1.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://realmnovel.com",
@@ -874,7 +874,7 @@
             },
             "script": {
                 "url": "sources/manhasama/source.js",
-                "sha256": "251cbe810b128eeebb1e94d6ebd8250656b382c9ab811434f47aa25122acba44",
+                "sha256": "5D11A12948441781FA7D5B2DCA8F935249A6A506ADBF2F958E52573DC2D8A787",
                 "entry": "createSource"
             },
             "capabilities": {
