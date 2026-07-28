@@ -1,5 +1,5 @@
 {
-    "version": "1.11.0",
+    "version": "1.12.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
     "manifest_version": "2026.07.04-dev.1",
@@ -857,7 +857,7 @@
         "manhasama": {
             "id": "manhasama",
             "name": "منهى السماء (Manha Alsamaa)",
-            "version": "1.1.0",
+            "version": "1.2.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://realmnovel.com",
