@@ -874,7 +874,7 @@
             },
             "script": {
                 "url": "sources/manhasama/source.js",
-                "sha256": "5D11A12948441781FA7D5B2DCA8F935249A6A506ADBF2F958E52573DC2D8A787",
+                "sha256": "7C4F818FAABF5B3BEAE2C9B71DC1375E8B6DE89FA3D2BAF7F5772A765801F81D",
                 "entry": "createSource"
             },
             "capabilities": {

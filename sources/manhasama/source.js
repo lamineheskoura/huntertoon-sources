@@ -141,8 +141,16 @@ function createSource(api, config) {
       var status = manga.status || "ongoing";
 
       var chData = await apiGet("/manga/" + slug + "/chapters?limit=200&page=1");
-      var chItems = chData.items || [];
-      var chapters = chItems.map(function (c) {
+      var allItems = chData.items || [];
+      var total = chData.total || 0;
+      var limit = chData.limit || 200;
+      var totalPages = Math.ceil(total / limit);
+      for (var p = 2; p <= totalPages; p++) {
+        var more = await apiGet("/manga/" + slug + "/chapters?limit=200&page=" + p);
+        var moreItems = more.items || [];
+        allItems = allItems.concat(moreItems);
+      }
+      var chapters = allItems.map(function (c) {
         return {
           number: extractNumber(c.number),
           title: c.title || c.number || "",
@@ -160,7 +168,7 @@ function createSource(api, config) {
         genres: genres,
         chapters: chapters,
         originalUrl: rawUrl || (baseUrl + "/manga/" + slug),
-        hasMoreChapters: !!chData.hasMore,
+        hasMoreChapters: false,
         lastFetchedPage: 1,
         contentType: "manga"
       };
