@@ -1,10 +1,10 @@
 {
-    "version": "1.15.0",
+    "version": "1.16.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
     "manifest_version": "2026.07.04-dev.1",
-    "generated_at": "2026-07-26T00:00:00Z",
-    "last_updated": "2026-07-26T00:00:00Z",
+    "generated_at": "2026-08-12T00:00:00Z",
+    "last_updated": "2026-08-12T00:00:00Z",
     "min_app_version": "1.4.0",
     "repository": {
         "owner": "lamineheskoura",
@@ -1433,6 +1433,94 @@
                 "author": "HunterToon Team",
                 "description": "RealmNovel (عالم الروايات) Arabic novel source using the Novels Sky mobile app REST API for list, search, detail, chapters, and chapter text content.",
                 "changelog": "v2.0.2: Fix cover images (use realmnovel.com/img/novel/{id}.jpg), chapter lazy pagination via fetchMoreChapters."
+            }
+        },
+        "mknov": {
+            "id": "mknov",
+            "name": "كوكب الروايات (MK Novel)",
+            "version": "1.0.0",
+            "enabled": true,
+            "status": "beta",
+            "base_url": "https://www.mknov.com",
+            "website_url": "https://www.mknov.com",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=mknov.com",
+            "requires_cf": false,
+            "image_referer": "https://www.mknov.com/",
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+                "Referer": "https://www.mknov.com/"
+            },
+            "script": {
+                "url": "sources/mknov/source.js",
+                "sha256": "b2217dc74b0433a19c2fbc917de2b2c6140d7c6c9c6c0e0e47ecd26fcecdd93e",
+                "entry": "createSource"
+            },
+            "capabilities": {
+                "content_types": [
+                    "novel"
+                ],
+                "supports_search": true,
+                "supports_filters": false,
+                "supports_lazy_chapters": false,
+                "supports_download": true,
+                "requires_cloudflare": false
+            },
+            "compatibility": {
+                "min_app_version": "1.4.0",
+                "runtime_api_version": "1.0"
+            },
+            "metadata": {
+                "language": "ar",
+                "adult": false,
+                "author": "HunterToon Team",
+                "description": "MK Novel (كوكب الروايات) - Next.js Arabic novel source. Homepage / ; search /library?q= ; detail /novel/{id} ; chapters via /api/works/{id}/chapters . Scrambled text is decoded with per-page protected-font substitution tables embedded in the source.",
+                "changelog": "v1.0.0: Initial release - RSC payload extraction with 20 built-in protected-font decode maps for chapter text."
+            }
+        },
+        "novelsparadise": {
+            "id": "novelsparadise",
+            "name": "جنة الروايات (Novels Paradise)",
+            "version": "1.0.0",
+            "enabled": true,
+            "status": "beta",
+            "base_url": "https://novelsparadise.site",
+            "website_url": "https://novelsparadise.site",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=novelsparadise.site",
+            "requires_cf": true,
+            "image_referer": "https://novelsparadise.site/",
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+                "Referer": "https://novelsparadise.site/"
+            },
+            "script": {
+                "url": "sources/novelsparadise/source.js",
+                "sha256": "29b80edf8dea8b63006408d6b0f2610b4e1362fd8b9e0277d6a518610fbffaaa",
+                "entry": "createSource"
+            },
+            "capabilities": {
+                "content_types": [
+                    "novel"
+                ],
+                "supports_search": true,
+                "supports_filters": false,
+                "supports_lazy_chapters": false,
+                "supports_download": true,
+                "requires_cloudflare": true
+            },
+            "compatibility": {
+                "min_app_version": "1.4.0",
+                "runtime_api_version": "1.0"
+            },
+            "metadata": {
+                "language": "ar",
+                "adult": false,
+                "author": "HunterToon Team",
+                "description": "Novels Paradise (جنة الروايات) - WordPress/ts_reader Arabic novel source. Homepage / ; search /search/{query} ; detail /series/{slug}/ ; chapters at /{slug}-{num}/ . Chapter pages are behind a Cloudflare managed challenge (app bypass flow provides cookies).",
+                "changelog": "v1.0.0: Initial release - HTML scraping for homepage cards, search list, series detail (status/author/genres/description), and all chapter links."
             }
         }
     }
