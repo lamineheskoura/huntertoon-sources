@@ -104,7 +104,7 @@ function createSource(api, config) {
     var listSel = sel("chapter_list", ".ch-item, #chapterlist li, .eplister li, .clstyle li");
     var dateSel = sel("chapter_date", ".ch-date, .chapterdate");
     var lockSel = sel("chapter_locked", ".fa-lock, .paywall, .locked");
-    var numAttr = sel("chapter_number_attr", "data-num");
+    var numAttr = sel("chapter_number_attr", "data-ch");
     var items = await api.cssMap(html, listSel, {
       href: { selector: "a", type: "attr", attr: "href" },
       num: { selector: "", type: "attr", attr: numAttr },
