@@ -1,5 +1,5 @@
 {
-    "version": "1.14.0",
+    "version": "1.15.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
     "manifest_version": "2026.07.04-dev.1",
@@ -512,7 +512,7 @@
         "lava_scans": {
             "id": "lava_scans",
             "name": "لافا سكانز (Lava Scans)",
-            "version": "1.2.0",
+            "version": "1.3.0",
             "enabled": true,
             "status": "stable",
             "base_url": "https://lavascans.com",
@@ -528,7 +528,7 @@
             },
             "script": {
                 "url": "sources/lava_scans/source.js",
-                "sha256": "8949F2C9A062348DFB7AC70A6994741B30103717EC178F30692AC15BAF107BCD",
+                "sha256": "C42384AB05D4AEACEBDA39142C7C2DDBCE9237C22E3C0041FAA9894F904DA118",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -550,7 +550,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Canonical lava_scans installable JavaScript source matching the built-in LavaScans behavior",
-                "changelog": "v1.2.0: site no longer protected by Cloudflare - requiresCloudflare:false, fix chapter number attr (data-ch)"
+                "changelog": "v1.3.0: detect locked chapters via data-coin=yes attribute (fa-lock icon has no text)"
             }
         },
         "mangatime": {

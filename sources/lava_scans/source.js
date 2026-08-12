@@ -103,14 +103,13 @@ function createSource(api, config) {
   async function extractChapters(html) {
     var listSel = sel("chapter_list", ".ch-item, #chapterlist li, .eplister li, .clstyle li");
     var dateSel = sel("chapter_date", ".ch-date, .chapterdate");
-    var lockSel = sel("chapter_locked", ".fa-lock, .paywall, .locked");
     var numAttr = sel("chapter_number_attr", "data-ch");
     var items = await api.cssMap(html, listSel, {
       href: { selector: "a", type: "attr", attr: "href" },
       num: { selector: "", type: "attr", attr: numAttr },
       title: { selector: "a", type: "text" },
       date: { selector: dateSel, type: "text" },
-      locked: { selector: lockSel, type: "text" }
+      locked: { selector: "", type: "attr", attr: "data-coin" }
     });
     var chapters = [];
     var seen = {};
@@ -124,7 +123,7 @@ function createSource(api, config) {
         var match = (item.title || "").match(/(?:فصل|chapter|ch)[\s_.-]*(\d+(?:\.\d+)?)/i) || (item.title || chapterUrl).match(/(\d+(?:\.\d+)?)/);
         chapterNumber = match ? match[1] : "0";
       }
-      chapters.push({ number: chapterNumber, title: (item.title || "").trim(), views: 0, url: chapterUrl, isLocked: !!(item.locked && item.locked.trim()), date: (item.date || "").trim() });
+      chapters.push({ number: chapterNumber, title: (item.title || "").trim(), views: 0, url: chapterUrl, isLocked: String(item.locked).toLowerCase() === "yes", date: (item.date || "").trim() });
     }
     chapters.sort(function(a, b) { return (parseFloat(b.number) || 0) - (parseFloat(a.number) || 0); });
     return chapters;
