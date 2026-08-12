@@ -1,5 +1,5 @@
 {
-    "version": "1.13.0",
+    "version": "1.14.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
     "manifest_version": "2026.07.04-dev.1",
@@ -512,13 +512,13 @@
         "lava_scans": {
             "id": "lava_scans",
             "name": "لافا سكانز (Lava Scans)",
-            "version": "1.1.0",
+            "version": "1.2.0",
             "enabled": true,
             "status": "stable",
             "base_url": "https://lavascans.com",
             "website_url": "https://lavascans.com",
             "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=lavascans.com",
-            "requires_cf": true,
+            "requires_cf": false,
             "image_referer": "https://lavascans.com/",
             "headers": {
                 "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
@@ -528,7 +528,7 @@
             },
             "script": {
                 "url": "sources/lava_scans/source.js",
-                "sha256": "107F4AED680F4E9D8AB954A10599FFF600581DE8933EB6EBAF8256D5BFA4D87E",
+                "sha256": "8949F2C9A062348DFB7AC70A6994741B30103717EC178F30692AC15BAF107BCD",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -539,7 +539,7 @@
                 "supports_filters": true,
                 "supports_lazy_chapters": false,
                 "supports_download": true,
-                "requires_cloudflare": true
+                "requires_cloudflare": false
             },
             "compatibility": {
                 "min_app_version": "1.4.0",
@@ -550,7 +550,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Canonical lava_scans installable JavaScript source matching the built-in LavaScans behavior",
-                "changelog": "v1.1.0: restore requiresCloudflare:true for Cloudflare protection, fix chapter number attr (data-ch)"
+                "changelog": "v1.2.0: site no longer protected by Cloudflare - requiresCloudflare:false, fix chapter number attr (data-ch)"
             }
         },
         "mangatime": {

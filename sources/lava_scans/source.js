@@ -224,7 +224,7 @@ function createSource(api, config) {
   }
 
   return {
-    requiresCloudflare: true,
+    requiresCloudflare: false,
 
     async getHomepageManga(args) {
       try {
