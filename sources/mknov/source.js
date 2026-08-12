@@ -217,15 +217,21 @@ function createSource(api, config) {
     var arrStart = rsc.indexOf("[", i + marker.length);
     if (arrStart === -1) return [];
     var listStr = extractBalanced(rsc, arrStart, "[", "]");
+    if (!listStr) return [];
+    // The payload contains real control chars (unescaped newlines inside
+    // description strings) which break JSON.parse - neutralise them.
+    listStr = listStr.replace(/[\u0000-\u001F\u007F]/g, " ");
     return parseWorkArray(listStr);
   }
 
-  // Fetch and parse homepage
+  // Fetch and parse homepage (library page shows the full manhwa list)
   async function getHomepageCards(page) {
-    var url = page && page > 1 ? baseUrl + "/?page=" + page : baseUrl + "/";
+    var url = baseUrl + "/library";
+    if (page && page > 1) url += "?page=" + page;
     var html = await fetchHtml(url);
     var rsc = extractRscPayload(html);
-    var items = parseWorkListFromRsc(rsc, "featured");
+    var items = parseWorkListFromRsc(rsc, "donghuaList");
+    if (!items.length) items = parseWorkListFromRsc(rsc, "featured");
     return dedupeCards(items);
   }
 

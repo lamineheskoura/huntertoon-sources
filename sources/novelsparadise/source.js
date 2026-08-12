@@ -129,17 +129,17 @@ function createSource(api, config) {
     var out = [];
     var seen = {};
 
-    // Pass 1: homepage grid - <a href=".../series/..." title="..."> contain <img>.
-    // Match anchor latching a title attribute to avoid pulling unrelated anchors.
-    var reImg = /<a\s[^>]*href="([^"]*\/series\/[^"\/?#]+\/)"[^>]*(?:\s(?:title|data-tip)="([^"]*)")?[^>]*>[\s\S]{0,3000}?<img\b[^>]*?(?:src|data-src)="([^"]+)"[^>]*?(?:alt|title)="([^"]*)"/g;
+    // Pass 1: homepage grid cards - <a href=".../series/<slug>/"> contain <img>.
+    // The img must be inside the SAME anchor (guard against "list-mode" toggles).
+    var reImg = /<a\s[^>]*href="([^"]*\/series\/[^"\/?#]+\/)"[^>]*>(?:(?!<\/a>).){0,5000}?<img\b[^>]*?(?:src|data-src)="([^"]+)"[^>]*?(?:alt|title)="([^"]*)"/g;
     var m;
     while ((m = reImg.exec(html)) !== null) {
       var sm = seriesHrefMatch(m[1]);
       if (!sm || seen[sm.url]) continue;
-      var t = decodeEntities(clean(m[4] || m[2] || sm.slug));
+      var t = decodeEntities(clean(m[3]));
       if (!t) continue;
       seen[sm.url] = true;
-      out.push({ url: sm.url, cover: m[3], title: t });
+      out.push({ url: sm.url, cover: m[2], title: t });
     }
 
     // Pass 2: anchor with <h3>child (homepage luf block)
@@ -153,23 +153,29 @@ function createSource(api, config) {
       out.push({ url: sm2.url, cover: "", title: t2 });
     }
 
-    // Pass 3: search list cards article.maindet h2 a text + img
-    var reSearch = /<a\s[^>]*href="([^"]*\/series\/[^"\/?#]+\/)"[^>]*>\s*<img\b[^>]*?(?:src|data-src)="([^"]+)"[\s\S]{0,3000}?<h2[^>]*>\s*<a\s[^>]*>([^<]+)<\/a>/g;
-    while ((m = reSearch.exec(html)) !== null) {
-      var sm3 = seriesHrefMatch(m[1]);
+    // Pass 3: search/browse list cards - article.maindet with .mdthumb a > img
+    // and .mdinfo h2 a text (used by /search/ and /series/?order=update).
+    var reCard = /<article\s[^>]*class="[^"]*\bmaindet\b[^"]*"[\s\S]*?<\/article>/g;
+    while ((m = reCard.exec(html)) !== null) {
+      var block = m[0];
+      var h2m = block.match(/<h2[^>]*>\s*<a\s[^>]*href="([^"]*\/series\/[^"\/?#]+\/)"[^>]*>([^<]+)<\/a>/i);
+      if (!h2m) continue;
+      var sm3 = seriesHrefMatch(h2m[1]);
       if (!sm3 || seen[sm3.url]) continue;
-      var t3 = decodeEntities(clean(m[3]));
+      var t3 = decodeEntities(clean(h2m[2]));
       if (!t3) continue;
+      var imgm = block.match(/<img\b[^>]*?(?:src|data-src)="([^"]+)"/i);
       seen[sm3.url] = true;
-      out.push({ url: sm3.url, cover: m[2], title: t3 });
+      out.push({ url: sm3.url, cover: imgm ? imgm[1] : "", title: t3 });
     }
 
     return out;
   }
 
-  // Fetch homepage cards
+  // Fetch homepage cards (series list page - browse side triggers CF bypass)
   async function getHomepageCards(page) {
-    var url = page && page > 1 ? baseUrl + "/?page=" + page : baseUrl + "/";
+    var url = baseUrl + "/series/?order=update";
+    if (page && page > 1) url += "&page=" + page;
     var html = await fetchHtml(url);
     return dedupeCards(parseCardsFromHtml(html));
   }
