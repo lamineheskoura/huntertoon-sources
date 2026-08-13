@@ -76,81 +76,34 @@ function createSource(api, config) {
     return "manga";
   }
 
-  function base64UrlDecode(str) {
-    var b64 = String(str || "").replace(/-/g, "+").replace(/_/g, "/");
-    while (b64.length % 4) b64 += "=";
-    var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    var out = "";
-    var buffer = 0, bits = 0;
-    for (var i = 0; i < b64.length; i++) {
-      var c = b64.charAt(i);
-      if (c === "=") break;
-      var idx = chars.indexOf(c);
-      if (idx < 0) continue;
-      buffer = (buffer << 6) | idx;
-      bits += 6;
-      if (bits >= 8) {
-        bits -= 8;
-        out += String.fromCharCode((buffer >> bits) & 0xff);
-      }
-    }
-    return out;
+  function getStorageKey(relId) {
+    return api.http(apiBase + "/releases/" + relId + "/grant", {
+      method: "POST",
+      headers: {
+        "User-Agent": headers["User-Agent"],
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Content-Type": "application/json",
+        "Referer": baseUrl + "/"
+      },
+      body: "{}"
+    }).then(function (res) {
+      if (!res || !res.ok) return null;
+      try { return JSON.parse((res.body || "").trim()); } catch (e) { return null; }
+    }).catch(function () { return null; });
   }
 
-  function jwtPayload(token) {
-    try {
-      var parts = String(token || "").split(".");
-      if (parts.length < 2) return null;
-      return JSON.parse(base64UrlDecode(parts[1]));
-    } catch (e) {
-      return null;
-    }
-  }
-
-  async function getStorageKey(relId) {
-    try {
-      var res = await api.http(apiBase + "/releases/" + relId + "/grant", {
-        method: "POST",
-        headers: {
-          "User-Agent": headers["User-Agent"],
-          "Accept": "application/json, text/plain, */*",
-          "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-          "Content-Type": "application/json",
-          "Referer": baseUrl + "/"
-        },
-        body: "{}"
-      });
-      var text = (res && res.body) || "";
-      var data = JSON.parse(text);
-      var payload = jwtPayload(data && data.grant);
-      return (payload && payload.sk) || "";
-    } catch (e) {
-      return "";
-    }
-  }
-
-  function pageExists(url) {
-    return api.http(url, { method: "HEAD", headers: { "Referer": baseUrl + "/" } })
-      .then(function (res) { return !!(res && res.ok); })
-      .catch(function () { return false; });
-  }
-
-  async function collectPages(storageKey) {
-    var found = [];
-    var hqBase = baseUrl + "/uploads/releases/" + storageKey + "/hq/";
-    var useC = await pageExists(hqBase + "0c.webp");
-    var start = 0;
-    if (!useC) {
-      if (await pageExists(hqBase + "1.webp")) start = 1;
-      else if (await pageExists(hqBase + "0.webp")) start = 0;
-      else return found;
-    }
-    for (var i = start; i < 200; i++) {
-      var name = useC ? i + "c.webp" : i + ".webp";
-      if (!(await pageExists(hqBase + name))) break;
-      found.push(hqBase + name);
-    }
-    return found;
+  async function getChapterPagesFromGrant(relId) {
+    var data = await getStorageKey(relId);
+    if (!data) return [];
+    var storageKey = String(data.storageKey || "");
+    var pages = Array.isArray(data.pages) ? data.pages : [];
+    if (!storageKey || !pages.length) return [];
+    return pages.map(function (p) {
+      var url = String((p && (p.url || p.webp_url)) || "").trim();
+      if (!url) return null;
+      return baseUrl + "/uploads/releases/" + storageKey + "/hq/" + url;
+    }).filter(function (u) { return !!u; });
   }
 
   function getSeriesId(url) {
@@ -252,19 +205,14 @@ function createSource(api, config) {
 
     async getChapterPages(args) {
       var relId = getRelId(args && args.url);
-      var storageKey = await getStorageKey(relId);
-      if (!storageKey) return [];
-      return collectPages(storageKey);
+      return getChapterPagesFromGrant(relId);
     },
 
     async getChapterContent(args) {
       try {
         var relId = getRelId(args && args.url);
-        var storageKey = await getStorageKey(relId);
-        if (storageKey) {
-          var pages = await collectPages(storageKey);
-          if (pages.length) return { kind: "image", imageUrls: pages };
-        }
+        var pages = await getChapterPagesFromGrant(relId);
+        if (pages.length) return { kind: "image", imageUrls: pages };
       } catch (e) { }
       return { kind: "image", imageUrls: [] };
     },

@@ -394,7 +394,7 @@
             },
             "script": {
                 "url": "sources/dilar/source.js",
-                "sha256": "e04edce81fefd308085f7ca5c652c938c8ee796b39e1fb45070eb0238f860664",
+                "sha256": "5010016623279bf1d4d80562afa53bfbc161663f5fabf65e4132e8086b82c2a8",
                 "entry": "createSource"
             },
             "capabilities": {
