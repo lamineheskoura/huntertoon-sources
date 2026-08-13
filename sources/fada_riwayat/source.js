@@ -58,6 +58,11 @@ function createSource(api, config) {
     return text.indexOf("manga") !== -1 || text.indexOf("مانجا") !== -1 || text.indexOf("comic") !== -1;
   }
 
+  function isNovelMarker(text) {
+    text = String(text || "");
+    return text.indexOf("رواية") !== -1 || text.indexOf("Novel") !== -1;
+  }
+
   function decodeEntities(s) {
     return String(s || "")
       .replace(/&/g, "&")
@@ -79,6 +84,9 @@ function createSource(api, config) {
   // 7. Strip hash tags from paragraph ends
 
   var zeroWidth = /[\u200B-\u200D\u2060-\u2064\uFEFF\u00AD\u2063]/g;
+
+  // Arabic diacritics + tatweel used to obfuscate watermark text (تطـبيق، فضــاء)
+  var diacritics = /[\u0640\u064B-\u065F\u0670\u0653-\u0655]/g;
 
   var stripSelectors = [
     ".orw-reader-gap",
@@ -118,7 +126,11 @@ function createSource(api, config) {
     /نؤكد\s*لمتابعينا\s*الكرام/,
     /تنبيه:\s*تطبيق\s*شاي\s*روايات/,
     /play\.google\.com\/store\/apps/,
-    /اقرأ\s*من\s*تطبيق/
+    /اقرأ\s*من\s*تطبيق/,
+    /تابع\s*على\s*تطبيق\s*فضاء/,
+    /افضل\s*موقع\s*لقراءة\s*الروايات/,
+    /متوفر\s*على\s*غوغل\s*بلاي/,
+    /القس\s*المجنون\s*ولورد\s*الغوامض/
   ];
 
   // Full junk paragraph patterns — entire paragraph is anti-scrape
@@ -129,7 +141,9 @@ function createSource(api, config) {
     /play\.google\.com\/store\/apps/,
     /^اقرأ\s*من\s*المصدر/,
     /شاي\s*(ال)?روايات\s*تطبيق\s*سارق/,
-    /^https?:\/\//
+    /^https?:\/\//,
+    /تابع\s*على\s*تطبيق\s*فضاء\s*الروايات/,
+    /فضاء\s*الروايات\s*متوفر\s*على\s*غوغل/
   ];
 
   // Anti-scrape legacy patterns
@@ -168,7 +182,8 @@ function createSource(api, config) {
     /هذا\s*نص\s*حقوق/,
     /كل\s*الفص[ـ]*ول\s*مس[ـ]*روقة/,
     /شاي\s*روايات/,
-    /فضاء\s*الروايات\s*فقط/
+    /فضاء\s*الروايات\s*فقط/,
+    /تابع\s*على\s*تطبيق\s*فضاء\s*الروايات/
   ];
 
   function isPoisonedText(text) {
@@ -292,6 +307,7 @@ function createSource(api, config) {
       .replace(/<style[\s\S]*?<\/style>/gi, "")
       .replace(/<[^>]*>/g, "")
       .replace(/&nbsp;/g, " ")
+      .replace(/&quot;/g, '"')
       .replace(/&/g, "&")
       .replace(/"/g, '"')
       .replace(/&#39;/g, "'");
@@ -305,11 +321,13 @@ function createSource(api, config) {
       // Normalize zero-width chars BEFORE any pattern matching
       var cleaned = raw2.replace(zeroWidth, "").replace(/[ \t]+/g, " ").trim();
       if (cleaned.length === 0) continue;
+      // Normalize diacritics/tatweel for pattern matching (watermarks use تطبـيق، فضــاء)
+      var norm = cleaned.replace(diacritics, "");
 
       // Check if entire paragraph is a full junk block
       var isFullJunk = false;
       for (var j = 0; j < fullJunkPatterns.length; j++) {
-        if (fullJunkPatterns[j].test(cleaned)) {
+        if (fullJunkPatterns[j].test(norm)) {
           isFullJunk = true;
           break;
         }
@@ -319,7 +337,7 @@ function createSource(api, config) {
       // Try to rescue real text from watermark tail
       var rescued = null;
       for (var k = 0; k < watermarkTailMarkers.length; k++) {
-        var match = watermarkTailMarkers[k].exec(cleaned);
+        var match = watermarkTailMarkers[k].exec(norm);
         if (match && match.index > 10) {
           var candidate = cleaned.substring(0, match.index).trim();
           if (candidate.length >= 8) {
@@ -340,7 +358,7 @@ function createSource(api, config) {
       // Check if paragraph matches anti-scrape patterns (whole thing is junk)
       var isAntiScrape = false;
       for (var m = 0; m < antiScrapePatterns.length; m++) {
-        if (antiScrapePatterns[m].test(cleaned)) {
+        if (antiScrapePatterns[m].test(norm)) {
           isAntiScrape = true;
           break;
         }
@@ -351,14 +369,14 @@ function createSource(api, config) {
       var cleanedNoHash = cleaned.replace(hashTagPattern, "").trim();
       if (cleanedNoHash.length < 20) {
         var hasResidue =
-          cleaned.indexOf("cenele") !== -1 ||
-          cleaned.indexOf("فضاء") !== -1 ||
-          cleaned.indexOf("مسروق") !== -1 ||
-          cleaned.indexOf("تطبيق") !== -1 ||
-          cleaned.indexOf("موـقع") !== -1 ||
-          cleaned.indexOf("فـضاء") !== -1 ||
-          cleaned.indexOf("الفصـول") !== -1 ||
-          hashTagPattern.test(cleaned);
+          norm.indexOf("cenele") !== -1 ||
+          norm.indexOf("فضاء") !== -1 ||
+          norm.indexOf("مسروق") !== -1 ||
+          norm.indexOf("تطبيق") !== -1 ||
+          norm.indexOf("موقع") !== -1 ||
+          norm.indexOf("فضاء") !== -1 ||
+          norm.indexOf("الفصول") !== -1 ||
+          hashTagPattern.test(norm);
         if (hasResidue) continue;
       }
 
@@ -382,16 +400,17 @@ function createSource(api, config) {
 
   async function listCards(pageHtml) {
     var selectors = [
+      "article.nhv-library-card",
       ".page-item-detail",
       ".nhv-pitem",
       ".c-tabs-item__content",
       ".page-listing-item .row > div"
     ];
-    var coverSel = ".item-thumb img, .nhv-pitem__cover img, .tab-thumb img, img";
+    var coverSel = ".nhv-library-card__cover img, .item-thumb img, .nhv-pitem__cover img, .tab-thumb img, img";
     var titleSel =
-      ".post-title h3 a, .post-title a, .nhv-pitem__title, .tab-content .post-title a, h3 a, h4 a";
+      "h2.nhv-library-card__title a, .post-title h3 a, .post-title a, .nhv-pitem__title, .tab-content .post-title a, h3 a, h4 a";
     var urlSel =
-      ".post-title a, .item-thumb a, .nhv-pitem, .tab-content .post-title a, h3 a, h4 a";
+      "a.nhv-library-card__cover, .post-title a, .item-thumb a, .nhv-pitem, .tab-content .post-title a, h3 a, h4 a";
 
     var out = [];
     var seen = {};
@@ -405,12 +424,17 @@ function createSource(api, config) {
         var h = node.html || "";
 
         var title = "";
-        var titleSelectors = titleSel.split(",").map(function (e) { return e.trim(); });
-        for (var t = 0; t < titleSelectors.length; t++) {
-          var tText = await api.cssText(h, titleSelectors[t]);
-          if (tText && tText.trim()) {
-            title = tText.trim();
-            break;
+        var ariaTitle = await api.cssAttr(h, "a.nhv-library-card__cover", "aria-label");
+        if (ariaTitle && ariaTitle.trim()) {
+          title = ariaTitle.trim();
+        } else {
+          var titleSelectors = titleSel.split(",").map(function (e) { return e.trim(); });
+          for (var t = 0; t < titleSelectors.length; t++) {
+            var tText = await api.cssText(h, titleSelectors[t]);
+            if (tText && tText.trim()) {
+              title = tText.trim();
+              break;
+            }
           }
         }
         if (!title) continue;
@@ -431,7 +455,7 @@ function createSource(api, config) {
 
         var cardText = node.text || "";
         var contentType = "novel";
-        if (cardText.indexOf("مانجا") !== -1 || cardText.indexOf("Novel") === -1 && isMangaMarker(cardText)) {
+        if (isMangaMarker(cardText) && !isNovelMarker(cardText)) {
           contentType = "manga";
         }
 
@@ -520,9 +544,9 @@ function createSource(api, config) {
   async function extractNovelText(pageHtml) {
     // Try selectors in order — most specific first
     var selectors = [
-      ".reading-content.current .text-left",
-      ".text-left",
+      ".reading-content.current",
       ".reading-content",
+      ".text-left",
       ".entry-content",
       ".chapter-content",
       ".content"
@@ -535,6 +559,11 @@ function createSource(api, config) {
     }
 
     if (!rawHtml) return "";
+
+    // Keep only the main <article> block when present — this drops chapter
+    // headers, donation forms, store promos and footers in one shot.
+    var articleMatch = rawHtml.match(/<article\b[^>]*>[\s\S]*?<\/article>/i);
+    if (articleMatch) rawHtml = articleMatch[0];
 
     // Clean the HTML to remove anti-scrape elements
     var cleanedHtml = cleanNovelHtml(rawHtml);
@@ -654,12 +683,14 @@ function createSource(api, config) {
 
       // Title
       var title =
+        (await api.cssText(pageHtml, "h1.nhv-novel-title")) ||
         (await api.cssText(pageHtml, ".post-title h1")) ||
         (await api.cssAttr(pageHtml, "meta[property='og:title']", "content")) ||
         "بدون عنوان";
 
       // Cover
       var cover =
+        (await api.cssAttr(pageHtml, ".nhv-novel-cover img", "src")) ||
         (await api.cssAttr(pageHtml, ".summary_image img", "src")) ||
         (await api.cssAttr(pageHtml, ".summary_image img", "data-src")) ||
         (await api.cssAttr(pageHtml, "meta[property='og:image']", "content")) ||
@@ -667,19 +698,23 @@ function createSource(api, config) {
 
       // Description
       var description =
+        (await api.cssText(pageHtml, ".nhv-novel-synopsis")) ||
         (await api.cssText(pageHtml, ".summary__content p, .description-summary p, .manga-excerpt p, .summary__content")) || "";
 
       // Genres
-      var genres = await api.cssList(pageHtml, ".genres-content a");
+      var genres = (await api.cssList(pageHtml, ".nhv-novel-genres a")) || (await api.cssList(pageHtml, ".genres-content a"));
       var genresClean = (genres || []).map(function (g) { return decodeEntities(g).trim(); }).filter(Boolean);
 
       // Content type detection
+      var kicker = (await api.cssText(pageHtml, ".nhv-novel-kicker")) || "";
       var bodyClass = await api.cssAttr(pageHtml, "body", "class") || "";
-      var contentType = "manga";
-      if (bodyClass.indexOf("chapter-type-novel") !== -1 ||
-          bodyClass.indexOf("post-type-wp-manga-novel") !== -1 ||
-          genresClean.some(function (g) { return g.indexOf("رواية") !== -1 || g === "Novel"; })) {
-        contentType = "novel";
+      var contentType = "novel";
+      if (isMangaMarker(kicker)) {
+        contentType = "manga";
+      } else if (!kicker && bodyClass.indexOf("chapter-type-novel") === -1 &&
+          bodyClass.indexOf("post-type-wp-manga-novel") === -1 &&
+          !genresClean.some(function (g) { return g.indexOf("رواية") !== -1; })) {
+        contentType = "manga";
       }
 
       var chapters = await fetchChapters(url);
@@ -714,7 +749,7 @@ function createSource(api, config) {
       var hasNovelContainer = false;
       if (!hasNovelClass) {
         var n1 = await api.cssHtml(pageHtml, ".text-left[dir='rtl']");
-        var n2 = await api.cssHtml(pageHtml, ".reading-content.current .text-left");
+        var n2 = await api.cssHtml(pageHtml, ".reading-content.current");
         hasNovelContainer = !!(n1 && n1.trim()) || !!(n2 && n2.trim());
       }
       var isNovel = hasNovelClass || hasNovelContainer;

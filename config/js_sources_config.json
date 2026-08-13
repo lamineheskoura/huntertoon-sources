@@ -948,7 +948,7 @@
         "fada_riwayat": {
             "id": "fada_riwayat",
             "name": "فضاء الروايات (Fada Riwayat)",
-            "version": "1.0.0",
+            "version": "1.1.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://cenele.com",
@@ -964,7 +964,7 @@
             },
             "script": {
                 "url": "sources/fada_riwayat/source.js",
-                "sha256": "4f71a05770ea8cb42e2cb54bf890ffbfad413707394bdd84234b96f98b097286",
+                "sha256": "27F3A221554CA4FDDB27ADA4144D238F4EAFF69400C0AAEF4E50E8349F533264",
                 "entry": "createSource"
             },
             "capabilities": {
