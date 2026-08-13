@@ -21,7 +21,7 @@
         "azora": {
             "id": "azora",
             "name": "أزورا مانجا (Azora Manga)",
-            "version": "1.1.0",
+            "version": "1.2.0",
             "enabled": true,
             "status": "stable",
             "base_url": "https://azorafly.com",
@@ -38,8 +38,8 @@
             },
             "script": {
 "url": "sources/azora/source.js",
-            "sha256": "4DC039C97A1AF6CF6DA26D6BCE7E54AB82B3F39DCECB146C02249F53BBFB84F0",
-            "entry": "createSource"
+                "sha256": "614DEA54E0BE9983C838FDFD852AB77186373F63D76314D741B1FD17258DE679",
+                "entry": "createSource"
             },
             "capabilities": {
                 "content_types": [
@@ -60,7 +60,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Azora Manga source using the current azorafly.com API",
-                "changelog": "v1.1.0: fetch chapter pages from the /api/chapter endpoint directly (ordered images, no fake/cover images for locked chapters)"
+                "changelog": "v1.2.0: novel chapters now return text content; fix post lookup (search with spaces) and detect novels via seriesType NOVEL"
             }
         },
         "brownmanga": {

@@ -89,6 +89,10 @@ function createSource(api, config) {
     return m ? m[1] : "0";
   }
 
+  function isNovelPost(post) {
+    return !!(post && (post.isNovel === true || String(post.seriesType || "").toUpperCase() === "NOVEL"));
+  }
+
   function toManga(post) {
     if (!post) return null;
     var slug = String(post.slug || "");
@@ -98,7 +102,7 @@ function createSource(api, config) {
       title: title,
       coverUrl: sanitizeImageUrl(post.featuredImage || ""),
       detailUrl: baseUrl + "/series/" + slug,
-      contentType: post.isNovel ? "novel" : "manga"
+      contentType: isNovelPost(post) ? "novel" : "manga"
     };
   }
 
@@ -111,7 +115,8 @@ function createSource(api, config) {
   }
 
   async function findPostBySlug(slug) {
-    var posts = await queryPosts({ searchTerm: slug, perPage: 10, page: 1 });
+    var search = String(slug || "").replace(/-/g, " ").trim();
+    var posts = await queryPosts({ searchTerm: search, perPage: 10, page: 1 });
     for (var i = 0; i < posts.length; i++) {
       if (String(posts[i].slug || "") === slug) return posts[i];
     }
@@ -132,20 +137,44 @@ function createSource(api, config) {
     return m ? "chapter-" + m[1] : "";
   }
 
-  async function getChapterPagesFromApi(chapterUrl) {
+  function pagesFromChapter(chapter) {
+    var imgs = Array.isArray(chapter.images) ? chapter.images.slice().sort(function (a, b) { return (a.order || 0) - (b.order || 0); }) : [];
+    return imgs.map(function (p) { return sanitizeImageUrl(p.url); }).filter(function (u) { return !!u; });
+  }
+
+  function htmlToText(html) {
+    var text = String(html || "");
+    text = text.replace(/<br\s*\/?>/gi, "\n");
+    text = text.replace(/<\/p>/gi, "\n");
+    text = text.replace(/<[^>]*>/g, "");
+    text = text.replace(/&nbsp;/gi, " ")
+      .replace(/&quot;/g, "\"")
+      .replace(/&#39;|&rsquo;/g, "'")
+      .replace(/&ldquo;|&rdquo;/g, "\"")
+      .replace(/&hellip;/g, "…")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">");
+    return text.replace(/\n{3,}/g, "\n\n").trim();
+  }
+
+  async function getChapterData(chapterUrl) {
     var slug = extractSlug(chapterUrl);
     var chapterSlug = extractChapterSlug(chapterUrl);
     if (!slug || !chapterSlug) return null;
     var data = await getJson(apiBase + "/api/chapter" + buildQuery({ mangaslug: slug, chapterslug: chapterSlug }));
-    var chapter = data && data.chapter;
+    return data && data.chapter;
+  }
+
+  async function getChapterPagesFromApi(chapterUrl) {
+    var chapter = await getChapterData(chapterUrl);
     if (!chapter) return null;
     if (chapter.isLocked === true || !Array.isArray(chapter.images) || chapter.images.length === 0) {
       var err = new Error("Chapter is locked");
       err.isLocked = true;
       throw err;
     }
-    var pages = chapter.images.slice().sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
-    return pages.map(function (p) { return sanitizeImageUrl(p.url); }).filter(function (u) { return !!u; });
+    return pagesFromChapter(chapter);
   }
 
   function extractPostId(html) {
@@ -282,7 +311,7 @@ function createSource(api, config) {
         originalUrl: url,
         hasMoreChapters: false,
         lastFetchedPage: 1,
-        contentType: post && post.isNovel ? "novel" : "manga"
+        contentType: isNovelPost(post) ? "novel" : "manga"
       };
     },
 
@@ -297,7 +326,25 @@ function createSource(api, config) {
     },
 
     async getChapterContent(args) {
-      return { kind: "image", imageUrls: await this.getChapterPages(args) };
+      var chapterUrl = makeAbsolute((args && args.url) || "");
+      lastChapterUrl = chapterUrl;
+      var chapter = null;
+      try {
+        chapter = await getChapterData(chapterUrl);
+      } catch (e) {}
+      if (!chapter || chapter.isLocked === true) {
+        return { kind: "text", chapterTitle: "", textContent: "" };
+      }
+      var isNovel = !!((chapter.mangaPost && chapter.mangaPost.isNovel) || (chapter.content && !(Array.isArray(chapter.images) && chapter.images.length)));
+      if (isNovel) {
+        var number = String(chapter.number || "");
+        return {
+          kind: "text",
+          chapterTitle: String(chapter.title || "") || (number ? "الفصل " + number : ""),
+          textContent: htmlToText(chapter.content || "")
+        };
+      }
+      return { kind: "image", imageUrls: pagesFromChapter(chapter) };
     },
 
     async fetchMoreChapters() {

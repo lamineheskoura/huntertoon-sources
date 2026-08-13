@@ -46,11 +46,11 @@
       "id": "azora",
       "name": "أزورا مانجا (Azora Manga)",
       "enabled": true,
-      "version": "1.1.0",
+      "version": "1.2.0",
       "base_url": "https://azorafly.com",
       "script": {
         "url": "sources/azora/source.js",
-        "sha256": "4DC039C97A1AF6CF6DA26D6BCE7E54AB82B3F39DCECB146C02249F53BBFB84F0",
+        "sha256": "614DEA54E0BE9983C838FDFD852AB77186373F63D76314D741B1FD17258DE679",
         "entry": "createSource"
       },
       "allowed_hosts": ["azorafly.com", "*.azorafly.com", "azoramoon.com", "*.azoramoon.com"],
