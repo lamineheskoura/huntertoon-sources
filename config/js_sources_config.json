@@ -378,7 +378,7 @@
         "dilar": {
             "id": "dilar",
             "name": "ديلار (Dilar)",
-            "version": "1.0.0",
+            "version": "1.0.1",
             "enabled": true,
             "status": "stable",
             "base_url": "https://dilar.tube",
@@ -394,7 +394,7 @@
             },
             "script": {
                 "url": "sources/dilar/source.js",
-                "sha256": "771317aafa6f676cda9c1b310c76c92e1ce92267e50df86ff8eabb4470ed87bd",
+                "sha256": "e04edce81fefd308085f7ca5c652c938c8ee796b39e1fb45070eb0238f860664",
                 "entry": "createSource"
             },
             "capabilities": {
