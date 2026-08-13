@@ -224,14 +224,26 @@ function createSource(api, config) {
     return parseWorkArray(listStr);
   }
 
-  // Fetch and parse homepage (library page shows the full manhwa list)
+  // Fetch homepage via the library JSON API.
+  // Note: /api/works paginates with limit+offset - the ?page= param is ignored,
+  // which caused the same 30 cards to repeat on every "load more" scroll.
   async function getHomepageCards(page) {
-    var url = baseUrl + "/library";
-    if (page && page > 1) url += "?page=" + page;
-    var html = await fetchHtml(url);
-    var rsc = extractRscPayload(html);
-    var items = parseWorkListFromRsc(rsc, "donghuaList");
-    if (!items.length) items = parseWorkListFromRsc(rsc, "featured");
+    var p = page && page > 1 ? Math.floor(page) : 1;
+    var offset = (p - 1) * 30;
+    var url = baseUrl + "/api/works?limit=30&offset=" + offset;
+    var json = await fetchHtml(url);
+    var items = [];
+    try {
+      var arr = JSON.parse(json);
+      if (Array.isArray(arr)) items = arr;
+    } catch (e) { items = []; }
+    // Fallback: server-rendered library page (RSC donghuaList) if the API fails
+    if (!items.length) {
+      var html = await fetchHtml(baseUrl + "/library");
+      var rsc = extractRscPayload(html);
+      items = parseWorkListFromRsc(rsc, "donghuaList");
+      if (!items.length) items = parseWorkListFromRsc(rsc, "featured");
+    }
     return dedupeCards(items);
   }
 

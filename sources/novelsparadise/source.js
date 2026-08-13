@@ -174,8 +174,12 @@ function createSource(api, config) {
 
   // Fetch homepage cards (series list page - browse side triggers CF bypass)
   async function getHomepageCards(page) {
-    var url = baseUrl + "/series/?order=update";
-    if (page && page > 1) url += "&page=" + page;
+    // Use "/series" WITHOUT the trailing slash and without "?order=update":
+    // that exact URL returns the Cloudflare 403 challenge, which triggers the
+    // app's CF-bypass flow and saves the cookies needed for chapter pages.
+    // "/series/" returns 200 directly, so no cookies are stored and chapters fail.
+    var url = baseUrl + "/series";
+    if (page && page > 1) url = baseUrl + "/series/page/" + Math.floor(page) + "/";
     var html = await fetchHtml(url);
     return dedupeCards(parseCardsFromHtml(html));
   }
