@@ -127,6 +127,27 @@ function createSource(api, config) {
     return parts.length ? parts[parts.length - 1] : "";
   }
 
+  function extractChapterSlug(url) {
+    var m = String(url || "").match(/\/chapter-([^\/?#]+)/);
+    return m ? "chapter-" + m[1] : "";
+  }
+
+  async function getChapterPagesFromApi(chapterUrl) {
+    var slug = extractSlug(chapterUrl);
+    var chapterSlug = extractChapterSlug(chapterUrl);
+    if (!slug || !chapterSlug) return null;
+    var data = await getJson(apiBase + "/api/chapter" + buildQuery({ mangaslug: slug, chapterslug: chapterSlug }));
+    var chapter = data && data.chapter;
+    if (!chapter) return null;
+    if (chapter.isLocked === true || !Array.isArray(chapter.images) || chapter.images.length === 0) {
+      var err = new Error("Chapter is locked");
+      err.isLocked = true;
+      throw err;
+    }
+    var pages = chapter.images.slice().sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
+    return pages.map(function (p) { return sanitizeImageUrl(p.url); }).filter(function (u) { return !!u; });
+  }
+
   function extractPostId(html) {
     var patterns = [
       /&quot;postId&quot;:\[0,(\d+)\]/,
@@ -187,60 +208,6 @@ function createSource(api, config) {
     }
     chapters.sort(function (a, b) { return (parseFloat(b.number) || 0) - (parseFloat(a.number) || 0); });
     return chapters;
-  }
-
-  async function extractImages(html) {
-    var entries = [];
-    var seen = {};
-    function add(raw, index) {
-      var url = sanitizeImageUrl(raw || "");
-      if (!url || seen[url]) return;
-      if (url.indexOf("/featured/") !== -1 || url.indexOf("logo") !== -1 || url.indexOf("avatar") !== -1 || url.indexOf("icon") !== -1) return;
-      seen[url] = true;
-      entries.push({ url: url, index: typeof index === "number" ? index : 999999 });
-    }
-
-    var normalized = html.replace(/\\\//g, "/");
-    var tagRegex = /<img[^>]+data-reader-page-image[^>]*>/gi;
-    var attrRegex = /(src|data-src|data-lazy-src|data-reader-index)\s*=\s*["']([^"']+)["']/gi;
-    var tagMatch;
-    while ((tagMatch = tagRegex.exec(normalized)) !== null) {
-      var tag = tagMatch[0];
-      var attrs = {};
-      var attrMatch;
-      while ((attrMatch = attrRegex.exec(tag)) !== null) {
-        attrs[attrMatch[1]] = attrMatch[2];
-      }
-      var index = parseInt(attrs["data-reader-index"] || "", 10);
-      add(attrs.src || attrs["data-src"] || attrs["data-lazy-src"] || "", isNaN(index) ? 999999 : index);
-      add(attrs["data-src"] || "", isNaN(index) ? 999999 : index);
-      add(attrs["data-lazy-src"] || "", isNaN(index) ? 999999 : index);
-    }
-
-    if (!entries.length) {
-      var images = await api.cssAll(html, ".comic-images-wrapper img[data-reader-page-image], img[data-reader-page-image]");
-      for (var i = 0; i < images.length; i++) {
-        var attrs = images[i].attrs || {};
-        var index = parseInt(attrs["data-reader-index"] || "", 10);
-        add(attrs.src || attrs["data-src"] || attrs["data-lazy-src"] || "", isNaN(index) ? 999999 : index);
-        add(attrs["data-src"] || "", isNaN(index) ? 999999 : index);
-        add(attrs["data-lazy-src"] || "", isNaN(index) ? 999999 : index);
-      }
-    }
-
-    var re = /https?:\/\/storage\.azora(?:fly|moon)\.com\/[^\s"'<>\\]+\.(?:jpg|jpeg|png|webp)/gi;
-    var m;
-    while ((m = re.exec(normalized)) !== null) add(m[0], 999999);
-
-    entries.sort(function (a, b) {
-      if (a.index !== b.index) return a.index - b.index;
-      function page(u) {
-        var pm = u.match(/page-(\d+)/i) || u.split("/").pop().match(/^(\d+)/) || u.match(/(\d+)\.(?:jpg|jpeg|png|webp)$/i);
-        return pm ? parseInt(pm[1], 10) : 999999;
-      }
-      return page(a.url) - page(b.url);
-    });
-    return entries.map(function (entry) { return entry.url; });
   }
 
   return {
@@ -322,7 +289,11 @@ function createSource(api, config) {
     async getChapterPages(args) {
       var chapterUrl = makeAbsolute((args && args.url) || "");
       lastChapterUrl = chapterUrl;
-      return await extractImages(await getHtml(chapterUrl));
+      try {
+        var pages = await getChapterPagesFromApi(chapterUrl);
+        if (pages && pages.length) return pages;
+      } catch (e) {}
+      return [];
     },
 
     async getChapterContent(args) {
