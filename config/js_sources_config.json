@@ -1,8 +1,8 @@
 {
-    "version": "1.19.0",
+    "version": "1.19.1",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.08.15.1",
+    "manifest_version": "2026.08.15.2",
     "generated_at": "2026-08-15T00:00:00Z",
     "last_updated": "2026-08-15T00:00:00Z",
     "min_app_version": "1.4.0",
@@ -1482,13 +1482,13 @@
         "mangadar": {
             "id": "mangadar",
             "name": "مانغادار (MangaDar)",
-            "version": "1.0.0",
+            "version": "1.0.1",
             "enabled": true,
             "status": "beta",
             "base_url": "https://mangadar.com",
             "website_url": "https://mangadar.com",
             "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=mangadar.com",
-            "requires_cf": true,
+            "requires_cf": false,
             "image_referer": "https://mangadar.com/",
             "headers": {
                 "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
@@ -1498,7 +1498,7 @@
             },
             "script": {
                 "url": "sources/mangadar/source.js",
-                "sha256": "3D18A8687194E3A3F35BF01FA18684164351131E22E4A0CB985C2129FA9E2E23",
+                "sha256": "1AE84540EF3A13B8C1C2AD19954307AE0D1FA19ADCA2F2DE83F9882354E586C7",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1511,7 +1511,7 @@
                 "supports_filters": false,
                 "supports_lazy_chapters": false,
                 "supports_download": true,
-                "requires_cloudflare": true
+                "requires_cloudflare": false
             },
             "compatibility": {
                 "min_app_version": "1.4.0",
@@ -1521,8 +1521,8 @@
                 "language": "ar",
                 "adult": false,
                 "author": "HunterToon Team",
-                "description": "MangaDar - WordPress/Alpine manga source with Cloudflare Turnstile protection",
-                "changelog": "v1.0.0: listCards by series link regex, chapters from Alpine rows JSON, pages from mv-pages JSON"
+                "description": "MangaDar - WordPress/Alpine manga source, no Cloudflare protection",
+                "changelog": "v1.0.1: no Cloudflare protection - direct HTTP verified live (homepage/detail/chapter/search)"
             }
         }
     }

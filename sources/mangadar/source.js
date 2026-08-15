@@ -100,7 +100,7 @@ function createSource(api, config) {
   // ────────────────── Public API ──────────────────
 
   return {
-    requiresCloudflare: true,
+    requiresCloudflare: false,
 
     async getHomepageManga(args) {
       var page = (args && args.page) || 1;
