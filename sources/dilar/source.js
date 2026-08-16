@@ -47,10 +47,15 @@ function createSource(api, config) {
     return out;
   }
 
-  function concatBytes(a, b) {
-    var out = new Uint8Array(a.length + b.length);
-    out.set(a);
-    out.set(b, a.length);
+  function concatBytes() {
+    var total = 0;
+    for (var i = 0; i < arguments.length; i++) total += arguments[i].length;
+    var out = new Uint8Array(total);
+    var off = 0;
+    for (var j = 0; j < arguments.length; j++) {
+      out.set(arguments[j], off);
+      off += arguments[j].length;
+    }
     return out;
   }
 
@@ -137,6 +142,16 @@ function createSource(api, config) {
     var out = new Uint8Array(hex.length / 2);
     for (var i = 0; i < out.length; i++) out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
     return out;
+  }
+
+  function hexBytes(u8) {
+    var s = "";
+    for (var i = 0; i < u8.length; i++) s += u8[i].toString(16).padStart(2, "0");
+    return s;
+  }
+
+  function len2Bytes(u8) {
+    return new Uint8Array([(u8.length >> 8) & 0xff, u8.length & 0xff]);
   }
 
   // ==================== SHA-256 ====================
@@ -506,7 +521,7 @@ function createSource(api, config) {
     return { privHex: privHex, pubB64: b64url(raw) };
   }
 
-  // ==================== ECIES (dilar v1..v5) ====================
+  // ==================== ECIES (dilar v1..v8) ====================
   function decryptEnvelope(env, privHex, pubB64) {
     var priv = BigInt("0x" + privHex);
     var pubRaw = b64decode(pubB64);
@@ -531,6 +546,15 @@ function createSource(api, config) {
     } else if (env.v === 5) {
       infoBytes = utf8Encode("dilar.response.ecies.v5|" + e);
       saltBytes = hmacSha256(iv, concatBytes(epk, pubRaw));
+    } else if (env.v === 6) {
+      infoBytes = utf8Encode("dilar.response.ecies.v6|" + e + "|" + b64url(iv));
+      saltBytes = sha256(concatBytes(sha256(pubRaw), sha256(epk), iv));
+    } else if (env.v === 7) {
+      infoBytes = utf8Encode("dilar.response.ecies.v7|" + e);
+      saltBytes = hkdf(iv, epk, "dilar.response.ecies.v7.salt", 32);
+    } else if (env.v === 8) {
+      infoBytes = utf8Encode("dilar.response.ecies.v8|" + e + "|" + hexBytes(iv));
+      saltBytes = sha256(concatBytes(len2Bytes(pubRaw), pubRaw, len2Bytes(epk), epk, len2Bytes(iv), iv));
     } else {
       throw new Error("unknown envelope v " + env.v);
     }
@@ -544,9 +568,24 @@ function createSource(api, config) {
     return JSON.parse(utf8Decode(pt));
   }
 
+  // assets_enc (dilar.media.payload.v1): {v:1, k, e, s, iv, ct, tag}
+  function decryptAssetsEnc(ae, unlockToken, mediaToken) {
+    var ikm = utf8Encode(String(unlockToken) + "|" + String(mediaToken));
+    var salt = b64decode(ae.s);
+    var info = utf8Encode("dilar.media.payload.v1|" + ae.e);
+    var key = hkdf(ikm, salt, info, 32);
+    var iv = b64decode(ae.iv);
+    var ct = b64decode(ae.ct);
+    var tag = b64decode(ae.tag);
+    var combined = new Uint8Array(ct.length + tag.length);
+    combined.set(ct);
+    combined.set(tag, ct.length);
+    var pt = aesGcmDecrypt(key, iv, combined);
+    return JSON.parse(utf8Decode(pt));
+  }
+
   // ==================== DILAR API ====================
   var passCache = {};
-  var grantCache = {};
   var mediaCache = {};
 
   function nowMs() {
@@ -571,63 +610,54 @@ function createSource(api, config) {
     return token;
   }
 
-  async function getGrant(relId) {
-    var cached = grantCache[relId];
-    if (cached && cached.exp > nowMs()) return cached;
-    var pass = await getPassToken(relId);
-    var res = await api.http(apiBase + "/releases/" + relId + "/grant", {
-      method: "POST",
-      headers: mergeHeaders({ "Content-Type": "application/json", "X-Scheme-Caps": "1,2", "X-Unlock-Free-Chapter": pass }),
-      body: "{}"
-    });
-    var body = res && res.ok ? String(res.body || "") : "";
-    var data = {};
-    try { data = JSON.parse(body); } catch (e) { }
-    var grant = String(data.grant || "");
-    if (!grant) throw new Error("grant failed for " + relId);
-    var exp = (Number(data.expiresIn) || 3600) - 60;
-    var result = { grant: grant, storageKey: String(data.storageKey || ""), pages: Array.isArray(data.pages) ? data.pages : [] };
-    grantCache[relId] = { grant: grant, exp: nowMs() + exp * 1000 };
-    return result;
-  }
-
-  async function getChapterDetail(relId) {
-    var pass = await getPassToken(relId);
-    var grantInfo = await getGrant(relId);
-    var session = makeSession();
+  async function fetchDetail(relId, session, pass) {
+    var extra = {
+      "X-Crypto-Caps": "1,2,3,4,5,6,7,8",
+      "X-DH-Pub": session.pubB64
+    };
+    if (pass) extra["X-Unlock-Free-Chapter"] = pass;
     var res = await api.http(apiBase + "/chapters/" + relId, {
       method: "GET",
-      headers: mergeHeaders({
-        "X-Crypto-Caps": "1,2,3,4,5",
-        "X-DH-Pub": session.pubB64,
-        "X-Media-Grant": grantInfo.grant,
-        "X-Unlock-Free-Chapter": pass
-      })
+      headers: mergeHeaders(extra)
     });
     var body = res && res.ok ? String(res.body || "") : "";
     var env = {};
     try { env = JSON.parse(body); } catch (e) { }
     if (!env || !env.v || !env.epk || !env.ct) {
-      if (body.indexOf("FREE_PASS_REQUIRED") >= 0 || body.indexOf("403") >= 0) {
-        delete passCache[relId];
-        delete grantCache[relId];
-      }
       throw new Error("chapter detail failed for " + relId);
     }
     return decryptEnvelope(env, session.privHex, session.pubB64);
+  }
+
+  async function getChapterDetail(relId) {
+    var session = makeSession();
+    var cached = passCache[relId];
+    var payload = await fetchDetail(relId, session, cached && cached.exp > nowMs() ? cached.token : null);
+    if (payload && payload.free_pass_required === true) {
+      var pass = await getPassToken(relId);
+      payload = await fetchDetail(relId, session, pass);
+    }
+    return payload;
   }
 
   function mediaUrl(storageKey, file, mediaToken) {
     return baseUrl + "/uploads/releases/" + storageKey + "/hq/" + file + "?t=" + mediaToken;
   }
 
-  async function getChapterImages(relId) {
+  async function getChapterImages(relId, passToken) {
     var detail = await getChapterDetail(relId);
     var storageKey = String(detail.storage_key || "");
     var mediaToken = String(detail.media_token || "");
-    if (!storageKey || !mediaToken) return [];
-    var pages = Array.isArray(detail.pages) ? detail.pages : [];
-    if (!pages.length && Array.isArray(detail.webp_pages)) pages = detail.webp_pages;
+    var pages = Array.isArray(detail.pages) && detail.pages.length ? detail.pages : [];
+    if (!pages.length && Array.isArray(detail.webp_pages) && detail.webp_pages.length) pages = detail.webp_pages;
+    if (!pages.length && detail.assets_enc) {
+      var pass = passToken || (passCache[relId] ? passCache[relId].token : null);
+      try {
+        var assets = decryptAssetsEnc(detail.assets_enc, pass, mediaToken);
+        if (Array.isArray(assets)) pages = assets;
+      } catch (e) { }
+    }
+    if (!storageKey || !mediaToken || !pages.length) return [];
     var urls = [];
     for (var i = 0; i < pages.length; i++) {
       var file = String((pages[i] && (pages[i].url || pages[i].webp_url)) || "").trim();
@@ -792,7 +822,6 @@ function createSource(api, config) {
       } catch (e) { }
       try {
         delete passCache[relId];
-        delete grantCache[relId];
         return await getChapterImages(relId);
       } catch (e) {
         return [];

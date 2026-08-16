@@ -1,8 +1,8 @@
 {
-    "version": "1.21.0",
+    "version": "1.22.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.08.16.1",
+    "manifest_version": "2026.08.16.2",
     "generated_at": "2026-08-16T00:00:00Z",
     "last_updated": "2026-08-16T00:00:00Z",
     "min_app_version": "1.4.0",
@@ -378,7 +378,7 @@
         "dilar": {
             "id": "dilar",
             "name": "ديلار (Dilar)",
-            "version": "1.1.0",
+            "version": "1.2.0",
             "enabled": true,
             "status": "stable",
             "base_url": "https://dilar.tube",
@@ -394,7 +394,7 @@
             },
             "script": {
                 "url": "sources/dilar/source.js",
-                "sha256": "2858BFA0A6DAF9854BB06F8B16C12096261959DFCB80C6E20D4854FDD6BA7DF3",
+                "sha256": "216999D8948E37CFD6D05B2FC5B78F65A283ECA229C363CE1AE3C88DA757DF6B",
                 "entry": "createSource"
             },
             "capabilities": {
