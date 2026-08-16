@@ -1,10 +1,10 @@
 {
-    "version": "1.20.0",
+    "version": "1.21.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.08.15.3",
-    "generated_at": "2026-08-15T00:00:00Z",
-    "last_updated": "2026-08-15T00:00:00Z",
+    "manifest_version": "2026.08.16.1",
+    "generated_at": "2026-08-16T00:00:00Z",
+    "last_updated": "2026-08-16T00:00:00Z",
     "min_app_version": "1.4.0",
     "repository": {
         "owner": "lamineheskoura",
@@ -378,7 +378,7 @@
         "dilar": {
             "id": "dilar",
             "name": "ديلار (Dilar)",
-            "version": "1.0.1",
+            "version": "1.1.0",
             "enabled": true,
             "status": "stable",
             "base_url": "https://dilar.tube",
@@ -394,7 +394,7 @@
             },
             "script": {
                 "url": "sources/dilar/source.js",
-                "sha256": "5010016623279bf1d4d80562afa53bfbc161663f5fabf65e4132e8086b82c2a8",
+                "sha256": "2858BFA0A6DAF9854BB06F8B16C12096261959DFCB80C6E20D4854FDD6BA7DF3",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -416,8 +416,8 @@
                 "language": "ar",
                 "adult": false,
                 "author": "HunterToon Team",
-                "description": "Dilar API source migrated to JavaScript with manga and novel support",
-                "changelog": "Initial JS migration matching API list/details/chapter content"
+                "description": "Dilar API source with pure-JS crypto (ECDH P-256 + ECIES envelope decryption) for chapter content",
+                "changelog": "v1.1.0: rewrote chapter flow (free-pass unlock, scheme grant, encrypted chapter detail via X-DH-Pub + pure-JS ECIES v1..v5 decryption, media_token image URLs)"
             }
         },
         "lekmanga": {
