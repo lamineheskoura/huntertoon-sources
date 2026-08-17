@@ -762,7 +762,7 @@ function createSource(api, config) {
   }
 
   return {
-    requiresCloudflare: false,
+    requiresCloudflare: true,
 
     async getHomepageManga(args) {
       return this.getFilteredManga(args || {});

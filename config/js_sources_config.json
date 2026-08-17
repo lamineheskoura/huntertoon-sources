@@ -2,9 +2,9 @@
     "version": "1.22.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.08.16.2",
-    "generated_at": "2026-08-16T00:00:00Z",
-    "last_updated": "2026-08-16T00:00:00Z",
+    "manifest_version": "2026.08.17.1",
+    "generated_at": "2026-08-17T00:00:00Z",
+    "last_updated": "2026-08-17T00:00:00Z",
     "min_app_version": "1.4.0",
     "repository": {
         "owner": "lamineheskoura",
@@ -378,13 +378,13 @@
         "dilar": {
             "id": "dilar",
             "name": "ديلار (Dilar)",
-            "version": "1.2.0",
+            "version": "1.2.1",
             "enabled": true,
             "status": "stable",
             "base_url": "https://dilar.tube",
             "website_url": "https://dilar.tube",
             "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=dilar.tube",
-            "requires_cf": false,
+            "requires_cf": true,
             "image_referer": "https://dilar.tube/",
             "headers": {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -394,7 +394,7 @@
             },
             "script": {
                 "url": "sources/dilar/source.js",
-                "sha256": "216999D8948E37CFD6D05B2FC5B78F65A283ECA229C363CE1AE3C88DA757DF6B",
+                "sha256": "A7927E84B29D94003E596DF94643AD29C1900DF4DF53ED0DA623E2B5EFECA900",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -406,7 +406,7 @@
                 "supports_filters": true,
                 "supports_lazy_chapters": false,
                 "supports_download": true,
-                "requires_cloudflare": false
+                "requires_cloudflare": true
             },
             "compatibility": {
                 "min_app_version": "1.4.0",
@@ -417,7 +417,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Dilar API source with pure-JS crypto (ECDH P-256 + ECIES envelope decryption) for chapter content",
-                "changelog": "v1.1.0: rewrote chapter flow (free-pass unlock, scheme grant, encrypted chapter detail via X-DH-Pub + pure-JS ECIES v1..v5 decryption, media_token image URLs)"
+                "changelog": "v1.2.1: enable Cloudflare bypass — dilar.tube serves an inline challenge (Turnstile) on the manga list page; the app now routes all requests through the WebView challenge-solver and reuses the session cookies (requiresCloudflare=true). v1.1.0: rewrote chapter flow (free-pass unlock, scheme grant, encrypted chapter detail via X-DH-Pub + pure-JS ECIES v1..v5 decryption, media_token image URLs)"
             }
         },
         "lekmanga": {
