@@ -1303,7 +1303,7 @@
         "asurascans": {
             "id": "asurascans",
             "name": "Asura Scans",
-            "version": "1.0.2",
+            "version": "1.0.1",
             "enabled": true,
             "status": "beta",
             "base_url": "https://asurascans.com",
@@ -1320,7 +1320,7 @@
             },
             "script": {
                 "url": "sources/asurascans/source.js",
-                "sha256": "bc92b895229516dce6c105d770e3c5056675977edca942e7579ad9593bc0f4df",
+                "sha256": "1464d36b9aa2d48859a49adb1df7d1e9840186169d2b7e29f063be29711655ce",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1342,7 +1342,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Asura Scans English manga/manhwa source (Astro.js SSR). Homepage at /; browse at /browse?page=N; detail at /comics/{slug}; reader at /comics/{slug}/chapter/{num}; images on cdn.asurascans.com. Supports locked chapter detection.",
-                "changelog": "Fix reader: route chapter images through the weserv image proxy (images.weserv.nl) with JPEG output. The CDN (cdn.asurascans.com) drops non-browser HTTP clients (the app downloader), so chapter images never loaded in the reader; weserv fetches server-side and serves any client, and JPEG output avoids webp decoding issues. List, detail, search and covers unchanged."
+                "changelog": "Fix parseCards: add fallback .series-card selector for browse/search page (was using only homepage grid selector); browse/search now shows correct manga list"
             }
         },
         "stellarsaber": {
