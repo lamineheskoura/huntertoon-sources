@@ -5,7 +5,7 @@ function createSource(api, config) {
     configHeaders["User-Agent"] ||
     "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
   var lastChapterUrl = baseUrl + "/";
-  var cdnBase = "https://cdn.asurascans.com";
+  var weservBase = "https://images.weserv.nl/";
 
   var defaultGenres = [
     "Action", "Adventure", "Comedy", "Drama", "Fantasy", "Romance",
@@ -153,6 +153,12 @@ function createSource(api, config) {
     return chapters;
   }
 
+  function proxyReaderImage(url) {
+    if (url.indexOf("cdn.asurascans.com") === -1) return url;
+    var target = url.replace(/^https?:\/\//, "");
+    return weservBase + "?url=" + encodeURIComponent(target) + "&output=jpeg&quality=85";
+  }
+
   async function extractReaderImages(html) {
     var urls = [];
     var seen = {};
@@ -177,7 +183,7 @@ function createSource(api, config) {
       }
       if (seen[src]) continue;
       seen[src] = true;
-      urls.push(src);
+      urls.push(proxyReaderImage(src));
     }
     return urls;
   }
