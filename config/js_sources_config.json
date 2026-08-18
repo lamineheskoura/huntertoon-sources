@@ -1303,7 +1303,7 @@
         "asurascans": {
             "id": "asurascans",
             "name": "Asura Scans",
-            "version": "1.0.1",
+            "version": "1.1.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://asurascans.com",
@@ -1320,7 +1320,7 @@
             },
             "script": {
                 "url": "sources/asurascans/source.js",
-                "sha256": "1464d36b9aa2d48859a49adb1df7d1e9840186169d2b7e29f063be29711655ce",
+                "sha256": "dda54433388a67a222aafd3ceed5414607aaab83856fa7c6d4024fbf4f41b662",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1342,7 +1342,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Asura Scans English manga/manhwa source (Astro.js SSR). Homepage at /; browse at /browse?page=N; detail at /comics/{slug}; reader at /comics/{slug}/chapter/{num}; images on cdn.asurascans.com. Supports locked chapter detection.",
-                "changelog": "Fix parseCards: add fallback .series-card selector for browse/search page (was using only homepage grid selector); browse/search now shows correct manga list"
+                "changelog": "v1.1.0 (studied against live site): (1) FIX pagination/browse: the real server-rendered listing is /browse/comics?page=N (verified: 40 cards/page, page 1 != page 2); plain /browse?page=N returns an empty client-side shell, which is why the list never advanced. Homepage page>1 and filtered browse now use /browse/comics?page=N; genre/type filters try /browse/comics?genres=..&page=N first and fall back to the plain listing if the server returns no cards (filters are client-side/API only). (2) FIX search: /browse?search= is also a client-side shell; search now calls the site API api.asurascans.com/api/search?q= (returns {data:[{slug,title,cover|cover_url,type}]}), mapping slug to /comics/{slug}. (3) FIX intermittent chapter images: cdn.asurascans.com intermittently drops non-browser HTTP clients (verified: our IP was TCP-blocked while the site kept serving browsers and weserv fetched the CDN fine); chapter images now go through images.weserv.nl with output=jpeg (serves any client, no webp decode issues). List/detail/chapter-list logic unchanged."
             }
         },
         "stellarsaber": {

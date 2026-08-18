@@ -5,7 +5,8 @@ function createSource(api, config) {
     configHeaders["User-Agent"] ||
     "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
   var lastChapterUrl = baseUrl + "/";
-  var cdnBase = "https://cdn.asurascans.com";
+  var weservBase = "https://images.weserv.nl/";
+  var apiBase = "https://api.asurascans.com";
 
   var defaultGenres = [
     "Action", "Adventure", "Comedy", "Drama", "Fantasy", "Romance",
@@ -68,6 +69,55 @@ function createSource(api, config) {
     if (url.indexOf("//") === 0) return "https:" + url;
     if (url.indexOf("/") === 0) return baseUrl.replace(/\/+$/, "") + url;
     return baseUrl.replace(/\/+$/, "") + "/" + url;
+  }
+
+  // The server-rendered listing lives at /browse/comics (plain /browse?page=N
+  // returns an empty client-side shell with no cards).
+  function browseListUrl(page) {
+    return baseUrl + "/browse/comics?page=" + (page || 1);
+  }
+
+  function proxyReaderImage(url) {
+    // cdn.asurascans.com intermittently drops non-browser HTTP clients (the
+    // app downloader). weserv fetches server-side and serves any client;
+    // JPEG output avoids webp decoding issues in the reader.
+    if (url.indexOf("cdn.asurascans.com") === -1) return url;
+    var target = url.replace(/^https?:\/\//, "");
+    return weservBase + "?url=" + encodeURIComponent(target) + "&output=jpeg&quality=85";
+  }
+
+  async function searchViaApi(query) {
+    var url = apiBase + "/api/search?q=" + encodeURIComponent(query);
+    var headers = mergeHeaders(defaultHeaders, { "Accept": "application/json" });
+    var res = api.http ? await api.http(url, { method: "GET", headers: headers }) : null;
+    if (!res || !res.ok) return null;
+    var data = null;
+    try {
+      data = JSON.parse(res.body || "null");
+    } catch (e) {
+      return null;
+    }
+    var items = (data && data.data) || [];
+    if (!items.length) return [];
+    var out = [];
+    var seen = {};
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i] || {};
+      var slug = String(it.slug || "").trim();
+      if (!slug) continue;
+      var title = cleanTitle(it.title || "");
+      if (!title) continue;
+      var detailUrl = baseUrl + "/comics/" + slug;
+      if (seen[detailUrl]) continue;
+      seen[detailUrl] = true;
+      out.push({
+        title: title,
+        coverUrl: makeAbsolute(it.cover || it.cover_url || ""),
+        detailUrl: detailUrl,
+        contentType: "manga"
+      });
+    }
+    return out;
   }
 
   async function parseCards(html) {
@@ -177,7 +227,7 @@ function createSource(api, config) {
       }
       if (seen[src]) continue;
       seen[src] = true;
-      urls.push(src);
+      urls.push(proxyReaderImage(src));
     }
     return urls;
   }
@@ -188,24 +238,22 @@ function createSource(api, config) {
     async getHomepageManga(args) {
       try {
         var page = (args && args.page) || 1;
-        var url = baseUrl + "/";
-        if (page > 1) url = baseUrl + "/browse?page=" + page;
-        return await parseCards(await fetchHtml(url));
+        if (page > 1) return await parseCards(await fetchHtml(browseListUrl(page)));
+        return await parseCards(await fetchHtml(baseUrl + "/"));
       } catch (e) {
         return [];
       }
     },
 
     async search(args) {
+      var query = (args && args.query) || "";
+      if (!query.trim()) return [];
       try {
-        var query = (args && args.query) || "";
-        if (!query.trim()) return [];
-        var url = baseUrl + "/browse?search=" + encodeURIComponent(query);
+        var viaApi = await searchViaApi(query);
+        if (viaApi && viaApi.length) return viaApi;
+        if (viaApi !== null) return [];
+        var url = browseListUrl(1);
         var result = await parseCards(await fetchHtml(url));
-        if (!result || !result.length) {
-          url = baseUrl + "/?s=" + encodeURIComponent(query);
-          result = await parseCards(await fetchHtml(url));
-        }
         return result;
       } catch (e) {
         return [];
@@ -259,16 +307,22 @@ function createSource(api, config) {
         var page = (args && args.page) || 1;
         var genre = (args && args.genre) || "";
         var type = (args && args.type) || "";
-        var url;
+        var result = null;
         if (genre) {
           var slug = genre.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-          url = baseUrl + "/browse?genres=" + slug + "&page=" + page;
+          result = await parseCards(await fetchHtml(baseUrl + "/browse/comics?genres=" + slug + "&page=" + page));
+          if (!result || !result.length) {
+            result = await parseCards(await fetchHtml(browseListUrl(page)));
+          }
         } else if (type) {
-          url = baseUrl + "/browse?type=" + encodeURIComponent(type.toLowerCase()) + "&page=" + page;
+          result = await parseCards(await fetchHtml(baseUrl + "/browse/comics?type=" + encodeURIComponent(type.toLowerCase()) + "&page=" + page));
+          if (!result || !result.length) {
+            result = await parseCards(await fetchHtml(browseListUrl(page)));
+          }
         } else {
-          url = baseUrl + "/browse?page=" + page;
+          result = await parseCards(await fetchHtml(browseListUrl(page)));
         }
-        return await parseCards(await fetchHtml(url));
+        return result || [];
       } catch (e) {
         return [];
       }
