@@ -31,6 +31,11 @@ function createSource(api, config) {
   async function getJson(url) {
     var text = await api.fetchText(url, headers);
     if (!text) throw new Error("Empty response: " + url);
+    text = String(text);
+    if (text.charAt(0) !== "{" && text.charAt(0) !== "[") {
+      var inner = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+      if (inner) text = inner[0];
+    }
     return JSON.parse(text);
   }
 
@@ -762,7 +767,7 @@ function createSource(api, config) {
   }
 
   return {
-    requiresCloudflare: true,
+    requiresCloudflare: false,
 
     async getHomepageManga(args) {
       return this.getFilteredManga(args || {});
