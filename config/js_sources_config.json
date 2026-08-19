@@ -1,10 +1,10 @@
 {
-    "version": "1.23.0",
+    "version": "1.24.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.08.19.1",
-    "generated_at": "2026-08-19T00:00:00Z",
-    "last_updated": "2026-08-19T00:00:00Z",
+    "manifest_version": "2026.08.19.2",
+    "generated_at": "2026-08-19T12:00:00Z",
+    "last_updated": "2026-08-19T12:00:00Z",
     "min_app_version": "1.4.0",
     "repository": {
         "owner": "lamineheskoura",
@@ -378,13 +378,13 @@
         "dilar": {
             "id": "dilar",
             "name": "ديلار (Dilar)",
-            "version": "1.3.0",
+            "version": "1.4.0",
             "enabled": true,
             "status": "stable",
             "base_url": "https://dilar.tube",
             "website_url": "https://dilar.tube",
             "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=dilar.tube",
-            "requires_cf": false,
+            "requires_cf": true,
             "image_referer": "https://dilar.tube/",
             "headers": {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -394,7 +394,7 @@
             },
             "script": {
                 "url": "sources/dilar/source.js",
-                "sha256": "3F1F16615CD24E3011425140871012B8372CDC9A23C552B07D483377AE4257AB",
+                "sha256": "977342C05B0EEB04F9BC44747150FC352504C6D861BA67907D2A73AE98ACAB93",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -406,7 +406,7 @@
                 "supports_filters": true,
                 "supports_lazy_chapters": false,
                 "supports_download": true,
-                "requires_cloudflare": false
+                "requires_cloudflare": true
             },
             "compatibility": {
                 "min_app_version": "1.4.0",
@@ -417,7 +417,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Dilar API source with pure-JS crypto (ECDH P-256 + ECIES envelope decryption) for chapter content",
-                "changelog": "v1.3.0: no Cloudflare on the API — dilar.tube serves raw JSON to non-browser clients (verified live); the embedded Turnstile only protects the website pages which the app never fetches, so all requests now go direct (requiresCloudflare=false). Also made JSON parsing robust against the <html><body><p>…</p></body></html> wrapper the API serves to browsers. v1.2.1: enable Cloudflare bypass — dilar.tube serves an inline challenge (Turnstile) on the manga list page; the app now routes all requests through the WebView challenge-solver and reuses the session cookies (requiresCloudflare=true). v1.1.0: rewrote chapter flow (free-pass unlock, scheme grant, encrypted chapter detail via X-DH-Pub + pure-JS ECIES v1..v5 decryption, media_token image URLs)"
+                "changelog": "v1.4.0: restore requiresCloudflare=true — dilar.tube is behind Cloudflare and blocks direct Dart HTTP (TLS fingerprinting); the WebView solver now fetches the HTML-wrapped JSON which the unwrap in getJson parses correctly (raw JSON still handled for non-browser clients). v1.3.0: no Cloudflare on the API — dilar.tube serves raw JSON to non-browser clients (verified live); the embedded Turnstile only protects the website pages which the app never fetches, so all requests now go direct (requiresCloudflare=false). Also made JSON parsing robust against the <html><body><p>…</p></body></html> wrapper the API serves to browsers. v1.2.1: enable Cloudflare bypass — dilar.tube serves an inline challenge (Turnstile) on the manga list page; the app now routes all requests through the WebView challenge-solver and reuses the session cookies (requiresCloudflare=true). v1.1.0: rewrote chapter flow (free-pass unlock, scheme grant, encrypted chapter detail via X-DH-Pub + pure-JS ECIES v1..v5 decryption, media_token image URLs)"
             }
         },
         "lekmanga": {
@@ -468,13 +468,13 @@
         "mangastarz": {
             "id": "mangastarz",
             "name": "MangaStarz",
-            "version": "1.1.0",
+            "version": "1.2.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://manga-starz.net",
             "website_url": "https://manga-starz.net",
             "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=manga-starz.net",
-            "requires_cf": false,
+            "requires_cf": true,
             "image_referer": "https://manga-starz.net/",
             "headers": {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -484,7 +484,7 @@
             },
             "script": {
                 "url": "sources/mangastarz/source.js",
-                "sha256": "ed53921c57acad9694c28277f1471a99912ac43b328eba19f11bfbf94292b3e6",
+                "sha256": "D3D1C6B294939BFF6DE78F4EE12A6A03B54FA88B146AC8CF24DDBDC46B4AE1F5",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -495,7 +495,7 @@
                 "supports_filters": true,
                 "supports_lazy_chapters": false,
                 "supports_download": true,
-                "requires_cloudflare": false
+                "requires_cloudflare": true
             },
             "compatibility": {
                 "min_app_version": "1.4.0",
@@ -506,7 +506,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "MangaStarz Madara source migrated to JavaScript",
-                "changelog": "v1.1.0: no Cloudflare protection (verified live — content served directly, no interstitial; only passive CF JS detection scripts); requiresCloudflare=false. Verified selectors against the live site: homepage cards (.page-item-detail + .post-title h3 a, covers via src), pagination /manga/page/N/?m_orderby=latest (page 1 redirects to /manga/), detail (h1/.summary_image img/li.wp-manga-chapter) and reader (.reading-content .page-break img). v1.0.0: initial JS migration matching built-in Madara source behavior"
+                "changelog": "v1.2.0: restore requiresCloudflare=true — manga-starz.net is behind Cloudflare and blocks direct Dart HTTP via TLS fingerprinting (verified: empty list when set to false). The WebView solver fetches the page through Chromium's TLS stack and returns it with session cookies; the passive challenge-platform JS script is NOT a real challenge (no iframe/widget/cf_chl markers), so pages load normally. v1.1.0: no Cloudflare protection (verified live — content served directly, no interstitial; only passive CF JS detection scripts); requiresCloudflare=false. Verified selectors against the live site: homepage cards (.page-item-detail + .post-title h3 a, covers via src), pagination /manga/page/N/?m_orderby=latest (page 1 redirects to /manga/), detail (h1/.summary_image img/li.wp-manga-chapter) and reader (.reading-content .page-break img). v1.0.0: initial JS migration matching built-in Madara source behavior"
             }
         },
         "lava_scans": {
