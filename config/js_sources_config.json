@@ -378,7 +378,7 @@
         "dilar": {
             "id": "dilar",
             "name": "ديلار (Dilar)",
-            "version": "1.5.0",
+            "version": "1.5.1",
             "enabled": true,
             "status": "stable",
             "base_url": "https://dilar.tube",
@@ -394,7 +394,7 @@
             },
             "script": {
                 "url": "sources/dilar/source.js",
-                "sha256": "B00FF68E7FE5EBBF3C48338D051D133F869F2BEC8D7EE9E98DAC7B120E6C9034",
+                "sha256": "481E68A9EE471B048E64FE6ED6DAC58C5FD1F3271E301C18052F2ED48927512B",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -417,7 +417,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Dilar API source with pure-JS crypto (ECDH P-256 + ECIES envelope decryption) for chapter content",
-                "changelog": "v1.5.0: Native ECIES v12 envelope support with AES-GCM AAD, derivedNonce, and novel text support; requiresCloudflare=false for direct API responses."
+                "changelog": "v1.5.1: Removed BigInt syntax errors for full QuickJS compatibility; delegated ECIES chapter crypto to native engine bridge with headless browser fallback."
             }
         },
         "lekmanga": {
