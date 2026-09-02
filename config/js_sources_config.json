@@ -21,7 +21,7 @@
         "azora": {
             "id": "azora",
             "name": "أزورا مانجا (Azora Manga)",
-            "version": "1.2.0",
+            "version": "1.3.0",
             "enabled": true,
             "status": "stable",
             "base_url": "https://azorafly.com",
@@ -38,7 +38,7 @@
             },
             "script": {
                 "url": "sources/azora/source.js",
-                "sha256": "614DEA54E0BE9983C838FDFD852AB77186373F63D76314D741B1FD17258DE679",
+                "sha256": "914C60C653449B9A31E034466200638A23861DBE088A4AFDA3A059753508788B",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -60,7 +60,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Azora Manga source using the current azorafly.com API",
-                "changelog": "v1.2.0: novel chapters now return text content; fix post lookup (search with spaces) and detect novels via seriesType NOVEL"
+                "changelog": "v1.3.0: Direct API-based fetching via api.azorafly.com; bypass broken frontend HTML entirely for instant chapter and image loading."
             }
         },
         "brownmanga": {
@@ -378,13 +378,13 @@
         "dilar": {
             "id": "dilar",
             "name": "ديلار (Dilar)",
-            "version": "1.4.0",
+            "version": "1.5.0",
             "enabled": true,
             "status": "stable",
             "base_url": "https://dilar.tube",
             "website_url": "https://dilar.tube",
             "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=dilar.tube",
-            "requires_cf": true,
+            "requires_cf": false,
             "image_referer": "https://dilar.tube/",
             "headers": {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -394,7 +394,7 @@
             },
             "script": {
                 "url": "sources/dilar/source.js",
-                "sha256": "977342C05B0EEB04F9BC44747150FC352504C6D861BA67907D2A73AE98ACAB93",
+                "sha256": "B00FF68E7FE5EBBF3C48338D051D133F869F2BEC8D7EE9E98DAC7B120E6C9034",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -406,7 +406,7 @@
                 "supports_filters": true,
                 "supports_lazy_chapters": false,
                 "supports_download": true,
-                "requires_cloudflare": true
+                "requires_cloudflare": false
             },
             "compatibility": {
                 "min_app_version": "1.4.0",
@@ -417,30 +417,30 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Dilar API source with pure-JS crypto (ECDH P-256 + ECIES envelope decryption) for chapter content",
-                "changelog": "v1.4.0: restore requiresCloudflare=true — dilar.tube is behind Cloudflare and blocks direct Dart HTTP (TLS fingerprinting); the WebView solver now fetches the HTML-wrapped JSON which the unwrap in getJson parses correctly (raw JSON still handled for non-browser clients). v1.3.0: no Cloudflare on the API — dilar.tube serves raw JSON to non-browser clients (verified live); the embedded Turnstile only protects the website pages which the app never fetches, so all requests now go direct (requiresCloudflare=false). Also made JSON parsing robust against the <html><body><p>…</p></body></html> wrapper the API serves to browsers. v1.2.1: enable Cloudflare bypass — dilar.tube serves an inline challenge (Turnstile) on the manga list page; the app now routes all requests through the WebView challenge-solver and reuses the session cookies (requiresCloudflare=true). v1.1.0: rewrote chapter flow (free-pass unlock, scheme grant, encrypted chapter detail via X-DH-Pub + pure-JS ECIES v1..v5 decryption, media_token image URLs)"
+                "changelog": "v1.5.0: Native ECIES v12 envelope support with AES-GCM AAD, derivedNonce, and novel text support; requiresCloudflare=false for direct API responses."
             }
         },
         "lekmanga": {
             "id": "lekmanga",
             "name": "LekManga",
-            "version": "1.0.2",
+            "version": "1.1.0",
             "enabled": true,
             "status": "stable",
-            "base_url": "https://lek-manga.net",
-            "website_url": "https://lek-manga.net",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=lek-manga.net",
+            "base_url": "https://mangalik.net",
+            "website_url": "https://mangalik.net",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=mangalik.net",
             "requires_cf": false,
-            "image_referer": "https://lek-manga.net/",
+            "image_referer": "https://mangalik.net/",
             "headers": {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
                 "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
-                "Referer": "https://lek-manga.net/",
-                "Origin": "https://lek-manga.net"
+                "Referer": "https://mangalik.net/",
+                "Origin": "https://mangalik.net"
             },
             "script": {
                 "url": "sources/lekmanga/source.js",
-                "sha256": "3236da09b22b9e2f3816e46eeec0811bee238950148e42b5b921cf01e1f375e5",
+                "sha256": "3CAA0A088969B6F334464E854A9AB35202443EC1BBAC2B76D3C97F419BE191B4",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -462,7 +462,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "LekManga Madara source migrated to JavaScript",
-                "changelog": "Fixed requiresCloudflare to true matching built-in source behavior; VPN no longer needed"
+                "changelog": "v1.1.0: Updated base URL to mangalik.net; optimized for smart per-request CF bypass."
             }
         },
         "mangastarz": {

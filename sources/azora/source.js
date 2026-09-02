@@ -115,12 +115,21 @@ function createSource(api, config) {
   }
 
   async function findPostBySlug(slug) {
-    var search = String(slug || "").replace(/-/g, " ").trim();
-    var posts = await queryPosts({ searchTerm: search, perPage: 10, page: 1 });
-    for (var i = 0; i < posts.length; i++) {
-      if (String(posts[i].slug || "") === slug) return posts[i];
+    if (!slug) return null;
+    try {
+      var data = await getJson(apiBase + "/api/post?postSlug=" + encodeURIComponent(slug));
+      if (data && data.post) return data.post;
+    } catch (e) {}
+    try {
+      var search = String(slug).replace(/-/g, " ").trim();
+      var posts = await queryPosts({ searchTerm: search, perPage: 10, page: 1 });
+      for (var i = 0; i < posts.length; i++) {
+        if (String(posts[i].slug || "") === slug) return posts[i];
+      }
+      return posts.length ? posts[0] : null;
+    } catch (e2) {
+      return null;
     }
-    return null;
   }
 
   function extractSlug(url) {
@@ -279,31 +288,45 @@ function createSource(api, config) {
     async getMangaDetails(args) {
       var url = makeAbsolute((args && args.url) || "");
       var slug = extractSlug(url);
-      var html = await getHtml(url);
-      var post = null;
-      try { post = await findPostBySlug(slug); } catch (e) {}
-      var postId = (post && post.id) || extractPostId(html);
+      var post = await findPostBySlug(slug);
+      var postId = (post && post.id) || 0;
 
-      var title = (post && post.postTitle) || await api.cssAttr(html, "meta[property='og:title']", "content") || "بدون عنوان";
-      var cover = sanitizeImageUrl((post && post.featuredImage) || await api.cssAttr(html, "meta[property='og:image']", "content") || "");
-      var description = stripHtml((post && post.postContent) || await api.cssAttr(html, "meta[name='description']", "content") || "");
+      var title = (post && (post.postTitle || post.title)) || "";
+      var cover = sanitizeImageUrl((post && post.featuredImage) || "");
+      var description = stripHtml((post && (post.postContent || post.content)) || "");
       var genres = [];
       if (post && Array.isArray(post.genres)) {
-        genres = post.genres.map(function (g) { return String((g && g.name) || "").trim(); }).filter(function (g) { return !!g; });
+        genres = post.genres.map(function (g) { return String((g && (g.name || g.title)) || "").trim(); }).filter(function (g) { return !!g; });
       }
 
       var chapters = [];
-      try {
-        chapters = await fetchChapters(postId, slug);
-      } catch (e) {}
-      if (!chapters.length) {
+      if (postId) {
         try {
-          chapters = await fallbackChaptersFromHtml(html);
+          chapters = await fetchChapters(postId, slug);
         } catch (e) {}
       }
 
+      // If API post was not found, fallback to HTML if available
+      if (!postId) {
+        try {
+          var html = await getHtml(url);
+          if (html) {
+            postId = extractPostId(html);
+            if (!title) title = await api.cssAttr(html, "meta[property='og:title']", "content") || "بدون عنوان";
+            if (!cover) cover = sanitizeImageUrl(await api.cssAttr(html, "meta[property='og:image']", "content") || "");
+            if (!description) description = stripHtml(await api.cssAttr(html, "meta[name='description']", "content") || "");
+            if (postId) {
+              try { chapters = await fetchChapters(postId, slug); } catch (e2) {}
+            }
+            if (!chapters.length) {
+              chapters = await fallbackChaptersFromHtml(html);
+            }
+          }
+        } catch (e3) {}
+      }
+
       return {
-        title: String(title).trim(),
+        title: String(title || "بدون عنوان").trim(),
         coverUrl: cover,
         description: description,
         genres: genres,
