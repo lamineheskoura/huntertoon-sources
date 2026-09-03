@@ -22,12 +22,14 @@ function createSource(api, config) {
     return selectors[key] || fallback;
   }
 
-  async function fetchHtml(url, extraHeaders, method) {
+  async function fetchHtml(url, extraHeaders, method, postBody) {
     var headers = {};
     for (var key in defaultHeaders) headers[key] = defaultHeaders[key];
     if (extraHeaders) for (var extra in extraHeaders) headers[extra] = extraHeaders[extra];
     if (api.http) {
-      var res = await api.http(url, { method: method || "GET", headers: headers });
+      var reqOpts = { method: method || "GET", headers: headers };
+      if (postBody) reqOpts.body = postBody;
+      var res = await api.http(url, reqOpts);
       if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : 0) + " for " + url);
       return res.body || "";
     }
@@ -126,44 +128,81 @@ function createSource(api, config) {
   }
 
   async function extractChapters(html) {
-    var listSel = sel("chapter_list", ".wp-manga-chapter");
-    var items = await api.cssMap(html, listSel, {
-      title: { selector: sel("chapter_title", "a"), type: "text" },
-      href: { selector: sel("chapter_url", "a"), type: "attr", attr: "href" },
-      date: { selector: sel("chapter_date", ".chapter-release-date i"), type: "text" },
-      locked: { selector: sel("chapter_locked", ".c-premium, .fa-lock"), type: "text" }
-    });
+    var listSel = sel("chapter_list", ".wp-manga-chapter, li.wp-manga-chapter, .chapter-item");
+    var items = [];
+    try {
+      items = await api.cssMap(html, listSel, {
+        title: { selector: sel("chapter_title", "a"), type: "text" },
+        href: { selector: sel("chapter_url", "a"), type: "attr", attr: "href" },
+        date: { selector: sel("chapter_date", ".chapter-release-date i, .chapter-release-date, .timediff, .post-on"), type: "text" },
+        locked: { selector: sel("chapter_locked", ".c-premium, .fa-lock"), type: "text" }
+      });
+    } catch (e) {}
+
     var chapters = [];
     var seen = {};
-    for (var i = 0; i < items.length; i++) {
-      var item = items[i];
-      var chapterUrl = makeAbsolute(item.href || "");
-      if (!chapterUrl || seen[chapterUrl]) continue;
-      seen[chapterUrl] = true;
-      var title = cleanTitle(item.title);
-      chapters.push({
-        number: extractNumber(chapterUrl, title),
-        title: title,
-        views: 0,
-        url: chapterUrl,
-        isLocked: !!(item.locked && item.locked.trim()),
-        date: cleanTitle(item.date)
-      });
+    if (items && items.length) {
+      for (var i = 0; i < items.length; i++) {
+        var item = items[i];
+        var chapterUrl = makeAbsolute(item.href || "");
+        if (!chapterUrl || seen[chapterUrl]) continue;
+        seen[chapterUrl] = true;
+        var title = cleanTitle(item.title);
+        chapters.push({
+          number: extractNumber(chapterUrl, title),
+          title: title || ("الفصل " + extractNumber(chapterUrl, title)),
+          views: 0,
+          url: chapterUrl,
+          isLocked: !!(item.locked && item.locked.trim()),
+          date: cleanTitle(item.date)
+        });
+      }
     }
+
+    if (!chapters.length) {
+      var re = /<a[^>]+href="([^"]*(?:manga\/[^\/]+\/\d+|\/chapter-|\/ch-|\/الفصل)[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+      var m;
+      while ((m = re.exec(html)) !== null) {
+        var chUrl = makeAbsolute(m[1]);
+        if (!chUrl || seen[chUrl] || chUrl.indexOf("/ajax/") !== -1) continue;
+        seen[chUrl] = true;
+        var t = cleanTitle(m[2]);
+        if (t.length > 50) continue;
+        chapters.push({
+          number: extractNumber(chUrl, t),
+          title: t || "الفصل",
+          views: 0,
+          url: chUrl,
+          isLocked: false,
+          date: ""
+        });
+      }
+    }
+
     chapters.sort(function(a, b) { return (parseFloat(b.number) || 0) - (parseFloat(a.number) || 0); });
     return chapters;
   }
 
   async function fetchChapters(detailUrl, detailHtml) {
-    var ajaxUrl = detailUrl.replace(/\/$/, "") + "/ajax/chapters/";
+    var ajaxUrl = detailUrl.replace(/\/+$/, "") + "/ajax/chapters/";
     try {
       var ajaxHtml = await fetchHtml(ajaxUrl, {
-        "X-Requested-With": "XMLHttpRequest",
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+        "X-Requested-With": "XMLHttpRequest"
       }, "POST");
-      var ajaxChapters = ajaxHtml ? await extractChapters(ajaxHtml) : [];
-      if (ajaxChapters.length) return ajaxChapters;
+      if (ajaxHtml && ajaxHtml.indexOf("<") !== -1) {
+        var ajaxChapters = await extractChapters(ajaxHtml);
+        if (ajaxChapters.length) return ajaxChapters;
+      }
     } catch (e) {}
+    try {
+      var getAjax = await fetchHtml(ajaxUrl, {
+        "X-Requested-With": "XMLHttpRequest"
+      }, "GET");
+      if (getAjax && getAjax.indexOf("<") !== -1) {
+        var chs = await extractChapters(getAjax);
+        if (chs.length) return chs;
+      }
+    } catch (e2) {}
     return await extractChapters(detailHtml);
   }
 
@@ -182,11 +221,14 @@ function createSource(api, config) {
     async getHomepageManga(args) {
       try {
         var page = (args && args.page) || 1;
-        var html = await fetchHtml(baseUrl + "/manga/page/" + page + "/?m_orderby=latest");
+        var url = page === 1
+          ? baseUrl + "/manga/?m_orderby=latest"
+          : baseUrl + "/manga/page/" + page + "/?m_orderby=latest";
+        var html = await fetchHtml(url);
         return await toMangaList(html, sel("homepage_list", ".page-item-detail"), {
-          titleSel: sel("homepage_title", ".post-title h3 a"),
-          coverSel: sel("homepage_cover", ".item-thumb a img"),
-          urlSel: sel("homepage_url", ".post-title h3 a")
+          titleSel: sel("homepage_title", ".item-thumb a, .post-title h3 a[href*='/manga/']"),
+          coverSel: sel("homepage_cover", ".item-thumb a img, .item-thumb img"),
+          urlSel: sel("homepage_url", ".item-thumb a, .post-title h3 a[href*='/manga/']")
         });
       } catch (e) {
         return [];
@@ -198,11 +240,14 @@ function createSource(api, config) {
         var query = (args && args.query) || "";
         var page = (args && args.page) || 1;
         if (!query.trim()) return [];
-        var html = await fetchHtml(baseUrl + "/page/" + page + "/?s=" + encodeURIComponent(query) + "&post_type=wp-manga");
-        return await toMangaList(html, sel("search_list", ".c-tabs-item__content"), {
-          titleSel: sel("search_title", ".post-title h3 a"),
-          coverSel: sel("search_cover", ".tab-thumb a img"),
-          urlSel: sel("search_title", ".post-title h3 a")
+        var url = page === 1
+          ? baseUrl + "/?s=" + encodeURIComponent(query) + "&post_type=wp-manga"
+          : baseUrl + "/page/" + page + "/?s=" + encodeURIComponent(query) + "&post_type=wp-manga";
+        var html = await fetchHtml(url);
+        return await toMangaList(html, sel("search_list", ".c-tabs-item__content, .page-item-detail"), {
+          titleSel: sel("search_title", ".item-thumb a, .post-title h3 a[href*='/manga/']"),
+          coverSel: sel("search_cover", ".tab-thumb a img, .item-thumb img"),
+          urlSel: sel("search_url", ".item-thumb a, .post-title h3 a[href*='/manga/']")
         });
       } catch (e) {
         return [];

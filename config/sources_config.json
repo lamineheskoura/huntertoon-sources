@@ -103,22 +103,22 @@
       },
       "selectors": {
         "homepage_list": ".page-item-detail",
-        "homepage_title": ".post-title h3 a",
-        "homepage_cover": ".item-thumb a img",
-        "homepage_url": ".post-title h3 a",
+        "homepage_title": ".item-thumb a, .post-title h3 a[href*='/manga/']",
+        "homepage_cover": ".item-thumb a img, .item-thumb img",
+        "homepage_url": ".item-thumb a, .post-title h3 a[href*='/manga/']",
         "manga_title": ".post-title h1",
         "manga_cover": ".summary_image img",
         "manga_description": ".description-summary, .manga-excerpt",
         "manga_genres": ".genres-content a",
-        "chapter_list": ".wp-manga-chapter",
+        "chapter_list": ".wp-manga-chapter, li.wp-manga-chapter, .chapter-item",
         "chapter_title": "a",
         "chapter_url": "a",
-        "chapter_date": ".chapter-release-date i",
+        "chapter_date": ".chapter-release-date i, .chapter-release-date, .timediff",
         "chapter_locked": ".c-premium, .fa-lock",
         "chapter_page_image": ".reading-content .page-break img",
-        "search_list": ".c-tabs-item__content",
-        "search_title": ".post-title h3 a",
-        "search_cover": ".tab-thumb a img"
+        "search_list": ".c-tabs-item__content, .page-item-detail",
+        "search_title": ".item-thumb a, .post-title h3 a[href*='/manga/']",
+        "search_cover": ".tab-thumb a img, .item-thumb img"
       },
       "regex": {
         "chapter_number": "/manga/[^/]+/(\\d+(?:\\.\\d+)?)/?$"

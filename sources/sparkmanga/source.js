@@ -28,12 +28,14 @@ function createSource(api, config) {
     return selectors[key] || fallback;
   }
 
-  async function fetchHtml(url, extraHeaders, method) {
+  async function fetchHtml(url, extraHeaders, method, postBody) {
     var headers = {};
     for (var k in defaultHeaders) headers[k] = defaultHeaders[k];
     if (extraHeaders) for (var x in extraHeaders) headers[x] = extraHeaders[x];
     if (api.http) {
-      var res = await api.http(url, { method: method || "GET", headers: headers });
+      var reqOpts = { method: method || "GET", headers: headers };
+      if (postBody) reqOpts.body = postBody;
+      var res = await api.http(url, reqOpts);
       if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : 0) + " for " + url);
       return res.body || "";
     }
@@ -85,6 +87,7 @@ function createSource(api, config) {
     var items = await api.cssMap(html, listSel, {
       title: { selector: opts.titleSel, type: "text" },
       href: { selector: opts.urlSel || opts.titleSel, type: "attr", attr: "href" },
+      postId: { selector: ".item-thumb", type: "attr", attr: "data-post-id" },
       cover: { selector: opts.coverSel, type: "attr", attr: "src" },
       coverLazy: { selector: opts.coverSel, type: "attr", attr: "data-src" },
       coverSrc: { selector: opts.coverSel, type: "attr", attr: "data-lazy-src" }
@@ -97,6 +100,10 @@ function createSource(api, config) {
       var detailUrl = makeAbsolute(item.href || "");
       if (!title || !detailUrl || seen[detailUrl]) continue;
       seen[detailUrl] = true;
+      var id = (item.postId || "").trim();
+      if (id && /^\d+$/.test(id)) {
+        detailUrl += (detailUrl.indexOf("?") === -1 ? "?" : "&") + "manga_id=" + id;
+      }
       var cover = item.cover || item.coverLazy || item.coverSrc || "";
       cover = validImage(cover);
       results.push({ title: title, detailUrl: detailUrl, coverUrl: cover, contentType: "manga" });
@@ -134,28 +141,6 @@ function createSource(api, config) {
           url: chapterUrl,
           isLocked: !!(it.locked),
           date: (it.date || "").trim()
-        });
-      }
-    }
-
-    // Direct link regex fallback if CSS selectors yielded nothing
-    if (!chapters.length) {
-      var re = /<a[^>]+href="([^"]*(?:chapter|ch|الفصل|\/manga\/[^\/]+\/[^\/]+)[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
-      var m;
-      while ((m = re.exec(html)) !== null) {
-        var chUrl = makeAbsolute(m[1]);
-        if (!chUrl || seen[chUrl] || chUrl.indexOf("/manga/") === -1) continue;
-        if (chUrl.indexOf("/ajax/") !== -1) continue;
-        seen[chUrl] = true;
-        var t = strip(m[2]);
-        if (t.length > 50) continue; // Not a chapter title
-        chapters.push({
-          number: extractNumber(chUrl, t),
-          title: t || "الفصل",
-          views: 0,
-          url: chUrl,
-          isLocked: false,
-          date: ""
         });
       }
     }
@@ -235,54 +220,94 @@ function createSource(api, config) {
     },
 
     async getMangaDetails(args) {
-      var url = makeAbsolute((args && args.url) || "");
-      var html = await fetchHtml(url);
+      var rawUrl = (args && args.url) || "";
+      var idMatch = rawUrl.match(/[?&]manga_id=(\d+)/);
+      var mangaId = idMatch ? idMatch[1] : "";
+      var cleanUrl = rawUrl.replace(/[?&]manga_id=\d+/, "");
+      var url = makeAbsolute(cleanUrl);
+
+      var html = "";
+      try {
+        html = await fetchHtml(url);
+      } catch (e) {
+        html = "";
+      }
+
+      if (!mangaId && html) {
+        var mId = html.match(/data-post-id="(\d+)"/) ||
+                  html.match(/data-id="(\d+)"/) ||
+                  html.match(/id="manga-item-(\d+)"/) ||
+                  html.match(/class="[^"]*post-(\d+)[^"]*"/) ||
+                  html.match(/name="post_id"\s+value="(\d+)"/) ||
+                  html.match(/id="manga-chapters-holder"\s+data-id="(\d+)"/);
+        if (mId) mangaId = mId[1];
+      }
 
       var title =
-        (await api.cssText(html, ".post-title h1")) ||
-        (await api.cssAttr(html, "meta[property='og:title']", "content")) ||
+        (html ? await api.cssText(html, ".post-title h1") : "") ||
+        (html ? await api.cssAttr(html, "meta[property='og:title']", "content") : "") ||
         "بدون عنوان";
 
       var cover =
-        (await api.cssAttr(html, ".summary_image img", "src")) ||
-        (await api.cssAttr(html, ".summary_image img", "data-src")) ||
-        (await api.cssAttr(html, "meta[property='og:image']", "content")) ||
+        (html ? await api.cssAttr(html, ".summary_image img", "src") : "") ||
+        (html ? await api.cssAttr(html, ".summary_image img", "data-src") : "") ||
+        (html ? await api.cssAttr(html, "meta[property='og:image']", "content") : "") ||
         "";
 
       var description =
-        (await api.cssText(html, ".summary__content p, .description-summary p")) || "";
+        (html ? await api.cssText(html, ".summary__content p, .description-summary p") : "") || "";
 
-      var genres = await api.cssList(html, ".genres-content a");
+      var genres = html ? await api.cssList(html, ".genres-content a") : [];
       var genresClean = (genres || []).map(function (g) { return strip(g); }).filter(Boolean);
 
-      var bodyClass = (await api.cssAttr(html, "body", "class")) || "";
+      var bodyClass = (html ? await api.cssAttr(html, "body", "class") : "") || "";
       var contentType = "manga";
       if (bodyClass.indexOf("chapter-type-novel") !== -1 ||
           genresClean.some(function (g) { return g.indexOf("رواية") !== -1 || g.indexOf("Novel") !== -1; }) ||
-          ((await api.cssText(html, ".manga-type")) || "").indexOf("رواية") !== -1) {
+          ((html ? await api.cssText(html, ".manga-type") : "") || "").indexOf("رواية") !== -1) {
         contentType = "novel";
       }
 
-      var chapters = await extractChapters(html);
+      var chapters = [];
 
-      // Madara AJAX chapters fallback: if chapters are loaded dynamically into #manga-chapters-holder
+      // 1. FASTEST RELIABLE METHOD: admin-ajax.php with manga_get_chapters (200 OK, no Cloudflare, all real chapters)
+      if (mangaId) {
+        try {
+          var adminUrl = baseUrl + "/wp-admin/admin-ajax.php";
+          var ajaxRes = await fetchHtml(adminUrl, {
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "X-Requested-With": "XMLHttpRequest",
+            "Referer": url
+          }, "POST", "action=manga_get_chapters&manga=" + mangaId);
+          if (ajaxRes && ajaxRes.indexOf("wp-manga-chapter") !== -1) {
+            chapters = await extractChapters(ajaxRes);
+          }
+        } catch (eAdmin) {}
+      }
+
+      // 2. If chapters still empty, try standard ajax/chapters/ endpoint
       if (!chapters.length) {
         try {
           var ajaxUrl = url.replace(/\/+$/, "") + "/ajax/chapters/";
-          var ajaxHtml = await fetchHtml(ajaxUrl, { "X-Requested-With": "XMLHttpRequest" }, "POST");
+          var ajaxHtml = await fetchHtml(ajaxUrl, { "X-Requested-With": "XMLHttpRequest", "Referer": url }, "POST");
           if (!ajaxHtml || ajaxHtml.indexOf("<") === -1) {
-            ajaxHtml = await fetchHtml(ajaxUrl, { "X-Requested-With": "XMLHttpRequest" }, "GET");
+            ajaxHtml = await fetchHtml(ajaxUrl, { "X-Requested-With": "XMLHttpRequest", "Referer": url }, "GET");
           }
-          if (ajaxHtml) {
+          if (ajaxHtml && ajaxHtml.indexOf("wp-manga-chapter") !== -1) {
             chapters = await extractChapters(ajaxHtml);
           }
         } catch (e1) {}
       }
 
-      // Headless browser fallback if still empty (ensures Cloudflare + JS rendered chapters are caught)
+      // 3. If chapters still empty, check detail page HTML
+      if (!chapters.length && html && html.indexOf("wp-manga-chapter") !== -1) {
+        chapters = await extractChapters(html);
+      }
+
+      // 4. Headless browser fallback if still empty
       if (!chapters.length && typeof api.browser === "function") {
         try {
-          var renderedHtml = await api.browser(url, { waitForSelector: ".wp-manga-chapter, li.wp-manga-chapter, .chapter-item, a[href*='/chapter-']", timeoutSeconds: 10 });
+          var renderedHtml = await api.browser(url, { waitForSelector: ".wp-manga-chapter, li.wp-manga-chapter, .chapter-item", timeoutSeconds: 10 });
           if (renderedHtml) {
             chapters = await extractChapters(renderedHtml);
           }

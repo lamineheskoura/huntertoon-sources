@@ -290,7 +290,7 @@
         "three_asq": {
             "id": "three_asq",
             "name": "3asq (شهامة)",
-            "version": "1.1.0",
+            "version": "1.2.0",
             "enabled": true,
             "status": "stable",
             "base_url": "https://3asq.online",
@@ -307,7 +307,7 @@
             },
             "script": {
                 "url": "sources/three_asq/source.js",
-                "sha256": "C61CA28257884B8060E680B1231D2888797B64DFCD7F71C0F7E42894CA3156B1",
+                "sha256": "4A965BB2566A6E2A1ECAED4614D870519DEC1F95EF23AA5B2A50B30DD31EC1F0",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -329,7 +329,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "3asq Madara HTML source migrated to installable JavaScript",
-                "changelog": "v1.1.0: Updated domain to https://3asq.online (301 redirect from 3asq.org)."
+                "changelog": "v1.2.0: Fixed page 1 301 trap, cleaned title/url selectors avoiding twitter badges, and verified 385+ chapters extraction."
             }
         },
         "hijala": {
@@ -766,7 +766,7 @@
         "sparkmanga": {
             "id": "sparkmanga",
             "name": "Spark Manga",
-            "version": "1.1.0",
+            "version": "1.2.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://sparkmanga.net",
@@ -782,7 +782,7 @@
             },
             "script": {
                 "url": "sources/sparkmanga/source.js",
-                "sha256": "0A1A249051882AFDC025132C903787AA43D73FDD1C639714C451506418345BDA",
+                "sha256": "04EEC1E5CA8FA8F11C8B7BEB3ADFF6569A46F545EB5B6617925E0026575B14B8",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -806,7 +806,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Spark Manga - Madara-based Arabic manga source with Cloudflare protection on browse/detail/search pages",
-                "changelog": "v1.1.0: Fast single-pass chapter extraction with Madara ajax/chapters/ fallback and browser rendering."
+                "changelog": "v1.2.0: Reliable chapter loading via admin-ajax.php bypassing Cloudflare, and fixed manga_id extraction."
             }
         },
         "mangalionz": {
