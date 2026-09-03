@@ -1,15 +1,13 @@
 function createSource(api, config) {
-  var baseUrl = (config && config.base_url) || "https://manga-starz.net";
+  var baseUrl = (config && config.base_url) || "https://starzmanga.com";
   var selectors = (config && config.selectors) || {};
 
   var userAgent = (config && config.user_agent) || "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
-  var cloudflareUserAgent = "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
   var defaultHeaders = {
     "User-Agent": userAgent,
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
+    "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
     "Referer": baseUrl + "/",
-    "Origin": baseUrl,
     "Sec-Fetch-Dest": "document",
     "Sec-Fetch-Mode": "navigate",
     "Sec-Fetch-Site": "same-origin",
@@ -26,14 +24,23 @@ function createSource(api, config) {
     return selectors[key] || fallback;
   }
 
-  async function fetchHtml(url, extraHeaders, method) {
+  async function fetchHtml(url, extraHeaders, method, postBody) {
     var headers = {};
     for (var k in defaultHeaders) headers[k] = defaultHeaders[k];
     if (extraHeaders) for (var x in extraHeaders) headers[x] = extraHeaders[x];
     if (api.http) {
-      var res = await api.http(url, { method: method || "GET", headers: headers });
-      if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : 0) + " for " + url);
-      return res.body || "";
+      var reqOpts = { method: method || "GET", headers: headers };
+      if (postBody) reqOpts.body = postBody;
+      try {
+        var res = await api.http(url, reqOpts);
+        if (res && res.ok && res.body) return res.body;
+      } catch (e) {}
+    }
+    if (typeof api.browser === "function" && (!method || method === "GET")) {
+      try {
+        var rendered = await api.browser(url, { waitForSelector: ".page-item-detail, .post-title", timeoutSeconds: 12 });
+        if (rendered && rendered.length > 500) return rendered;
+      } catch (e2) {}
     }
     if (method && method !== "GET") return "";
     var html = await api.fetchText(url, headers);
@@ -59,7 +66,9 @@ function createSource(api, config) {
     opts = opts || {};
     var items = await api.cssMap(html, listSel, {
       title: { selector: opts.titleSel, type: "text" },
+      linkTitle: { selector: ".item-thumb a, .post-title a", type: "attr", attr: "title" },
       href: { selector: opts.urlSel || opts.titleSel, type: "attr", attr: "href" },
+      anyHref: { selector: "a[href*='/manga/']", type: "attr", attr: "href" },
       cover: { selector: opts.coverSel, type: "attr", attr: "data-src" },
       coverLazy: { selector: opts.coverSel, type: "attr", attr: "data-lazy-src" },
       coverSrc: { selector: opts.coverSel, type: "attr", attr: "src" }
@@ -68,9 +77,10 @@ function createSource(api, config) {
     var seen = {};
     for (var i = 0; i < items.length; i++) {
       var item = items[i];
-      var title = (item.title || "").trim();
-      var detailUrl = makeAbsolute(item.href || "");
-      if (!title || !detailUrl || seen[detailUrl]) continue;
+      var title = (item.title || item.linkTitle || "").trim();
+      var href = item.href || item.anyHref || "";
+      var detailUrl = makeAbsolute(href);
+      if (!title || !detailUrl || seen[detailUrl] || detailUrl.indexOf("/feed/") !== -1) continue;
       seen[detailUrl] = true;
       var cover = item.cover || item.coverLazy || item.coverSrc || "";
       if (cover.indexOf("data:image") !== -1) cover = "";
@@ -99,7 +109,7 @@ function createSource(api, config) {
       var title = (item.title || "").trim();
       chapters.push({
         number: extractNumber(chapterUrl, title),
-        title: title,
+        title: title || ("الفصل " + extractNumber(chapterUrl, title)),
         views: 0,
         url: chapterUrl,
         isLocked: !!(item.locked && item.locked.trim()),
@@ -120,16 +130,19 @@ function createSource(api, config) {
   }
 
   return {
-    requiresCloudflare: true,
+    requiresCloudflare: false,
 
     async getHomepageManga(args) {
       try {
         var page = (args && args.page) || 1;
-        var html = await fetchHtml(baseUrl + "/manga/page/" + page + "/?m_orderby=latest");
+        var url = page === 1
+          ? baseUrl + "/manga/?m_orderby=latest"
+          : baseUrl + "/manga/page/" + page + "/?m_orderby=latest";
+        var html = await fetchHtml(url);
         return await toMangaList(html, sel("homepage_list", ".page-item-detail"), {
-          titleSel: sel("homepage_title", ".post-title h3 a, .post-title h5 a"),
-          coverSel: sel("homepage_cover", ".item-thumb a img"),
-          urlSel: sel("homepage_url", ".post-title h3 a, .post-title h5 a")
+          titleSel: sel("homepage_title", ".post-title h3 a, .post-title h5 a, .post-title a"),
+          coverSel: sel("homepage_cover", ".item-thumb a img, .item-thumb img"),
+          urlSel: sel("homepage_url", ".item-thumb a, .post-title h3 a, .post-title a")
         });
       } catch (e) {
         return [];
@@ -141,11 +154,14 @@ function createSource(api, config) {
         var query = (args && args.query) || "";
         var page = (args && args.page) || 1;
         if (!query.trim()) return [];
-        var html = await fetchHtml(baseUrl + "/page/" + page + "/?s=" + encodeURIComponent(query) + "&post_type=wp-manga");
-        return await toMangaList(html, sel("search_list", ".c-tabs-item__content"), {
-          titleSel: sel("search_title", ".post-title h3 a, .post-title h4 a"),
-          coverSel: sel("search_cover", ".tab-thumb a img"),
-          urlSel: sel("search_title", ".post-title h3 a, .post-title h4 a")
+        var url = page === 1
+          ? baseUrl + "/?s=" + encodeURIComponent(query) + "&post_type=wp-manga"
+          : baseUrl + "/page/" + page + "/?s=" + encodeURIComponent(query) + "&post_type=wp-manga";
+        var html = await fetchHtml(url);
+        return await toMangaList(html, sel("search_list", ".c-tabs-item__content, .page-item-detail"), {
+          titleSel: sel("search_title", ".post-title h3 a, .post-title h4 a, .post-title a"),
+          coverSel: sel("search_cover", ".tab-thumb a img, .item-thumb img"),
+          urlSel: sel("search_title", ".post-title h3 a, .post-title h4 a, .post-title a")
         });
       } catch (e) {
         return [];

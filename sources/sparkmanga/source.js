@@ -35,9 +35,16 @@ function createSource(api, config) {
     if (api.http) {
       var reqOpts = { method: method || "GET", headers: headers };
       if (postBody) reqOpts.body = postBody;
-      var res = await api.http(url, reqOpts);
-      if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : 0) + " for " + url);
-      return res.body || "";
+      try {
+        var res = await api.http(url, reqOpts);
+        if (res && res.ok && res.body) return res.body;
+      } catch (eHttp) {}
+    }
+    if (typeof api.browser === "function" && (!method || method === "GET")) {
+      try {
+        var rendered = await api.browser(url, { waitForSelector: ".page-item-detail, .post-title, .reading-content", timeoutSeconds: 12 });
+        if (rendered && rendered.length > 500) return rendered;
+      } catch (eBrowser) {}
     }
     if (method && method !== "GET") return "";
     var html = await api.fetchText(url, headers);
@@ -155,9 +162,14 @@ function createSource(api, config) {
       try {
         var page = (args && args.page) || 1;
         var url = page === 1
-          ? baseUrl + "/manga/?m_orderby=latest"
-          : baseUrl + "/manga/page/" + page + "/?m_orderby=latest";
-        return await toMangaList(await fetchHtml(url), sel("homepage_list", ".page-item-detail"), {
+          ? baseUrl + "/"
+          : baseUrl + "/page/" + page + "/";
+        var html = await fetchHtml(url);
+        if (!html || html.indexOf("page-item-detail") === -1) {
+          url = page === 1 ? baseUrl + "/manga/?m_orderby=latest" : baseUrl + "/manga/page/" + page + "/?m_orderby=latest";
+          html = await fetchHtml(url);
+        }
+        return await toMangaList(html, sel("homepage_list", ".page-item-detail"), {
           titleSel: sel("homepage_title", ".post-title a"),
           coverSel: sel("homepage_cover", ".item-thumb img"),
           urlSel: sel("homepage_url", ".item-thumb a, .post-title a")

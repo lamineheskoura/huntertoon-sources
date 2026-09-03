@@ -290,7 +290,7 @@
         "three_asq": {
             "id": "three_asq",
             "name": "3asq (شهامة)",
-            "version": "1.2.0",
+            "version": "1.2.1",
             "enabled": true,
             "status": "stable",
             "base_url": "https://3asq.online",
@@ -302,12 +302,11 @@
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
                 "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://3asq.online/",
-                "Origin": "https://3asq.online"
+                "Referer": "https://3asq.online/"
             },
             "script": {
                 "url": "sources/three_asq/source.js",
-                "sha256": "4A965BB2566A6E2A1ECAED4614D870519DEC1F95EF23AA5B2A50B30DD31EC1F0",
+                "sha256": "3197502E6FAD4529C942376E9110529DDB656021FEA54037DBB4E75B609403A6",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -329,7 +328,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "3asq Madara HTML source migrated to installable JavaScript",
-                "changelog": "v1.2.0: Fixed page 1 301 trap, cleaned title/url selectors avoiding twitter badges, and verified 385+ chapters extraction."
+                "changelog": "v1.2.1: Robust title & href extraction in toMangaList, removed Origin header, browser fallback for reliable rendering."
             }
         },
         "hijala": {
@@ -469,23 +468,23 @@
         "mangastarz": {
             "id": "mangastarz",
             "name": "MangaStarz",
-            "version": "1.2.0",
+            "version": "1.3.0",
             "enabled": true,
             "status": "beta",
-            "base_url": "https://manga-starz.net",
-            "website_url": "https://manga-starz.net",
+            "base_url": "https://starzmanga.com",
+            "website_url": "https://starzmanga.com",
             "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=manga-starz.net",
-            "requires_cf": true,
-            "image_referer": "https://manga-starz.net/",
+            "requires_cf": false,
+            "image_referer": "https://starzmanga.com/",
             "headers": {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
                 "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://manga-starz.net/"
+                "Referer": "https://starzmanga.com/"
             },
             "script": {
                 "url": "sources/mangastarz/source.js",
-                "sha256": "D3D1C6B294939BFF6DE78F4EE12A6A03B54FA88B146AC8CF24DDBDC46B4AE1F5",
+                "sha256": "FAF885979EC5ACD2C55C3B0BE7FFFC1C6BD38DFC4466154B8F87A63DDBFE59EA",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -496,7 +495,7 @@
                 "supports_filters": true,
                 "supports_lazy_chapters": false,
                 "supports_download": true,
-                "requires_cloudflare": true
+                "requires_cloudflare": false
             },
             "compatibility": {
                 "min_app_version": "1.4.0",
@@ -507,7 +506,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "MangaStarz Madara source migrated to JavaScript",
-                "changelog": "v1.2.0: restore requiresCloudflare=true — manga-starz.net is behind Cloudflare and blocks direct Dart HTTP via TLS fingerprinting (verified: empty list when set to false). The WebView solver fetches the page through Chromium's TLS stack and returns it with session cookies; the passive challenge-platform JS script is NOT a real challenge (no iframe/widget/cf_chl markers), so pages load normally. v1.1.0: no Cloudflare protection (verified live — content served directly, no interstitial; only passive CF JS detection scripts); requiresCloudflare=false. Verified selectors against the live site: homepage cards (.page-item-detail + .post-title h3 a, covers via src), pagination /manga/page/N/?m_orderby=latest (page 1 redirects to /manga/), detail (h1/.summary_image img/li.wp-manga-chapter) and reader (.reading-content .page-break img). v1.0.0: initial JS migration matching built-in Madara source behavior"
+                "changelog": "v1.3.0: Updated domain to starzmanga.com (301 moved), requires_cf=false, fixed pagination and infinite scrolling."
             }
         },
         "lava_scans": {
@@ -766,7 +765,7 @@
         "sparkmanga": {
             "id": "sparkmanga",
             "name": "Spark Manga",
-            "version": "1.2.0",
+            "version": "1.2.1",
             "enabled": true,
             "status": "beta",
             "base_url": "https://sparkmanga.net",
@@ -782,7 +781,7 @@
             },
             "script": {
                 "url": "sources/sparkmanga/source.js",
-                "sha256": "04EEC1E5CA8FA8F11C8B7BEB3ADFF6569A46F545EB5B6617925E0026575B14B8",
+                "sha256": "DB49F572D65B37B50AE732685DF6A3C2B36CA4FC79AA2862520FC5BD69922006",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -806,7 +805,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Spark Manga - Madara-based Arabic manga source with Cloudflare protection on browse/detail/search pages",
-                "changelog": "v1.2.0: Reliable chapter loading via admin-ajax.php bypassing Cloudflare, and fixed manga_id extraction."
+                "changelog": "v1.2.1: Added headless browser fallback for Cloudflare-protected paginated pages /page/N/, infinite scroll fixed."
             }
         },
         "mangalionz": {

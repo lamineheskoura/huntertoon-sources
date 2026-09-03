@@ -7,7 +7,6 @@ function createSource(api, config) {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
     "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
     "Referer": baseUrl + "/",
-    "Origin": baseUrl,
     "Sec-Fetch-Dest": "document",
     "Sec-Fetch-Mode": "navigate",
     "Sec-Fetch-Site": "same-origin",
@@ -29,9 +28,16 @@ function createSource(api, config) {
     if (api.http) {
       var reqOpts = { method: method || "GET", headers: headers };
       if (postBody) reqOpts.body = postBody;
-      var res = await api.http(url, reqOpts);
-      if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : 0) + " for " + url);
-      return res.body || "";
+      try {
+        var res = await api.http(url, reqOpts);
+        if (res && res.ok && res.body) return res.body;
+      } catch (eHttp) {}
+    }
+    if (typeof api.browser === "function" && (!method || method === "GET")) {
+      try {
+        var rendered = await api.browser(url, { waitForSelector: ".page-item-detail, .post-title, .wp-manga-chapter", timeoutSeconds: 12 });
+        if (rendered && rendered.length > 500) return rendered;
+      } catch (eBrowser) {}
     }
     if (method && method !== "GET") return "";
     var html = await api.fetchText(url, headers);
@@ -102,25 +108,26 @@ function createSource(api, config) {
   async function toMangaList(html, listSel, opts) {
     opts = opts || {};
     var items = await api.cssMap(html, listSel, {
-      title: { selector: opts.titleSel, type: "text" },
+      title: { selector: ".post-title h3 a[href*='/manga/'], .post-title h3 a:last-child, .post-title a", type: "text" },
+      linkTitle: { selector: ".item-thumb a, .post-title a", type: "attr", attr: "title" },
       titleAttr: { selector: "img", type: "attr", attr: "title" },
       altAttr: { selector: "img", type: "attr", attr: "alt" },
       thumbHref: { selector: ".item-thumb a, .tab-thumb a, .poster", type: "attr", attr: "href" },
       href: { selector: opts.urlSel || opts.titleSel || "a", type: "attr", attr: "href" },
       anyHref: { selector: "a[href*='/manga/']", type: "attr", attr: "href" },
-      coverDataSrc: { selector: opts.coverSel || "img", type: "attr", attr: "data-src" },
-      coverLazySrc: { selector: opts.coverSel || "img", type: "attr", attr: "data-lazy-src" },
-      coverSrc: { selector: opts.coverSel || "img", type: "attr", attr: "src" }
+      coverDataSrc: { selector: opts.coverSel || ".item-thumb img, img", type: "attr", attr: "data-src" },
+      coverLazySrc: { selector: opts.coverSel || ".item-thumb img, img", type: "attr", attr: "data-lazy-src" },
+      coverSrc: { selector: opts.coverSel || ".item-thumb img, img", type: "attr", attr: "src" }
     });
     var results = [];
     var seen = {};
     for (var i = 0; i < items.length; i++) {
       var item = items[i];
-      var title = cleanTitle(item.title || item.titleAttr || item.altAttr);
-      var href = item.thumbHref || item.href || item.anyHref || "";
+      var title = cleanTitle(item.title || item.linkTitle || item.titleAttr || item.altAttr);
+      var href = item.thumbHref || item.anyHref || item.href || "";
       if (href.indexOf("/manga/") === -1 && item.anyHref) href = item.anyHref;
       var detailUrl = makeAbsolute(href);
-      if (!title || !detailUrl || seen[detailUrl]) continue;
+      if (!title || !detailUrl || seen[detailUrl] || detailUrl.indexOf("/feed/") !== -1) continue;
       seen[detailUrl] = true;
       results.push({ title: title, detailUrl: detailUrl, coverUrl: extractImageValue(item, "cover"), contentType: "manga" });
     }
