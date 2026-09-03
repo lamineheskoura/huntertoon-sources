@@ -290,23 +290,24 @@
         "three_asq": {
             "id": "three_asq",
             "name": "3asq (شهامة)",
-            "version": "1.0.0",
+            "version": "1.1.0",
             "enabled": true,
             "status": "stable",
-            "base_url": "https://3asq.org",
-            "website_url": "https://3asq.org",
+            "base_url": "https://3asq.online",
+            "website_url": "https://3asq.online",
             "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=3asq.org",
             "requires_cf": false,
-            "image_referer": "https://3asq.org/",
+            "image_referer": "https://3asq.online/",
             "headers": {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
                 "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://3asq.org/"
+                "Referer": "https://3asq.online/",
+                "Origin": "https://3asq.online"
             },
             "script": {
                 "url": "sources/three_asq/source.js",
-                "sha256": "96564f04c3be0164fde9d37ff255d2285a46611e5ad319052b4acf6f7cbec080",
+                "sha256": "C61CA28257884B8060E680B1231D2888797B64DFCD7F71C0F7E42894CA3156B1",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -328,7 +329,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "3asq Madara HTML source migrated to installable JavaScript",
-                "changelog": "Initial JS implementation matching built-in Madara homepage, search, details, AJAX chapters, and reader behavior"
+                "changelog": "v1.1.0: Updated domain to https://3asq.online (301 redirect from 3asq.org)."
             }
         },
         "hijala": {
@@ -765,13 +766,13 @@
         "sparkmanga": {
             "id": "sparkmanga",
             "name": "Spark Manga",
-            "version": "1.0.7",
+            "version": "1.1.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://sparkmanga.net",
             "website_url": "https://sparkmanga.net",
             "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=sparkmanga.net",
-            "requires_cf": true,
+            "requires_cf": false,
             "image_referer": "https://sparkmanga.net/",
             "headers": {
                 "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
@@ -781,7 +782,7 @@
             },
             "script": {
                 "url": "sources/sparkmanga/source.js",
-                "sha256": "5ff42c23800dc39eb97371fe2eca9e3569ae450318398f77d11c5c7742432642",
+                "sha256": "0A1A249051882AFDC025132C903787AA43D73FDD1C639714C451506418345BDA",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -794,7 +795,7 @@
                 "supports_filters": true,
                 "supports_lazy_chapters": false,
                 "supports_download": true,
-                "requires_cloudflare": true
+                "requires_cloudflare": false
             },
             "compatibility": {
                 "min_app_version": "1.4.0",
@@ -805,7 +806,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Spark Manga - Madara-based Arabic manga source with Cloudflare protection on browse/detail/search pages",
-                "changelog": "v1.0.7: Same structure as mangalionz (cssAll .wp-manga-chapter) + retry fetch if HTML missing chapters"
+                "changelog": "v1.1.0: Fast single-pass chapter extraction with Madara ajax/chapters/ fallback and browser rendering."
             }
         },
         "mangalionz": {

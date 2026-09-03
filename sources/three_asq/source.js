@@ -1,5 +1,5 @@
 function createSource(api, config) {
-  var baseUrl = (config && config.base_url) || "https://3asq.org";
+  var baseUrl = (config && config.base_url) || "https://3asq.online";
   var selectors = (config && config.selectors) || {};
   var userAgent = (config && config.user_agent) || "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
   var defaultHeaders = {

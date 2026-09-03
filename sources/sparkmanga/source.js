@@ -105,37 +105,66 @@ function createSource(api, config) {
   }
 
   async function extractChapters(html) {
-    var nodes = await api.cssAll(html, ".wp-manga-chapter, li.wp-manga-chapter");
-    if (!nodes || !nodes.length) return [];
+    if (!html) return [];
+    var selector = ".wp-manga-chapter, li.wp-manga-chapter, li.chapter-item, ul.version-chap li, ul.sub-chap li, .listing-chapters_wrap li, .list-chapter li";
+    var items = [];
+    try {
+      items = await api.cssMap(html, selector, {
+        title: { selector: "a", type: "text" },
+        href: { selector: "a", type: "attr", attr: "href" },
+        date: { selector: ".chapter-release-date i, .chapter-release-date, .chapter-date", type: "text" },
+        locked: { selector: ".premium-chapter, .c-premium, .fa-lock, .premium-block", type: "html" }
+      });
+    } catch (e) {}
+
     var chapters = [];
     var seen = {};
-    for (var i = 0; i < nodes.length; i++) {
-      try {
-        var n = nodes[i] || {};
-        var h = n.html || "";
-        var href = (await api.cssAttr(h, "a", "href")) || (n.attrs && n.attrs.href) || "";
+    if (items && items.length) {
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i];
+        var href = it.href || "";
         var chapterUrl = makeAbsolute(href);
         if (!chapterUrl || seen[chapterUrl]) continue;
         seen[chapterUrl] = true;
-        var title = (await api.cssText(h, "a")) || n.text || "";
-        title = title.trim();
-        var date = (await api.cssText(h, ".chapter-release-date i, .chapter-release-date")) || "";
-        var isLocked = !!(await api.cssHtml(h, ".premium-chapter, .c-premium, .fa-lock, .premium-block"));
+        var title = (it.title || "").trim();
         chapters.push({
           number: extractNumber(chapterUrl, title),
-          title: title,
+          title: title || ("الفصل " + extractNumber(chapterUrl, title)),
           views: 0,
           url: chapterUrl,
-          isLocked: isLocked,
-          date: date.trim()
+          isLocked: !!(it.locked),
+          date: (it.date || "").trim()
         });
-      } catch(e) {}
+      }
     }
+
+    // Direct link regex fallback if CSS selectors yielded nothing
+    if (!chapters.length) {
+      var re = /<a[^>]+href="([^"]*(?:chapter|ch|الفصل|\/manga\/[^\/]+\/[^\/]+)[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+      var m;
+      while ((m = re.exec(html)) !== null) {
+        var chUrl = makeAbsolute(m[1]);
+        if (!chUrl || seen[chUrl] || chUrl.indexOf("/manga/") === -1) continue;
+        if (chUrl.indexOf("/ajax/") !== -1) continue;
+        seen[chUrl] = true;
+        var t = strip(m[2]);
+        if (t.length > 50) continue; // Not a chapter title
+        chapters.push({
+          number: extractNumber(chUrl, t),
+          title: t || "الفصل",
+          views: 0,
+          url: chUrl,
+          isLocked: false,
+          date: ""
+        });
+      }
+    }
+
     return chapters;
   }
 
   return {
-    requiresCloudflare: true,
+    requiresCloudflare: false,
 
     async getHomepageManga(args) {
       try {
@@ -208,9 +237,6 @@ function createSource(api, config) {
     async getMangaDetails(args) {
       var url = makeAbsolute((args && args.url) || "");
       var html = await fetchHtml(url);
-      if (html.indexOf("wp-manga-chapter") === -1) {
-        html = await fetchHtml(url);
-      }
 
       var title =
         (await api.cssText(html, ".post-title h1")) ||
@@ -238,6 +264,30 @@ function createSource(api, config) {
       }
 
       var chapters = await extractChapters(html);
+
+      // Madara AJAX chapters fallback: if chapters are loaded dynamically into #manga-chapters-holder
+      if (!chapters.length) {
+        try {
+          var ajaxUrl = url.replace(/\/+$/, "") + "/ajax/chapters/";
+          var ajaxHtml = await fetchHtml(ajaxUrl, { "X-Requested-With": "XMLHttpRequest" }, "POST");
+          if (!ajaxHtml || ajaxHtml.indexOf("<") === -1) {
+            ajaxHtml = await fetchHtml(ajaxUrl, { "X-Requested-With": "XMLHttpRequest" }, "GET");
+          }
+          if (ajaxHtml) {
+            chapters = await extractChapters(ajaxHtml);
+          }
+        } catch (e1) {}
+      }
+
+      // Headless browser fallback if still empty (ensures Cloudflare + JS rendered chapters are caught)
+      if (!chapters.length && typeof api.browser === "function") {
+        try {
+          var renderedHtml = await api.browser(url, { waitForSelector: ".wp-manga-chapter, li.wp-manga-chapter, .chapter-item, a[href*='/chapter-']", timeoutSeconds: 10 });
+          if (renderedHtml) {
+            chapters = await extractChapters(renderedHtml);
+          }
+        } catch (e2) {}
+      }
 
       return {
         title: strip(title) || "بدون عنوان",
