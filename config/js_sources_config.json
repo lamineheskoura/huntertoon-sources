@@ -306,7 +306,7 @@
             },
             "script": {
                 "url": "sources/three_asq/source.js",
-                "sha256": "3197502E6FAD4529C942376E9110529DDB656021FEA54037DBB4E75B609403A6",
+                "sha256": "3D2C370B8BC59DF90F1B2E845A154C150BA3C834F74ED5106132F559361EB785",
                 "entry": "createSource"
             },
             "capabilities": {
