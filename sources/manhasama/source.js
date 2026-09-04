@@ -6,7 +6,8 @@ function createSource(api, config) {
   var defaultHeaders = {
     "User-Agent": userAgent,
     "Accept": "application/json",
-    "Authorization": "Bearer guest"
+    "Authorization": "Bearer guest",
+    "X-Device-ID": "manha-huntertoon-" + (config && config.deviceId ? config.deviceId : "app")
   };
 
   var defaultGenres = [];
