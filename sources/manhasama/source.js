@@ -1,7 +1,7 @@
 function createSource(api, config) {
   var baseUrl = (config && config.base_url) || "https://realmnovel.com";
   var apiUrl = baseUrl + "/api";
-  var userAgent = (config && config.user_agent) || "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
+  var userAgent = (config && config.user_agent) || "Dart/3.6 (dart:io)";
 
   var defaultHeaders = {
     "User-Agent": userAgent,
