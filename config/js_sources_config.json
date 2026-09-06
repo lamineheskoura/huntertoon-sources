@@ -1,10 +1,10 @@
 {
-    "version": "1.25.0",
+    "version": "1.26.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.09.04.1",
+    "manifest_version": "2026.09.05.1",
     "generated_at": "2026-09-04T14:30:00Z",
-    "last_updated": "2026-09-04T14:30:00Z",
+    "last_updated": "2026-09-05T15:03:42Z",
     "min_app_version": "1.4.0",
     "repository": {
         "owner": "lamineheskoura",
@@ -290,7 +290,7 @@
         "three_asq": {
             "id": "three_asq",
             "name": "3asq (شهامة)",
-            "version": "1.2.1",
+            "version": "1.4.0",
             "enabled": true,
             "status": "stable",
             "base_url": "https://3asq.online",
@@ -306,7 +306,7 @@
             },
             "script": {
                 "url": "sources/three_asq/source.js",
-                "sha256": "0ED6A316DAF57A8747A13C1CB1FB72622F0B01D006525904A177105397A918C9",
+                "sha256": "016EA61B7A25960099EE0E91F1D5BF21C8404DAFAE29333A4A5E5C8522764D8C",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -328,7 +328,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "3asq Madara HTML source migrated to installable JavaScript",
-                "changelog": "v1.2.1: Robust title & href extraction in toMangaList, removed Origin header, browser fallback for reliable rendering."
+                "changelog": "v1.4.0: Fix search (parse tab-thumb result blocks, was always empty) and fix genre filter (use /manga-genre/{slug}/ URLs, site ignores ?genre[]= params)."
             }
         },
         "hijala": {
@@ -468,7 +468,7 @@
         "mangastarz": {
             "id": "mangastarz",
             "name": "MangaStarz",
-            "version": "1.3.0",
+            "version": "1.3.1",
             "enabled": true,
             "status": "beta",
             "base_url": "https://starzmanga.com",
@@ -484,7 +484,7 @@
             },
             "script": {
                 "url": "sources/mangastarz/source.js",
-                "sha256": "FAF885979EC5ACD2C55C3B0BE7FFFC1C6BD38DFC4466154B8F87A63DDBFE59EA",
+                "sha256": "0338BB4F36DE23A2B0772CAD15BB0233C31DA9B3D1E2120D94A6BE9D0F80B42C",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -506,7 +506,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "MangaStarz Madara source migrated to JavaScript",
-                "changelog": "v1.3.0: Updated domain to starzmanga.com (301 moved), requires_cf=false, fixed pagination and infinite scrolling."
+                "changelog": "v1.3.1: Fixed infinite scroll with 20 cards/page root pagination, instant zero-bridge detail parsing, and fixed undefined cloudflareUserAgent."
             }
         },
         "lava_scans": {
