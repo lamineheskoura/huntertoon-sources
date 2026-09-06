@@ -600,7 +600,7 @@
         "mangatek": {
             "id": "mangatek",
             "name": "مانجاتك (Mangatek)",
-            "version": "1.0.3",
+            "version": "1.1.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://mangatek.com",
@@ -646,7 +646,7 @@
             },
             "script": {
                 "url": "sources/mangatek/source.js",
-                "sha256": "2c652504cfe88dde018c9ebcffa5eddf369ed7ef7a8c1c2f516f430c69d415db",
+                "sha256": "8A0656D680D40B0F739FC6F411E26B66D4D8BA19BEAA62D4B544BE14277088AA",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -675,7 +675,7 @@
         "mangasid": {
             "id": "mangasid",
             "name": "مانجا سيد (Mangasid)",
-            "version": "1.0.2",
+            "version": "1.1.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://mangasid.com",
@@ -691,7 +691,7 @@
             },
             "script": {
                 "url": "sources/mangasid/source.js",
-                "sha256": "c480ec850c1af1803a7c200b981af66218ed0712c6e1accbc4b4a0d97de403bb",
+                "sha256": "B3EB30E101C7249C6291844B4F4AF2399D9AC4CC266FDA6681E762FB415E338F",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -857,7 +857,7 @@
         "manhasama": {
             "id": "manhasama",
             "name": "مانها السماء (Manha Alsamaa)",
-            "version": "1.3.1",
+            "version": "1.3.2",
             "enabled": true,
             "status": "beta",
             "base_url": "https://realmnovel.com",
@@ -874,7 +874,7 @@
             },
             "script": {
                 "url": "sources/manhasama/source.js",
-                "sha256": "CC26BA449DB5453F79BF9A339853767582F543863202CC16C40EADFDCD1DE8B9",
+                "sha256": "C9DAE3F48DD2FE403B1B57A442A62ADBD6E8A873CFDE29B3C821A8153D8ABC8D",
                 "entry": "createSource"
             },
             "capabilities": {

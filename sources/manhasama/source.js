@@ -208,12 +208,22 @@ function createSource(api, config) {
         var bubbles = p.bubbles || [];
         var overlays = bubbles.map(function (b) {
           var box = b.box || [0, 0, 0, 0];
+          // boxNorm = resolution-independent [nx, ny, nw, nh] (0-1). Prefer it in
+          // the app renderer over pixel box (immune to per-page size variance).
+          var norm = b.boxNorm || null;
           return {
+            id: b.id || "",
             text: b.text || "",
+            english: b.english || "",
             x: box[0] || 0,
             y: box[1] || 0,
             w: box[2] || 0,
             h: box[3] || 0,
+            nx: norm ? (Number(norm[0]) || 0) : 0,
+            ny: norm ? (Number(norm[1]) || 0) : 0,
+            nw: norm ? (Number(norm[2]) || 0) : 0,
+            nh: norm ? (Number(norm[3]) || 0) : 0,
+            hasNorm: !!norm,
             angle: 0
           };
         });
