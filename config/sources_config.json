@@ -4,6 +4,7 @@
   "format": "huntertoon-sources-v2",
   "sources": {
     "azora": {
+      "sid": 103,
       "enabled": true,
       "name": "أزورا مون (AzoraMoon)",
       "base_url": "https://azorafly.com/",
@@ -40,6 +41,7 @@
       }
     },
     "team_x": {
+      "sid": 132,
       "enabled": true,
       "name": "تيم إكس (Team-X)",
       "base_url": "https://olympustaff.com",
@@ -81,6 +83,7 @@
       }
     },
     "three_asq": {
+      "sid": 133,
       "enabled": true,
       "name": "3asq (شهامة)",
       "base_url": "https://3asq.online",
@@ -131,6 +134,7 @@
       "version": "1.3.0"
     },
     "dilar": {
+      "sid": 106,
       "enabled": true,
       "name": "ديلار (Dilar)",
       "base_url": "https://dilar.tube",
@@ -161,6 +165,7 @@
       }
     },
     "lekmanga": {
+      "sid": 112,
       "enabled": true,
       "name": "مانجا ليك (Mangalek)",
       "base_url": "https://mangalik.net",
@@ -206,6 +211,7 @@
       }
     },
     "hijala": {
+      "sid": 108,
       "enabled": true,
       "requires_cf": false,
       "name": "حجالة مانجا (Hijala)",
@@ -252,6 +258,7 @@
       }
     },
     "lava_scans": {
+      "sid": 111,
       "enabled": true,
       "requires_cf": false,
       "name": "لافا سكانز (Lava Scans)",
@@ -298,6 +305,7 @@
       }
     },
     "mangasid": {
+      "sid": 115,
       "enabled": true,
       "requires_cf": false,
       "name": "مانجا سيد (Mangasid)",
@@ -342,6 +350,7 @@
       }
     },
     "mangatek": {
+      "sid": 117,
       "enabled": true,
       "requires_cf": false,
       "name": "مانجاتك (Mangatek)",
@@ -389,6 +398,7 @@
       }
     },
     "mangatime": {
+      "sid": 118,
       "enabled": true,
       "requires_cf": false,
       "name": "مانجا تايم (MangaTime)",
@@ -410,6 +420,7 @@
       "regex": {}
     },
     "mangastarz": {
+      "sid": 116,
       "enabled": true,
       "requires_cf": false,
       "name": "MangaStarz",
