@@ -737,7 +737,7 @@
             "id": "hizo_manga",
             "sid": 109,
             "name": "Hizo Manga",
-            "version": "1.1.0",
+            "version": "1.2.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://hizomanga.net",
@@ -753,7 +753,7 @@
             },
             "script": {
                 "url": "sources/hizo_manga/source.js",
-                "sha256": "6e41da1263fd6f14fcca8697ed41448d93f9078dc18d91d93d817117fdace852",
+                "sha256": "03ACE35351E90AD335BCF47533457F2C06743D288F864C2DA698FDD57294AA1A",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -776,7 +776,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Hizo Manga mixed manga/novel source migrated to JavaScript",
-                "changelog": "Initial JS implementation with novel text detection and image fallback"
+                "changelog": "v1.2.0: Fix reader for live markup (chapter-type-text gate, entry-content fallback, h3.chapter-name title, h2 detail title, excerpt description, srcset/noscript image fallbacks, ajax POST headers)"
             }
         },
         "sparkmanga": {

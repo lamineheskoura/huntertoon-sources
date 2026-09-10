@@ -31,9 +31,15 @@ function createSource(api, config) {
     return (await api.fetchText(url, headers)) || "";
   }
 
-  async function postHtml(url) {
+  async function postHtml(url, referer) {
     if (api.http) {
-      var res = await api.http(url, { method: "POST", headers: headers, body: null });
+      var postHeaders = {};
+      for (var k in headers) postHeaders[k] = headers[k];
+      postHeaders["X-Requested-With"] = "XMLHttpRequest";
+      postHeaders["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8";
+      postHeaders["Accept"] = "*/*";
+      if (referer) postHeaders["Referer"] = referer;
+      var res = await api.http(url, { method: "POST", headers: postHeaders, body: "" });
       if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : 0) + " for " + url);
       return res.body || "";
     }
@@ -227,7 +233,7 @@ function createSource(api, config) {
     ajaxUrl += "ajax/chapters/";
 
     try {
-      var ajaxHtml = await postHtml(ajaxUrl);
+      var ajaxHtml = await postHtml(ajaxUrl, detailUrl);
       if (ajaxHtml && ajaxHtml.indexOf("wp-manga-chapter") !== -1) {
         var chapters = await parseChapters(ajaxHtml);
         if (chapters.length) return chapters;
@@ -327,9 +333,11 @@ function createSource(api, config) {
       var url = abs((args && args.url) || "");
       var pageHtml = await html(url);
 
-      // Title
+      // Title (live site uses h2, not h1)
       var title =
         (await api.cssText(pageHtml, ".post-title h1")) ||
+        (await api.cssText(pageHtml, ".post-title h2")) ||
+        (await api.cssText(pageHtml, "h1.entry-title, h2.entry-title")) ||
         (await api.cssAttr(pageHtml, "meta[property='og:title']", "content")) ||
         "بدون عنوان";
 
@@ -340,9 +348,11 @@ function createSource(api, config) {
         (await api.cssAttr(pageHtml, "meta[property='og:image']", "content")) ||
         "";
 
-      // Description
+      // Description (live site: .manga-excerpt .excerpt-content > p)
       var description =
-        (await api.cssText(pageHtml, ".summary__content p, .description-summary p")) || "";
+        (await api.cssText(pageHtml, ".summary__content p, .description-summary p")) ||
+        (await api.cssText(pageHtml, ".manga-excerpt .excerpt-content, .excerpt-content")) ||
+        "";
 
       // Genres
       var genres = await api.cssList(pageHtml, ".genres-content a");
@@ -383,32 +393,45 @@ function createSource(api, config) {
 
       var pageHtml = await html(url);
 
-      // Novel detection — matches Dart:
+      // Novel detection (live markers):
       // 1. body class contains 'chapter-type-novel'
-      // 2. .text-left element exists
+      // 2. any element with class 'chapter-type-text' (live wrapper div)
+      // 3. .text-left element exists
       var bodyClass = (await api.cssAttr(pageHtml, "body", "class")) || "";
       var hasNovelClass = bodyClass.indexOf("chapter-type-novel") !== -1;
-      var hasTextLeft = false;
+      var hasTextType = false;
       if (!hasNovelClass) {
+        try {
+          var tw = await api.cssAll(pageHtml, ".chapter-type-text");
+          hasTextType = !!(tw && tw.length);
+        } catch (eType) {}
+      }
+      var hasTextLeft = false;
+      if (!hasNovelClass && !hasTextType) {
         var tl = await api.cssHtml(pageHtml, ".text-left");
         hasTextLeft = !!(tl && tl.trim());
       }
-      var isNovel = hasNovelClass || hasTextLeft;
+      var isNovel = hasNovelClass || hasTextType || hasTextLeft;
 
       if (isNovel) {
         // Novel extraction — matches Dart:
-        // selector: '.text-left, .reading-content'
+        // selector: '.text-left, .reading-content' (+ legacy '.entry-content')
         // returns innerHtml as TextChapter
-        var selectors = [".text-left", ".reading-content"];
+        var selectors = [".text-left", ".reading-content", ".entry-content", "article"];
         var novelHtml = "";
         for (var i = 0; i < selectors.length; i++) {
-          novelHtml = await api.cssHtml(pageHtml, selectors[i]);
+          try {
+            novelHtml = await api.cssHtml(pageHtml, selectors[i]);
+          } catch (eSel) {
+            novelHtml = "";
+          }
           if (novelHtml && novelHtml.trim()) break;
         }
 
         if (novelHtml && novelHtml.trim()) {
           var textContent = htmlToText(novelHtml);
           var chapterTitle =
+            (await api.cssText(pageHtml, "h3.chapter-name")) ||
             (await api.cssText(pageHtml, ".chapter-title")) ||
             (await api.cssText(pageHtml, "#chapter-heading")) ||
             "";
@@ -428,10 +451,31 @@ function createSource(api, config) {
       for (var i = 0; i < imgs.length; i++) {
         var a = imgs[i].attrs || {};
         var src =
-          (a["data-src"] || a["data-lazy-src"] || a.src || "").trim();
+          (a["data-src"] || a["data-lazy-src"] || a["data-original"] || a.src || "").trim();
+        if (!src && a.srcset) {
+          var firstSrc = String(a.srcset).split(",")[0].trim().split(/\s+/)[0];
+          if (firstSrc) src = firstSrc.trim();
+        }
         if (!src) continue;
         src = validImage(src);
         if (src && urls.indexOf(src) === -1) urls.push(src);
+      }
+      // Last resort: noscript-fallback images inside the reading area
+      if (!urls.length) {
+        try {
+          var readerHtml =
+            (await api.cssHtml(pageHtml, ".reading-content")) || pageHtml;
+          var nsRe = /<noscript[^>]*>([\s\S]*?)<\/noscript>/gi;
+          var nsM;
+          while ((nsM = nsRe.exec(readerHtml)) !== null) {
+            var imgRe = /<img[^>]+(?:data-src|data-lazy-src|data-original|src)\s*=\s*["']([^"']+)["']/gi;
+            var imgM;
+            while ((imgM = imgRe.exec(nsM[1])) !== null) {
+              var nu = validImage((imgM[1] || "").trim());
+              if (nu && urls.indexOf(nu) === -1) urls.push(nu);
+            }
+          }
+        } catch (eNs) {}
       }
       return { kind: "image", imageUrls: urls };
     },
