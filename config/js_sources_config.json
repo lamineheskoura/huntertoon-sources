@@ -1427,22 +1427,23 @@
             "id": "realmnovel",
             "sid": 125,
             "name": "عالم الروايات (RealmNovel)",
-            "version": "2.0.2",
+            "version": "3.0.0",
             "enabled": true,
             "status": "stable",
-            "base_url": "http://62.171.141.197:5007",
+            "base_url": "https://www.realmnovel.com",
             "website_url": "https://www.realmnovel.com",
             "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=realmnovel.com",
             "requires_cf": false,
-            "image_referer": "https://realmnovel.com/",
+            "image_referer": "https://www.realmnovel.com/",
             "headers": {
-                "x-app-version": "10.0.0",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "application/json, text/plain, */*"
+                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+                "Referer": "https://www.realmnovel.com/"
             },
             "script": {
                 "url": "sources/realmnovel/source.js",
-                "sha256": "5f37b9c1fc74ef97b025bcafa5698c5eec4fedf29507fdfd6fe8e08f644bc793",
+                "sha256": "4F49289B60D6A0E3705B883258321208592A814E11E2990F0FE097DB9CFD16F6",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1451,7 +1452,7 @@
                 ],
                 "supports_search": true,
                 "supports_filters": false,
-                "supports_lazy_chapters": true,
+                "supports_lazy_chapters": false,
                 "supports_download": true,
                 "requires_cloudflare": false
             },
@@ -1463,8 +1464,8 @@
                 "language": "ar",
                 "adult": false,
                 "author": "HunterToon Team",
-                "description": "RealmNovel (عالم الروايات) Arabic novel source using the Novels Sky mobile app REST API for list, search, detail, chapters, and chapter text content.",
-                "changelog": "v2.0.2: Fix cover images (use realmnovel.com/img/novel/{id}.jpg), chapter lazy pagination via fetchMoreChapters."
+                "description": "RealmNovel (عالم الروايات) Arabic novel source scraping www.realmnovel.com (g3card list, novel detail, chapter text).",
+                "changelog": "v3.0.0: Migrate off dead IP API (403 on all routes) to www.realmnovel.com HTML: homepage/search cards, detail with chapters + lock flags, chapter text. Note: site serves ch1-50 on web, rest app-exclusive."
             }
         },
         "mknov": {
