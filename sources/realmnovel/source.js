@@ -1,52 +1,24 @@
 function createSource(api, config) {
-  var baseUrl = ((config && config.base_url) || "https://www.realmnovel.com").replace(/\/+$/, "");
-  var userAgent = (config && config.user_agent) || "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
+  var baseUrl = ((config && config.base_url) || "http://62.171.141.197:5007").replace(/\/+$/, "");
+  var userAgent = (config && config.user_agent) || "Dart/3.9 (dart:io)";
   var lastChapterUrl = baseUrl + "/";
 
+  // Auth: NONE required. The server gates on exact header x-app-version: 10
+  // (verified live: "10.0.0" and any other value -> 403/426).
   var defaultHeaders = {
+    "x-app-version": "10",
     "User-Agent": userAgent,
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-    "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-    "Referer": baseUrl + "/"
+    "Accept": "application/json, text/plain, */*",
+    "Content-Type": "application/json"
   };
-
-  async function fetchHtml(url) {
-    var headers = {};
-    for (var k in defaultHeaders) headers[k] = defaultHeaders[k];
-    if (api.http) {
-      try {
-        var res = await api.http(url, { method: "GET", headers: headers });
-        if (res && res.ok && res.body && res.body.length > 200) return res.body;
-      } catch (eHttp) {}
-    }
-    if (typeof api.browser === "function") {
-      try {
-        var rendered = await api.browser(url, {
-          waitForSelector: ".g3card, .chapter-content",
-          timeoutSeconds: 8
-        });
-        if (rendered && rendered.length > 500) return rendered;
-      } catch (eBrowser) {}
-    }
-    try {
-      var html = await api.fetchText(url, headers);
-      if (html && html.length > 100) return html;
-    } catch (eFetch) {}
-    return "";
-  }
 
   function makeAbsolute(url) {
     if (!url) return "";
     url = String(url).trim();
-    if (url.indexOf("http://") === 0) return "https:" + url.substring(5);
-    if (url.indexOf("https://") === 0) return url;
-    if (url.indexOf("//") === 0) return "https:" + url;
+    if (url.indexOf("http://") === 0 || url.indexOf("https://") === 0) return url;
+    if (url.indexOf("//") === 0) return "http:" + url;
     if (url.indexOf("/") === 0) return baseUrl + url;
     return baseUrl + "/" + url;
-  }
-
-  function cleanTitle(t) {
-    return String(t || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
   }
 
   function strip(s) {
@@ -63,86 +35,60 @@ function createSource(api, config) {
       .trim();
   }
 
+  function coverUrl(novelId) {
+    // API coverImage is an inline base64 blob — use the CDN file instead.
+    if (!novelId) return "";
+    return "https://www.realmnovel.com/img/novel/" + novelId + ".jpg";
+  }
+
+  async function apiGet(path) {
+    var url = makeAbsolute(path);
+    var res = await api.http(url, { method: "GET", headers: defaultHeaders });
+    if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : 0) + " for " + url);
+    return JSON.parse(res.body || "{}");
+  }
+
+  function novelToItem(n) {
+    if (!n || typeof n !== "object") return null;
+    var id = n._id || n.id || "";
+    if (!id) return null;
+    return {
+      title: n.title || n.titleEn || "",
+      coverUrl: coverUrl(id),
+      detailUrl: baseUrl + "/novels/" + id,
+      contentType: "novel"
+    };
+  }
+
+  function chapterToItem(c, novelId) {
+    if (!c || typeof c !== "object") return null;
+    var num = String(c.chapterNumber != null ? c.chapterNumber : "");
+    if (!num) return null;
+    return {
+      number: num,
+      title: c.title || ("الفصل " + num),
+      views: c.viewsCount || 0,
+      url: baseUrl + "/novels/" + novelId + "/chapters/" + num,
+      isLocked: false,
+      date: (c.createdAt || "").split("T")[0]
+    };
+  }
+
   function novelIdFromUrl(url) {
-    var m = String(url || "").match(/\/novel\/([0-9a-f]+)/i);
+    var m = String(url || "").match(/\/novels\/([0-9a-f]+)/i);
     return m ? m[1] : "";
   }
 
-  // Cards: a.g3card[href=/novel/{id}] > .g3cover img + .g3body (.g3title/.g3sub/.g3cat)
-  // + button.favbtn[data-title, data-titleen] as fallback title source.
-  function parseCards(html) {
-    if (!html) return [];
-    var results = [];
-    var seen = {};
-    var cardRe = /<a[^>]*class="[^"]*g3card[^"]*"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
-    var m;
-    while ((m = cardRe.exec(html)) !== null) {
-      var href = (m[1] || "").trim();
-      var block = m[2] || "";
-      var detailUrl = makeAbsolute(href);
-      if (!detailUrl || seen[detailUrl] || detailUrl.indexOf("/novel/") === -1) continue;
-      seen[detailUrl] = true;
-
-      var title = "";
-      var tm = block.match(/<div[^>]*class="[^"]*g3title[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
-      if (tm) title = cleanTitle(tm[1]);
-      var sub = "";
-      var sm = block.match(/<div[^>]*class="[^"]*g3sub[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
-      if (sm) sub = cleanTitle(sm[1]);
-      if (!title) {
-        var fm = block.match(/data-title="([^"]*)"/i);
-        if (fm) title = cleanTitle(fm[1]);
-      }
-      if (!title && sub) title = sub;
-      if (!title) continue;
-
-      var cover = "";
-      var im = block.match(/<img[^>]+src="([^"]+)"/i);
-      if (im) cover = makeAbsolute(im[1].trim());
-      if (!cover) {
-        var nid = novelIdFromUrl(detailUrl);
-        if (nid) cover = baseUrl + "/img/novel/" + nid + ".jpg";
-      }
-      if (cover.indexOf("data:image") === 0) cover = "";
-
-      results.push({
-        title: title,
-        detailUrl: detailUrl,
-        coverUrl: cover,
-        contentType: "novel"
-      });
+  async function fetchChapterPage(novelId, page, limit) {
+    var data = await apiGet("/novels/" + novelId + "/chapters?limit=" + (limit || 100) + "&page=" + page);
+    var items = data.data || [];
+    var out = [];
+    for (var i = 0; i < items.length; i++) {
+      var it = chapterToItem(items[i], novelId);
+      if (it) out.push(it);
     }
-    return results;
-  }
-
-  function parseChapters(html, novelId) {
-    if (!html) return [];
-    var chapters = [];
-    var seen = {};
-    var re = /<a[^>]*href="(\/novel\/[0-9a-f]+\/chapter\/(\d+))[^"]*"[^>]*>([\s\S]*?)<\/a>/gi;
-    var m;
-    while ((m = re.exec(html)) !== null) {
-      var num = m[2];
-      var raw = cleanTitle(m[3]);
-      var chUrl = baseUrl + m[1];
-      if (!num || seen[chUrl]) continue;
-      seen[chUrl] = true;
-      var locked = /🔒|locked|paywall|fa-lock|مقفل/i.test(m[0] + " " + raw);
-      var title = raw.replace(/اقرأ/gi, "").replace(/🔒/g, "").replace(/\s+/g, " ").trim();
-      if (!title) title = "الفصل " + num;
-      chapters.push({
-        number: num,
-        title: title,
-        views: 0,
-        url: chUrl,
-        isLocked: locked,
-        date: ""
-      });
-    }
-    chapters.sort(function (a, b) {
-      return (parseFloat(b.number) || 0) - (parseFloat(a.number) || 0);
-    });
-    return chapters;
+    var pag = data.pagination || {};
+    return { chapters: out, hasMore: pag.hasNextPage === true };
   }
 
   return {
@@ -151,8 +97,14 @@ function createSource(api, config) {
     async getHomepageManga(args) {
       try {
         var page = (args && args.page) || 1;
-        var url = page === 1 ? baseUrl + "/" : baseUrl + "/?page=" + page;
-        return parseCards(await fetchHtml(url));
+        var data = await apiGet("/novels?limit=20&page=" + page);
+        var items = data.data || [];
+        var out = [];
+        for (var i = 0; i < items.length; i++) {
+          var it = novelToItem(items[i]);
+          if (it) out.push(it);
+        }
+        return out;
       } catch (e) {
         return [];
       }
@@ -163,18 +115,20 @@ function createSource(api, config) {
         var query = (args && args.query) || "";
         var page = (args && args.page) || 1;
         if (!query.trim()) return [];
-        var url = page === 1
-          ? baseUrl + "/?s=" + encodeURIComponent(query)
-          : baseUrl + "/?s=" + encodeURIComponent(query) + "&page=" + page;
-        return parseCards(await fetchHtml(url));
+        var data = await apiGet("/novels/search?q=" + encodeURIComponent(query) + "&limit=20&page=" + page);
+        var items = data.data || [];
+        var out = [];
+        for (var i = 0; i < items.length; i++) {
+          var it = novelToItem(items[i]);
+          if (it) out.push(it);
+        }
+        return out;
       } catch (e) {
         return [];
       }
     },
 
     async getFilteredManga(args) {
-      // Site exposes category only as card data-cat; no genre archive found.
-      // Fall back to the working latest list (same as previous versions).
       return await this.getHomepageManga(args || {});
     },
 
@@ -183,45 +137,55 @@ function createSource(api, config) {
     },
 
     async getMangaDetails(args) {
-      var url = makeAbsolute((args && args.url) || "");
-      var html = await fetchHtml(url);
-      var nid = novelIdFromUrl(url);
+      var rawUrl = makeAbsolute((args && args.url) || "");
+      var novelId = novelIdFromUrl(rawUrl);
+      if (!novelId) throw new Error("Bad novel URL: " + rawUrl);
 
-      var title = "";
-      var tm = html.match(/<meta[^>]*property="og:title"[^>]*content="([^"]+)"/i);
-      if (tm) title = cleanTitle(tm[1]).split("—")[0].split("|")[0].trim();
-      if (!title) {
-        var h1 = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
-        if (h1) title = cleanTitle(h1[1]);
+      var data = await apiGet("/novels/" + novelId);
+      var novel = data.data || data;
+      if (!novel || !novel._id) throw new Error("Manga not found: " + novelId);
+
+      var first = await fetchChapterPage(novelId, 1, 100);
+
+      var genres = [];
+      if (Array.isArray(novel.tags)) {
+        for (var i = 0; i < novel.tags.length; i++) {
+          var g = String(novel.tags[i] == null ? "" : novel.tags[i]).trim();
+          if (g) genres.push(g);
+        }
       }
 
-      var cover = "";
-      var cm = html.match(/<meta[^>]*property="og:image"[^>]*content="([^"]+)"/i);
-      if (cm) cover = makeAbsolute(cm[1]);
-      if (!cover && nid) cover = baseUrl + "/img/novel/" + nid + ".jpg";
-
-      var desc = "";
-      var dm = html.match(/<meta[^>]*name="description"[^>]*content="([^"]+)"/i);
-      if (dm) desc = strip(dm[1]);
-
-      var status = "";
-      var st = html.match(/مستمرة|مكتملة|متوقفة/);
-      if (st) status = st[0];
-
-      var chapters = parseChapters(html, nid);
-
       return {
-        title: title || "بدون عنوان",
-        coverUrl: cover,
-        description: desc,
-        genres: [],
-        status: status,
-        chapters: chapters,
-        originalUrl: url,
-        hasMoreChapters: false,
+        title: novel.title || novel.titleEn || "بدون عنوان",
+        coverUrl: coverUrl(novel._id),
+        description: strip(novel.description || ""),
+        genres: genres,
+        status: novel.status || "",
+        chapters: first.chapters,
+        originalUrl: rawUrl,
+        hasMoreChapters: first.hasMore,
         lastFetchedPage: 1,
         contentType: "novel"
       };
+    },
+
+    async fetchMoreChapters(args) {
+      try {
+        var prev = (args && args.previousResult) || {};
+        var slug = novelIdFromUrl(prev.originalUrl || "");
+        if (!slug) return null;
+        var nextPage = (prev.lastFetchedPage || 1) + 1;
+        if (nextPage > 100) return null;
+        var res = await fetchChapterPage(slug, nextPage, 100);
+        if (!res.chapters.length) return null;
+        return {
+          chapters: res.chapters,
+          hasMoreChapters: res.hasMore,
+          lastFetchedPage: nextPage
+        };
+      } catch (e) {
+        return null;
+      }
     },
 
     async getChapterPages(args) {
@@ -229,42 +193,34 @@ function createSource(api, config) {
     },
 
     async getChapterContent(args) {
-      var chapterUrl = makeAbsolute((args && args.url) || "");
-      lastChapterUrl = chapterUrl || lastChapterUrl;
-      var html = await fetchHtml(chapterUrl);
-      var title = "";
-      var tm = html.match(/<title>([\s\S]*?)<\/title>/i);
-      if (tm) {
-        var parts = cleanTitle(tm[1]).split("—");
-        title = (parts.length > 1 ? parts[1] : parts[0]).split("|")[0].trim();
+      var rawUrl = makeAbsolute((args && args.url) || "");
+      lastChapterUrl = rawUrl || lastChapterUrl;
+      var m = rawUrl.match(/\/novels\/([0-9a-f]+)\/chapters\/(\d+)/i);
+      if (!m) throw new Error("Bad chapter URL: " + rawUrl);
+      var data = await apiGet("/novels/" + m[1] + "/chapters/" + m[2]);
+      var chapter = data.data || data;
+      if (!chapter || !chapter.content) {
+        return { kind: "text", chapterTitle: "", textContent: "" };
       }
-      var body = "";
-      var bm = html.match(/<div[^>]*class="[^"]*chapter-content[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?:<div[^>]*class="[^"]*chapter-nav|<footer|<script)/i);
-      if (!bm) {
-        bm = html.match(/<div[^>]*class="[^"]*chapter-content[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
-      }
-      if (bm) body = strip(bm[1]);
       return {
         kind: "text",
-        chapterTitle: title,
-        textContent: body
+        chapterTitle: strip(chapter.title || "") || ("الفصل " + m[2]),
+        textContent: chapter.content
       };
-    },
-
-    async fetchMoreChapters() {
-      return null;
     },
 
     getImageHeaders() {
       return {
         "User-Agent": userAgent,
-        "Referer": lastChapterUrl || baseUrl + "/",
+        "Referer": "https://www.realmnovel.com/",
         "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
       };
     },
 
     sanitizeCoverUrl(args) {
-      return makeAbsolute((args && args.url) || "");
+      var u = makeAbsolute((args && args.url) || "");
+      var nid = novelIdFromUrl(u);
+      return nid ? coverUrl(nid) : u;
     }
   };
 }
