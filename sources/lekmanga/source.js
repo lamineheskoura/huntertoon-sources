@@ -78,6 +78,17 @@ function createSource(api, config) {
     return String(title || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
   }
 
+  // Numeric post ID for admin-ajax manga_get_chapters (CF-proof chapter listing).
+  function extractPostId(html) {
+    if (!html) return "";
+    var m = html.match(/<\w+[^>]*id="manga-chapters-holder"[^>]*data-id="(\d+)"/i) ||
+            html.match(/data-id="(\d+)"[^>]*id="manga-chapters-holder"/i) ||
+            html.match(/<input[^>]*class="[^"]*rating-post-id[^"]*"[^>]*value="(\d+)"/i) ||
+            html.match(/<a[^>]+data-post="(\d+)"/i) ||
+            html.match(/<link[^>]*rel="shortlink"[^>]*href="[^"]*[?&]p=(\d+)/i);
+    return m ? m[1] : "";
+  }
+
   // Search-result fallback: .tab-thumb blocks (no .page-item-detail wrapper).
   function parseTabThumbList(html) {
     if (!html) return [];

@@ -434,7 +434,7 @@
             "id": "lekmanga",
             "sid": 112,
             "name": "LekManga",
-            "version": "1.3.0",
+            "version": "1.4.0",
             "enabled": true,
             "status": "stable",
             "base_url": "https://mangalik.net",
@@ -451,7 +451,7 @@
             },
             "script": {
                 "url": "sources/lekmanga/source.js",
-                "sha256": "0DC174D40CD12471CFBC7FCF2276F21467EE93A551C759758069B612F09D1530",
+                "sha256": "78B7183B38E4210E70BE714C665E8212708123521BE4496597F59619E5A92A1E",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -473,7 +473,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "LekManga Madara source migrated to JavaScript",
-                "changelog": "v1.3.0: CF-proof chapter listing via admin-ajax manga_get_chapters (post-ID extraction) + widened reader attrs (data-original/cfsrc/manga-src) + style-query normalization."
+                "changelog": "v1.4.0: Chapter discovery now 3-tier (direct parse + admin-ajax manga_get_chapters with 5 post-ID patterns + legacy ajax); verified 156 chapters on real markup."
             }
         },
         "mangastarz": {
