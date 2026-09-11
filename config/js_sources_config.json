@@ -570,7 +570,7 @@
             "id": "mangatime",
             "sid": 118,
             "name": "مانجا تايم (MangaTime)",
-            "version": "1.1.0",
+            "version": "1.2.0",
             "enabled": true,
             "status": "stable",
             "base_url": "https://mangatime.org",
@@ -586,12 +586,13 @@
             },
             "script": {
                 "url": "sources/mangatime/source.js",
-                "sha256": "81f3f1692d2611358ccb1f543fec1d4ba41e671db725124d811390f200abc1ee",
+                "sha256": "AEE4D83640D1119B808018C1CE4AAE10D952A8D6AB74062645CFD2A9AACA8B56",
                 "entry": "createSource"
             },
             "capabilities": {
                 "content_types": [
-                    "manga"
+                    "manga",
+                    "overlay"
                 ],
                 "supports_search": true,
                 "supports_filters": true,
@@ -608,7 +609,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "MangaTime source using homepage.getHomepage, search.searchSeries, content.getSeriesBySlug, content.getChapters, and content.getChapterPages tRPC APIs",
-                "changelog": "Rewrite: homepage uses homepage.getHomepage API; chapters fetched via seriesId; chapter pages use seriesSlug+chapterNumber params; sortBy values corrected to recent/popularity/rating/alphabetical; filters use array format for type/genre/status"
+                "changelog": "v1.2.0: Overlay support — json-overlay chapters return kind:overlay with pageOverlays + natural dims (object pages mapped for both bubble schemas); images chapters unchanged."
             }
         },
         "mangatek": {
