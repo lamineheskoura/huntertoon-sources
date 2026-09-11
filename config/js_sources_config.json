@@ -570,7 +570,7 @@
             "id": "mangatime",
             "sid": 118,
             "name": "مانجا تايم (MangaTime)",
-            "version": "1.2.0",
+            "version": "1.3.0",
             "enabled": true,
             "status": "stable",
             "base_url": "https://mangatime.org",
@@ -586,7 +586,7 @@
             },
             "script": {
                 "url": "sources/mangatime/source.js",
-                "sha256": "AEE4D83640D1119B808018C1CE4AAE10D952A8D6AB74062645CFD2A9AACA8B56",
+                "sha256": "B015BD127ED6AA552C08658FD24F35FC3BE2871DE1F79D2DDD814B4D6904D6E8",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -609,7 +609,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "MangaTime source using homepage.getHomepage, search.searchSeries, content.getSeriesBySlug, content.getChapters, and content.getChapterPages tRPC APIs",
-                "changelog": "v1.2.0: Overlay support — json-overlay chapters return kind:overlay with pageOverlays + natural dims (object pages mapped for both bubble schemas); images chapters unchanged."
+                "changelog": "v1.3.0: Full chapter lists (limit:1000, lazy growth, flat {url,nextPage} contract) + REAL overlay text via getChapterOverlay/chunks (bbox/style mapping, Amiri fonts)."
             }
         },
         "mangatek": {

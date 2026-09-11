@@ -62,6 +62,27 @@ function createSource(api, config) {
     return String(url || "").replace(/[?#].*$/, "").replace(/\/+$/, "").split("/").pop();
   }
 
+  function mapChapters(list, slug) {
+    var out = [];
+    if (!Array.isArray(list)) return out;
+    for (var ci = 0; ci < list.length; ci++) {
+      var ch = list[ci] || {};
+      var num = String(ch.number != null ? ch.number : (ch.chapterNumber != null ? ch.chapterNumber : (ci + 1)));
+      out.push({
+        number: num,
+        title: ch.title || ("الفصل " + num),
+        views: 0,
+        url: JSON.stringify({ seriesSlug: slug, chapterNumber: (ch.number != null ? ch.number : num), id: ch.id }),
+        isLocked: ch.isPremium === true || ch.isUnlocked === false,
+        date: ch.publishedAt || ch.createdAt || ""
+      });
+    }
+    out.sort(function (a, b) {
+      return (parseFloat(b.number) || 0) - (parseFloat(a.number) || 0);
+    });
+    return out;
+  }
+
   function toManga(item) {
     if (!item || !item.slug || !item.title) return null;
 
@@ -101,13 +122,16 @@ function createSource(api, config) {
       }, true));
     }
 
-    // Overlay item normalization — accepts both known schemas so text works
-    // the moment the backend publishes it (currently pages carry images only):
+    // Overlay item normalization — accepts all known schemas:
+    //  - mangatime overlay-chunk shape: {text, bbox:[x0,y0,x1,y1], templateId,
+    //    fineType, style:{size,color,weight,align,dir,lineHeight,font,
+    //    strokeColor,strokeW,...}}  (+ optional bubbleBbox/safeBbox)
     //  - manhasama shape: {text, box:[x,y,w,h], boxNorm:[nx,ny,nw,nh]}
     //  - tek/sid shape: {text, x,y,w,h, font_family, font_size_px, ...}
     function normalizeOverlayItem(item) {
       if (!item || typeof item !== "object") return null;
       var box = item.box || null;
+      var bbox = item.bbox || null;
       var norm = item.boxNorm || item.box_norm || null;
       var text = item.text;
       if (text === undefined || text === null) text = "";
@@ -115,10 +139,10 @@ function createSource(api, config) {
       if (angle === undefined || angle === null) angle = item.rotate;
       var out = {
         text: String(text),
-        x: box ? (Number(box[0]) || 0) : (Number(item.x) || 0),
-        y: box ? (Number(box[1]) || 0) : (Number(item.y) || 0),
-        w: box ? (Number(box[2]) || 0) : (Number(item.w || item.width) || 0),
-        h: box ? (Number(box[3]) || 0) : (Number(item.h || item.height) || 0),
+        x: box ? (Number(box[0]) || 0) : (bbox ? (Number(bbox[0]) || 0) : (Number(item.x) || 0)),
+        y: box ? (Number(box[1]) || 0) : (bbox ? (Number(bbox[1]) || 0) : (Number(item.y) || 0)),
+        w: box ? (Number(box[2]) || 0) : (bbox ? ((Number(bbox[2]) || 0) - (Number(bbox[0]) || 0)) : (Number(item.w || item.width) || 0)),
+        h: box ? (Number(box[3]) || 0) : (bbox ? ((Number(bbox[3]) || 0) - (Number(bbox[1]) || 0)) : (Number(item.h || item.height) || 0)),
         angle: Number(angle) || 0
       };
       if (norm && norm.length >= 4) {
@@ -128,12 +152,31 @@ function createSource(api, config) {
         out.nh = Number(norm[3]) || 0;
         out.hasNorm = true;
       }
+      // mangatime style object -> flat styling fields the app renderer reads.
+      var st = (item.style && typeof item.style === "object") ? item.style : null;
+      if (st) {
+        if (st.size != null) out.font_size_px = Number(st.size) || 0;
+        if (st.color) out.color = String(st.color);
+        if (st.weight != null) out.font_weight = Number(st.weight) || 0;
+        if (st.align) out.text_align = String(st.align);
+        if (st.dir) out.direction = String(st.dir);
+        if (st.lineHeight != null && !isNaN(Number(st.lineHeight))) out.line_height = Number(st.lineHeight);
+        if (st.font) out.font_family = String(st.font);
+        if (st.strokeColor) out.stroke_color = String(st.strokeColor);
+        if (st.strokeW != null && !isNaN(Number(st.strokeW))) out.stroke_width_px = Number(st.strokeW);
+        if (st.slantDeg != null && !isNaN(Number(st.slantDeg))) out.slant_deg = Number(st.slantDeg);
+      }
+      if (item.templateId) out.template_id = String(item.templateId);
+      if (item.fineType) out.fine_type = String(item.fineType);
+      if (item.type) out.bubble_type = String(item.type);
       // Styling passthrough (tek/sid schema) — app renders when present.
       var styleKeys = ["font_family", "font_size_px", "line_height", "color",
         "stroke_color", "stroke_width_px", "text_align", "direction", "bubble_shape"];
       for (var i = 0; i < styleKeys.length; i++) {
-        if (item[styleKeys[i]] !== undefined && item[styleKeys[i]] !== null) {
-          out[styleKeys[i]] = item[styleKeys[i]];
+        if (out[styleKeys[i]] === undefined || out[styleKeys[i]] === null || out[styleKeys[i]] === "" || out[styleKeys[i]] === 0) {
+          if (item[styleKeys[i]] !== undefined && item[styleKeys[i]] !== null) {
+            out[styleKeys[i]] = item[styleKeys[i]];
+          }
         }
       }
       return out;
@@ -196,6 +239,104 @@ function createSource(api, config) {
         if (src) urls.push(src);
       }
       return { imageUrls: urls, data: data };
+    }
+
+    async function fetchOverlayPages(chapterId) {
+      // content.getChapterOverlay {chapterId} -> {pages:[{pageIndex,width,height,bubbles[]}]}
+      // Falls back to per-chunk endpoint if the full blob is unavailable.
+      try {
+        if (!chapterId) return null;
+        var full = null;
+        try {
+          full = unwrap(await fetchApi("content.getChapterOverlay", { chapterId: chapterId }, true));
+        } catch (eFull) {
+          full = null;
+        }
+        if (full && Array.isArray(full.pages) && full.pages.length) return full.pages;
+        var man = null;
+        try {
+          man = unwrap(await fetchApi("content.getChapterOverlayManifest", { chapterId: chapterId }, true));
+        } catch (eMan) {
+          man = null;
+        }
+        var chunks = (man && man.chunks) || (man && man.manifest && man.manifest.chunks) || [];
+        var version = (man && (man.overlayVersion || (man.manifest && man.manifest.overlayVersion))) || 1;
+        var acc = [];
+        for (var ci = 0; ci < chunks.length; ci++) {
+          var idx = (chunks[ci] && chunks[ci].chunkIndex != null) ? chunks[ci].chunkIndex : ci;
+          try {
+            var ch = unwrap(await fetchApi("content.getChapterOverlayChunk", {
+              chapterId: chapterId, overlayVersion: version, chunkIndex: idx
+            }, true));
+            var cps = (ch && ch.pages) || [];
+            for (var pi = 0; pi < cps.length; pi++) acc.push(cps[pi]);
+          } catch (eChunk) {}
+        }
+        return acc.length ? acc : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function buildOverlayFromPages(overlayPages, imageUrls, fallbackDims) {
+      var pageMap = {};
+      var natW = 0, natH = 0;
+      var wCount = {}, hCount = {};
+      for (var i = 0; i < overlayPages.length; i++) {
+        var pg = overlayPages[i] || {};
+        var pIdx = (pg.pageIndex != null) ? pg.pageIndex : i;
+        var pw = Number(pg.width) || 0;
+        var ph = Number(pg.height) || 0;
+        if (pw > 0) wCount[pw] = (wCount[pw] || 0) + 1;
+        if (ph > 0) hCount[ph] = (hCount[ph] || 0) + 1;
+        var list = [];
+        var raw = pg.bubbles || pg.overlays || [];
+        if (!Array.isArray(raw)) raw = [];
+        // Per-page width normalization (proven tek/sid pattern): the app
+        // scales every coordinate by displayWidth/naturalWidth.
+        var s = 1;
+        for (var j = 0; j < raw.length; j++) {
+          var norm = normalizeOverlayItem(raw[j]);
+          if (norm) list.push(norm);
+        }
+        pageMap[pIdx] = { list: list, w: pw, h: ph };
+      }
+      var mc = 0;
+      for (var wk in wCount) { if (wCount[wk] > mc) { mc = wCount[wk]; natW = Number(wk); } }
+      mc = 0;
+      for (var hk in hCount) { if (hCount[hk] > mc) { mc = hCount[hk]; natH = Number(hk); } }
+      if (!natW) natW = (fallbackDims && fallbackDims.w) || 1200;
+      if (!natH) natH = (fallbackDims && fallbackDims.h) || 1200;
+      // Normalize every page to the natural width so one app-side scale fits all.
+      var pageOverlays = [];
+      for (var p = 0; p < imageUrls.length; p++) {
+        var entry = pageMap[p] || { list: [], w: natW, h: natH };
+        var pw2 = entry.w || natW;
+        var sc = (pw2 && pw2 !== natW) ? (natW / pw2) : 1;
+        var scaled = [];
+        for (var k = 0; k < entry.list.length; k++) {
+          var ov = entry.list[k];
+          var cp = {};
+          for (var kk in ov) cp[kk] = ov[kk];
+          if (sc !== 1) {
+            cp.x = Number((cp.x * sc).toFixed(2));
+            cp.y = Number((cp.y * sc).toFixed(2));
+            cp.w = Number((cp.w * sc).toFixed(2));
+            cp.h = Number((cp.h * sc).toFixed(2));
+            if (cp.font_size_px) cp.font_size_px = Number((cp.font_size_px * sc).toFixed(2));
+            if (cp.stroke_width_px) cp.stroke_width_px = Number((cp.stroke_width_px * sc).toFixed(2));
+          }
+          scaled.push(cp);
+        }
+        pageOverlays.push(scaled);
+      }
+      return {
+        kind: "overlay",
+        imageUrls: imageUrls,
+        pageOverlays: pageOverlays,
+        naturalImageWidth: natW,
+        naturalImageHeight: natH
+      };
     }
 
   return {
@@ -278,25 +419,13 @@ function createSource(api, config) {
         }
       }
       var chapters = [];
+      var chaptersHasMore = false;
       if (seriesId) {
-        var chData = unwrap(await fetchApi("content.getChapters", { seriesId: seriesId }, true));
+        var chData = unwrap(await fetchApi("content.getChapters", { seriesId: seriesId, limit: 1000 }, true));
         if (chData && chData.chapters && chData.chapters.length) {
-          for (var ci = 0; ci < chData.chapters.length; ci++) {
-            var ch = chData.chapters[ci];
-            var num = String(ch.number || ch.chapterNumber || ci + 1);
-            chapters.push({
-              number: num,
-              title: ch.title || "الفصل " + num,
-              views: 0,
-              url: JSON.stringify({ seriesSlug: slug, chapterNumber: ch.number || num, id: ch.id }),
-              isLocked: ch.isPremium === true || ch.isUnlocked === false,
-              date: ch.publishedAt || ch.createdAt || ""
-            });
-          }
-          chapters.sort(function(a, b) {
-            return (parseFloat(b.number) || 0) - (parseFloat(a.number) || 0);
-          });
+          chapters = mapChapters(chData.chapters, slug);
         }
+        chaptersHasMore = !!(chData && chData.hasMore);
       }
       return {
         title: title,
@@ -305,10 +434,43 @@ function createSource(api, config) {
         genres: genres,
         chapters: chapters,
         originalUrl: url,
-        hasMoreChapters: false,
+        hasMoreChapters: chaptersHasMore,
         lastFetchedPage: 1,
         contentType: "manga"
       };
+    },
+
+    async fetchMoreChapters(args) {
+      try {
+        // App calls with FLAT args {url, nextPage}; also accept legacy shapes.
+        var prev = (args && args.previousResult) || {};
+        var rawUrl = (args && args.url) || prev.originalUrl || "";
+        var slug = slugFromUrl(rawUrl);
+        if (!slug) {
+          try {
+            var rj = JSON.parse(rawUrl);
+            slug = rj.seriesSlug || rj.slug || "";
+          } catch (eJson) {}
+        }
+        if (!slug) return null;
+        var nextPage = (args && args.nextPage) || ((prev.lastFetchedPage || 1) + 1);
+        nextPage = parseInt(nextPage, 10) || 2;
+        if (nextPage < 2) nextPage = 2;
+        // No cursor paging server-side: grow the limit window (app dedupes by url).
+        var limit = nextPage * 1000;
+        if (limit > 5000) limit = 5000;
+        var series = unwrap(await fetchApi("content.getSeriesBySlug", { slug: slug }, true));
+        if (!series || !series.id) return null;
+        var chData = unwrap(await fetchApi("content.getChapters", { seriesId: series.id, limit: limit }, true));
+        if (!chData || !chData.chapters || !chData.chapters.length) return null;
+        return {
+          chapters: mapChapters(chData.chapters, slug),
+          hasMoreChapters: !!chData.hasMore,
+          lastFetchedPage: nextPage
+        };
+      } catch (e) {
+        return null;
+      }
     },
 
 
@@ -324,12 +486,16 @@ function createSource(api, config) {
       if (!r.imageUrls.length) return { kind: "image", imageUrls: [] };
       var fmt = String((r.data && r.data.format) || "");
       if (fmt === "json-overlay") {
+        var chapterId = (r.data && r.data.id) || ref.id || "";
+        var overlayPages = await fetchOverlayPages(chapterId);
+        if (overlayPages && overlayPages.length) {
+          var fb = naturalDims(r.data);
+          return buildOverlayFromPages(overlayPages, r.imageUrls, fb);
+        }
         return buildOverlayResult(r.data, r.imageUrls);
       }
       return { kind: "image", imageUrls: r.imageUrls };
     },
-
-    async fetchMoreChapters() { return null; },
 
     async getGenresAndTypes() {
       return {
