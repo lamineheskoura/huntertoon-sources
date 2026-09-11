@@ -434,13 +434,13 @@
             "id": "lekmanga",
             "sid": 112,
             "name": "LekManga",
-            "version": "1.1.0",
+            "version": "1.2.0",
             "enabled": true,
             "status": "stable",
             "base_url": "https://mangalik.net",
             "website_url": "https://mangalik.net",
             "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=mangalik.net",
-            "requires_cf": false,
+            "requires_cf": true,
             "image_referer": "https://mangalik.net/",
             "headers": {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -451,7 +451,7 @@
             },
             "script": {
                 "url": "sources/lekmanga/source.js",
-                "sha256": "3CAA0A088969B6F334464E854A9AB35202443EC1BBAC2B76D3C97F419BE191B4",
+                "sha256": "8856CC78974997A1A145B61DB0A19C9CEAC0A0A12B0024F24487886FB83B0DC1",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -462,7 +462,7 @@
                 "supports_filters": true,
                 "supports_lazy_chapters": false,
                 "supports_download": true,
-                "requires_cloudflare": false
+                "requires_cloudflare": true
             },
             "compatibility": {
                 "min_app_version": "1.4.0",
@@ -473,7 +473,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "LekManga Madara source migrated to JavaScript",
-                "changelog": "v1.1.0: Updated base URL to mangalik.net; optimized for smart per-request CF bypass."
+                "changelog": "v1.2.0: Homepage via / + /page/N/ wp-pagenavi scheme with archive fallback; 3-tier fetch (http/browser/fetchText); widened reader selectors + srcset/absolute URLs; chapter Referer + ajax headers; requires_cf true."
             }
         },
         "mangastarz": {

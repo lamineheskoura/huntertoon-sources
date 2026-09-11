@@ -27,27 +27,92 @@ function createSource(api, config) {
     return selectors[key] || fallback;
   }
 
-  async function fetchHtml(url, extraHeaders, method) {
+  async function fetchHtml(url, extraHeaders, method, postBody) {
     var headers = {};
     for (var k in defaultHeaders) headers[k] = defaultHeaders[k];
     if (extraHeaders) for (var x in extraHeaders) headers[x] = extraHeaders[x];
-    if (api.http) {
-      var res = await api.http(url, { method: method || "GET", headers: headers });
-      if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : 0) + " for " + url);
-      return res.body || "";
+    if (method === "POST") {
+      headers["X-Requested-With"] = "XMLHttpRequest";
+      headers["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8";
+      headers["Accept"] = "*/*";
     }
+    // 1. Primary: fast direct HTTP via api.http
+    if (api.http) {
+      try {
+        var reqOpts = { method: method || "GET", headers: headers };
+        if (postBody !== undefined && postBody !== null) reqOpts.body = postBody;
+        var res = await api.http(url, reqOpts);
+        if (res && res.ok && res.body && res.body.length > 200) return res.body;
+      } catch (eHttp) {}
+    }
+    // 2. Secondary: headless WebView solver for CF-challenged pages
+    if (typeof api.browser === "function" && (!method || method === "GET")) {
+      try {
+        var rendered = await api.browser(url, {
+          waitForSelector: ".page-item-detail, .post-title, .wp-manga-chapter",
+          timeoutSeconds: 10
+        });
+        if (rendered && rendered.length > 500) return rendered;
+      } catch (eBrowser) {}
+    }
+    // 3. Tertiary: direct fetchText
     if (method && method !== "GET") return "";
-    var html = await api.fetchText(url, headers);
-    if (!html) throw new Error("Empty response: " + url);
-    return html;
+    try {
+      var html = await api.fetchText(url, headers);
+      if (html && html.length > 100) return html;
+    } catch (eFetch) {}
+    return "";
   }
 
   function makeAbsolute(url) {
     if (!url) return "";
-    if (url.indexOf("http") === 0) return url;
+    url = String(url).trim();
+    if (url.indexOf("http://") === 0) return "https://" + url.substring(7);
+    if (url.indexOf("https://") === 0) return url;
     if (url.indexOf("//") === 0) return "https:" + url;
-    if (url.indexOf("/") === 0) return baseUrl + url;
-    return baseUrl + "/" + url;
+    if (url.indexOf("/") === 0) return baseUrl.replace(/\/$/, "") + url;
+    return baseUrl.replace(/\/$/, "") + "/" + url;
+  }
+
+  function cleanTitle(title) {
+    return String(title || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+  }
+
+  // Search-result fallback: .tab-thumb blocks (no .page-item-detail wrapper).
+  function parseTabThumbList(html) {
+    if (!html) return [];
+    var results = [];
+    var seen = {};
+    var tabRe = /<div[^>]*class="[^"]*tab-thumb[^"]*"[^>]*>([\s\S]*?)<\/div>/gi;
+    var tm;
+    while ((tm = tabRe.exec(html)) !== null) {
+      var block = tm[1];
+      var href = "", title = "";
+      var m1 = block.match(/<a[^>]*href="([^"]+)"[^>]*title="([^"]*)"/i);
+      var m2 = !m1 && block.match(/<a[^>]*title="([^"]*)"[^>]*href="([^"]+)"/i);
+      if (m1) {
+        href = m1[1].trim();
+        title = cleanTitle(m1[2]);
+      } else if (m2) {
+        title = cleanTitle(m2[1]);
+        href = m2[2].trim();
+      } else {
+        var m3 = block.match(/<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
+        if (m3) {
+          href = m3[1].trim();
+          title = cleanTitle(m3[2]);
+        }
+      }
+      var detailUrl = makeAbsolute(href);
+      if (!title || !detailUrl || seen[detailUrl]) continue;
+      seen[detailUrl] = true;
+      var cover = "";
+      var cm = block.match(/<img[^>]+(?:data-src|data-lazy-src|src)="([^"]+)"/i);
+      if (cm) cover = makeAbsolute(cm[1].trim());
+      if (cover.indexOf("data:image") === 0) cover = "";
+      results.push({ title: title, detailUrl: detailUrl, coverUrl: cover, contentType: "manga" });
+    }
+    return results;
   }
 
   function extractNumber(url, title) {
@@ -112,6 +177,8 @@ function createSource(api, config) {
 
   function normalizeUrl(url) {
     if (!url) return url;
+    url = String(url).trim();
+    url = url.replace(/([?&])style=(paged|list)\b/gi, "$1").replace(/[?&]$/, "");
     if (url.indexOf(baseUrl) === 0) return url;
     if (url.indexOf("http://") === 0 || url.indexOf("https://") === 0) {
       var pathMatch = url.match(/^https?:\/\/[^/]+(\/.*)$/);
@@ -121,17 +188,26 @@ function createSource(api, config) {
   }
 
   return {
-    requiresCloudflare: false,
+    requiresCloudflare: true,
 
     async getHomepageManga(args) {
       try {
         var page = (args && args.page) || 1;
-        var html = await fetchHtml(baseUrl + "/manga/page/" + page + "/?m_orderby=latest");
-        return await toMangaList(html, sel("homepage_list", ".page-item-detail"), {
-          titleSel: sel("homepage_title", ".post-title h3 a, .post-title h5 a"),
-          coverSel: sel("homepage_cover", ".item-thumb a img"),
-          urlSel: sel("homepage_url", ".post-title h3 a, .post-title h5 a")
-        });
+        // Primary: front page (/) + /page/N/ (proven wp-pagenavi scheme).
+        // Fallback: /manga/ archive pagination.
+        var urls = page === 1
+          ? [baseUrl + "/", baseUrl + "/manga/?m_orderby=latest"]
+          : [baseUrl + "/page/" + page + "/", baseUrl + "/manga/page/" + page + "/?m_orderby=latest"];
+        for (var i = 0; i < urls.length; i++) {
+          var html = await fetchHtml(urls[i]);
+          var list = await toMangaList(html, sel("homepage_list", ".page-item-detail"), {
+            titleSel: sel("homepage_title", ".post-title h3 a, .post-title h5 a, .post-title h4 a, .post-title a"),
+            coverSel: sel("homepage_cover", ".item-thumb a img, .item-thumb img"),
+            urlSel: sel("homepage_url", ".post-title h3 a, .post-title h5 a, .post-title h4 a, .post-title a")
+          });
+          if (list.length) return list;
+        }
+        return [];
       } catch (e) {
         return [];
       }
@@ -143,11 +219,13 @@ function createSource(api, config) {
         var page = (args && args.page) || 1;
         if (!query.trim()) return [];
         var html = await fetchHtml(baseUrl + "/page/" + page + "/?s=" + encodeURIComponent(query) + "&post_type=wp-manga");
-        return await toMangaList(html, sel("search_list", ".c-tabs-item__content"), {
+        var list = await toMangaList(html, sel("search_list", ".c-tabs-item__content"), {
           titleSel: sel("search_title", ".post-title h3 a, .post-title h4 a"),
           coverSel: sel("search_cover", ".tab-thumb a img"),
           urlSel: sel("search_title", ".post-title h3 a, .post-title h4 a")
         });
+        if (!list.length) list = parseTabThumbList(html);
+        return list;
       } catch (e) {
         return [];
       }
@@ -156,7 +234,9 @@ function createSource(api, config) {
     async getMangaDetails(args) {
       var url = normalizeUrl((args && args.url) || "");
       var html = await fetchHtml(url);
+      if (!html) throw new Error("Empty response: " + url);
       var title = await api.cssText(html, sel("manga_title", ".post-title h1"));
+      if (!title) title = await api.cssText(html, sel("manga_title_h2", ".post-title h2"));
       if (!title) title = await api.cssAttr(html, "meta[property='og:title']", "content");
       var cover = await api.cssAttr(html, sel("manga_cover", ".summary_image img"), "data-src");
       if (!cover) cover = await api.cssAttr(html, sel("manga_cover", ".summary_image img"), "data-lazy-src");
@@ -166,12 +246,11 @@ function createSource(api, config) {
       var genres = await api.cssList(html, sel("manga_genres", ".genres-content a"));
       var chapters = await extractChapters(html);
       if (!chapters.length) {
-        var ajaxUrl = url.replace(/\/$/, "") + "/ajax/chapters/";
-        var ajaxHtml = await fetchHtml(ajaxUrl, {
-          "X-Requested-With": "XMLHttpRequest",
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
-        }, "POST");
-        if (ajaxHtml) chapters = await extractChapters(ajaxHtml);
+        var ajaxUrl = url.replace(/\/+$/, "") + "/ajax/chapters/";
+        try {
+          var ajaxHtml = await fetchHtml(ajaxUrl, { "Referer": url }, "POST", "");
+          if (ajaxHtml) chapters = await extractChapters(ajaxHtml);
+        } catch (eAjax) {}
       }
       return {
         title: (title || "بدون عنوان").trim(),
@@ -190,15 +269,21 @@ function createSource(api, config) {
       var chapterUrl = normalizeUrl((args && args.url) || "");
       lastChapterUrl = chapterUrl;
       var html = await fetchHtml(chapterUrl);
-      var imgSel = sel("chapter_page_image", ".reading-content .page-break img, .wp-manga-chapter-img");
+      var imgSel = sel("chapter_page_image", "#readerarea img, .reader-area img, .reading-content img, .reading-content .page-break img, .page-break img, .wp-manga-chapter-img");
       var images = await api.cssMap(html, imgSel, {
         dataSrc: { selector: "", type: "attr", attr: "data-src" },
         lazy: { selector: "", type: "attr", attr: "data-lazy-src" },
+        orig: { selector: "", type: "attr", attr: "data-original" },
+        srcset: { selector: "", type: "attr", attr: "srcset" },
         src: { selector: "", type: "attr", attr: "src" }
       });
       var urls = [];
       for (var i = 0; i < images.length; i++) {
-        var src = images[i].dataSrc || images[i].lazy || images[i].src || "";
+        var raw = images[i].dataSrc || images[i].lazy || images[i].orig || images[i].src || "";
+        if (!raw && images[i].srcset) {
+          raw = String(images[i].srcset).split(",")[0].trim().split(/\s+/)[0];
+        }
+        var src = makeAbsolute(String(raw || "").trim());
         if (src && src.indexOf("data:image") === -1 && urls.indexOf(src) === -1) urls.push(src);
       }
       return urls;
@@ -236,7 +321,7 @@ function createSource(api, config) {
     getImageHeaders() {
       return {
         "User-Agent": cloudflareUserAgent,
-        "Referer": baseUrl + "/",
+        "Referer": lastChapterUrl || baseUrl + "/",
         "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
         "Sec-Fetch-Dest": "image",
@@ -246,7 +331,7 @@ function createSource(api, config) {
     },
 
     sanitizeCoverUrl(args) {
-      return (args && args.url) || "";
+      return makeAbsolute((args && args.url) || "") || ((args && args.url) || "");
     }
   };
 }
