@@ -171,10 +171,15 @@ function createSource(api, config) {
 
     async fetchMoreChapters(args) {
       try {
+        // App calls with FLAT args {url, nextPage}; also accept legacy
+        // {previousResult: {originalUrl, lastFetchedPage}} shape.
         var prev = (args && args.previousResult) || {};
-        var slug = novelIdFromUrl(prev.originalUrl || "");
+        var rawUrl = (args && args.url) || prev.originalUrl || "";
+        var slug = novelIdFromUrl(rawUrl);
         if (!slug) return null;
-        var nextPage = (prev.lastFetchedPage || 1) + 1;
+        var nextPage = (args && args.nextPage) || ((prev.lastFetchedPage || 1) + 1);
+        nextPage = parseInt(nextPage, 10) || 2;
+        if (nextPage < 2) nextPage = 2;
         if (nextPage > 100) return null;
         var res = await fetchChapterPage(slug, nextPage, 100);
         if (!res.chapters.length) return null;

@@ -1427,7 +1427,7 @@
             "id": "realmnovel",
             "sid": 125,
             "name": "عالم الروايات (RealmNovel)",
-            "version": "4.0.0",
+            "version": "4.0.1",
             "enabled": true,
             "status": "stable",
             "base_url": "http://62.171.141.197:5007",
@@ -1443,7 +1443,7 @@
             },
             "script": {
                 "url": "sources/realmnovel/source.js",
-                "sha256": "CE5F631A3ECDCE00AEAA936409384249690A17EAEF98C4E5305270C5795F795C",
+                "sha256": "0D73A3D2E75C659DB3DF0D8D2DADE90053D48183C2E81D9670059DF15B7B92A6",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1465,7 +1465,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "RealmNovel (عالم الروايات) Arabic novel source using the Novels Sky API with x-app-version bypass (no login).",
-                "changelog": "v4.0.0: Root fix — exact header x-app-version: 10 unlocks the whole API with NO login (all other values 403/426). Full 2428 chapters incl. 51+ via lazy pagination."
+                "changelog": "v4.0.1: Fix fetchMoreChapters reading flat app args {url, nextPage} (was previousResult-only, returned null after 100). v4.0.0: x-app-version: 10 unlocks API without login; full chapters incl. 51+."
             }
         },
         "mknov": {
