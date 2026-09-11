@@ -145,6 +145,17 @@ function createSource(api, config) {
     return results;
   }
 
+  // Numeric post ID for admin-ajax (CF-proof chapter listing).
+  function extractPostId(html) {
+    if (!html) return "";
+    var m = html.match(/<\w+[^>]*id="manga-chapters-holder"[^>]*data-id="(\d+)"/i) ||
+            html.match(/data-id="(\d+)"[^>]*id="manga-chapters-holder"/i) ||
+            html.match(/<input[^>]*class="[^"]*rating-post-id[^"]*"[^>]*value="(\d+)"/i) ||
+            html.match(/<a[^>]+data-post="(\d+)"/i) ||
+            html.match(/<link[^>]*rel="shortlink"[^>]*href="[^"]*[?&]p=(\d+)/i);
+    return m ? m[1] : "";
+  }
+
   async function extractChapters(html) {
     var listSel = sel("chapter_list", ".wp-manga-chapter, li.wp-manga-chapter");
     var dateSel = sel("chapter_date", ".chapter-release-date i, .chapter-release-date");
@@ -246,11 +257,34 @@ function createSource(api, config) {
       var genres = await api.cssList(html, sel("manga_genres", ".genres-content a"));
       var chapters = await extractChapters(html);
       if (!chapters.length) {
+        // Strategy 2: admin-ajax manga_get_chapters (CF-proof: admin-ajax bypasses CF).
+        try {
+          var postId = extractPostId(html);
+          if (postId) {
+            var ajaxRes = await api.http(baseUrl + "/wp-admin/admin-ajax.php", {
+              method: "POST",
+              headers: {
+                "User-Agent": userAgent,
+                "Accept": "*/*",
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "X-Requested-With": "XMLHttpRequest",
+                "Referer": url,
+                "Origin": baseUrl
+              },
+              body: "action=manga_get_chapters&manga=" + encodeURIComponent(postId)
+            });
+            if (ajaxRes && ajaxRes.ok && ajaxRes.body && ajaxRes.body.indexOf("wp-manga-chapter") !== -1) {
+              chapters = await extractChapters(ajaxRes.body);
+            }
+          }
+        } catch (eAjax1) {}
+      }
+      if (!chapters.length) {
         var ajaxUrl = url.replace(/\/+$/, "") + "/ajax/chapters/";
         try {
           var ajaxHtml = await fetchHtml(ajaxUrl, { "Referer": url }, "POST", "");
           if (ajaxHtml) chapters = await extractChapters(ajaxHtml);
-        } catch (eAjax) {}
+        } catch (eAjax2) {}
       }
       return {
         title: (title || "بدون عنوان").trim(),
@@ -269,17 +303,19 @@ function createSource(api, config) {
       var chapterUrl = normalizeUrl((args && args.url) || "");
       lastChapterUrl = chapterUrl;
       var html = await fetchHtml(chapterUrl);
-      var imgSel = sel("chapter_page_image", "#readerarea img, .reader-area img, .reading-content img, .reading-content .page-break img, .page-break img, .wp-manga-chapter-img");
+      var imgSel = sel("chapter_page_image", "#readerarea img, .reader-area img, .reading-content img, .reading-content .page-break img, .page-break img, .wp-manga-chapter-img, li.blocks-gallery-item img");
       var images = await api.cssMap(html, imgSel, {
         dataSrc: { selector: "", type: "attr", attr: "data-src" },
         lazy: { selector: "", type: "attr", attr: "data-lazy-src" },
         orig: { selector: "", type: "attr", attr: "data-original" },
+        cfsrc: { selector: "", type: "attr", attr: "data-cfsrc" },
+        mangasrc: { selector: "", type: "attr", attr: "data-manga-src" },
         srcset: { selector: "", type: "attr", attr: "srcset" },
         src: { selector: "", type: "attr", attr: "src" }
       });
       var urls = [];
       for (var i = 0; i < images.length; i++) {
-        var raw = images[i].dataSrc || images[i].lazy || images[i].orig || images[i].src || "";
+        var raw = images[i].dataSrc || images[i].lazy || images[i].orig || images[i].cfsrc || images[i].mangasrc || images[i].src || "";
         if (!raw && images[i].srcset) {
           raw = String(images[i].srcset).split(",")[0].trim().split(/\s+/)[0];
         }
