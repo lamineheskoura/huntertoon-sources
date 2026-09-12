@@ -434,24 +434,24 @@
             "id": "lekmanga",
             "sid": 112,
             "name": "LekManga",
-            "version": "1.4.0",
+            "version": "1.5.0",
             "enabled": true,
             "status": "stable",
-            "base_url": "https://mangalik.net",
-            "website_url": "https://mangalik.net",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=mangalik.net",
+            "base_url": "https://lekmanga.site",
+            "website_url": "https://lekmanga.site",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=lekmanga.site",
             "requires_cf": true,
-            "image_referer": "https://mangalik.net/",
+            "image_referer": "https://lekmanga.site/",
             "headers": {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
                 "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
-                "Referer": "https://mangalik.net/",
-                "Origin": "https://mangalik.net"
+                "Referer": "https://lekmanga.site/",
+                "Origin": "https://lekmanga.site"
             },
             "script": {
                 "url": "sources/lekmanga/source.js",
-                "sha256": "78B7183B38E4210E70BE714C665E8212708123521BE4496597F59619E5A92A1E",
+                "sha256": "9B517363560D867B26ED1796DD3FCF8A334D01832FD2798D6EE9FCDD884E9E51",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -473,7 +473,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "LekManga Madara source migrated to JavaScript",
-                "changelog": "v1.4.0: Chapter discovery now 3-tier (direct parse + admin-ajax manga_get_chapters with 5 post-ID patterns + legacy ajax); verified 156 chapters on real markup."
+                "changelog": "v1.5.0: Switch base to lekmanga.site (reachable edges; mangalik.net blackholed) + rewrite dead tempsolo image host to tempstorm (verified 200, reference-reader behavior)."
             }
         },
         "mangastarz": {

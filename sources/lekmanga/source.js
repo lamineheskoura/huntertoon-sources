@@ -1,5 +1,8 @@
 function createSource(api, config) {
-  var baseUrl = (config && config.base_url) || "https://mangalik.net";
+  // Primary host is lekmanga.site: same site/database as mangalik.net but served
+  // from reachable Cloudflare edges (mangalik.net edges are blackholed on many
+  // networks, which stuck the reader on infinite image loading).
+  var baseUrl = ((config && config.base_url) || "https://lekmanga.site").replace(/\/+$/, "");
   var selectors = (config && config.selectors) || {};
 
   var userAgent = (config && config.user_agent) || "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
@@ -68,10 +71,20 @@ function createSource(api, config) {
     if (!url) return "";
     url = String(url).trim();
     if (url.indexOf("http://") === 0) return "https://" + url.substring(7);
-    if (url.indexOf("https://") === 0) return url;
-    if (url.indexOf("//") === 0) return "https:" + url;
+    if (url.indexOf("https://") === 0) return rewriteImageHost(url);
+    if (url.indexOf("//") === 0) return rewriteImageHost("https:" + url);
     if (url.indexOf("/") === 0) return baseUrl.replace(/\/$/, "") + url;
     return baseUrl.replace(/\/$/, "") + "/" + url;
+  }
+
+  // Dead image host rewrite (verified live: same path returns 200 on the
+  // target host and hangs/403s on the source host).
+  function rewriteImageHost(url) {
+    if (!url) return url;
+    var u = String(url);
+    // tempsolo.mangalik.net -> tempstorm.lekmanga.site (same CDN path layout)
+    u = u.replace(/^https?:\/\/tempsolo\.mangalik\.net\//i, "https://tempstorm.lekmanga.site/");
+    return u;
   }
 
   function cleanTitle(title) {
