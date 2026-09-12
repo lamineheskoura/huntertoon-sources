@@ -451,7 +451,7 @@
             },
             "script": {
                 "url": "sources/lekmanga/source.js",
-                "sha256": "9B517363560D867B26ED1796DD3FCF8A334D01832FD2798D6EE9FCDD884E9E51",
+                "sha256": "D5C5A36077CDF7F4E6A13D197FB05073F33DC5115D262266233517F8E4D7C036",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -586,7 +586,7 @@
             },
             "script": {
                 "url": "sources/mangatime/source.js",
-                "sha256": "B015BD127ED6AA552C08658FD24F35FC3BE2871DE1F79D2DDD814B4D6904D6E8",
+                "sha256": "2BE6B9C671C7B47676244D86632A9D3B923D62BA7D4075CC9F470DD153308316",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -847,7 +847,7 @@
             },
             "script": {
                 "url": "sources/mangalionz/source.js",
-                "sha256": "5C84E9F9BBB118487F4D478619A87E4751ACEE45609499DC47735B956034FC52",
+                "sha256": "C1C3CBCCF86CFE2D893617DFBDA3172FACD5AFFC3FD8CA088A9D79A6DB18D678",
                 "entry": "createSource"
             },
             "capabilities": {
