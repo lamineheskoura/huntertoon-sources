@@ -27,27 +27,51 @@ function createSource(api, config) {
     return selectors[key] || fallback;
   }
 
-  async function fetchHtml(url, extraHeaders, method) {
+  async function fetchHtml(url, extraHeaders, method, postBody) {
     var headers = {};
     for (var k in defaultHeaders) headers[k] = defaultHeaders[k];
     if (extraHeaders) for (var x in extraHeaders) headers[x] = extraHeaders[x];
-    if (api.http) {
-      var res = await api.http(url, { method: method || "GET", headers: headers });
-      if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : 0) + " for " + url);
-      return res.body || "";
+    if (method === "POST") {
+      headers["X-Requested-With"] = "XMLHttpRequest";
+      headers["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8";
+      headers["Accept"] = "*/*";
     }
+    // 1. Primary: fast direct HTTP via api.http
+    if (api.http) {
+      try {
+        var reqOpts = { method: method || "GET", headers: headers };
+        if (postBody !== undefined && postBody !== null) reqOpts.body = postBody;
+        var res = await api.http(url, reqOpts);
+        if (res && res.ok && res.body && res.body.length > 200) return res.body;
+      } catch (eHttp) {}
+    }
+    // 2. Secondary: headless WebView solver for CF-challenged pages
+    if (typeof api.browser === "function" && (!method || method === "GET")) {
+      try {
+        var rendered = await api.browser(url, {
+          waitForSelector: ".page-item-detail, .post-title, .wp-manga-chapter",
+          timeoutSeconds: 10
+        });
+        if (rendered && rendered.length > 500) return rendered;
+      } catch (eBrowser) {}
+    }
+    // 3. Tertiary: direct fetchText
     if (method && method !== "GET") return "";
-    var html = await api.fetchText(url, headers);
-    if (!html) throw new Error("Empty response: " + url);
-    return html;
+    try {
+      var html = await api.fetchText(url, headers);
+      if (html && html.length > 100) return html;
+    } catch (eFetch) {}
+    return "";
   }
 
   function makeAbsolute(url) {
     if (!url) return "";
-    if (url.indexOf("http") === 0) return url;
+    url = String(url).trim();
+    if (url.indexOf("http://") === 0) return "https://" + url.substring(7);
+    if (url.indexOf("https://") === 0) return url;
     if (url.indexOf("//") === 0) return "https:" + url;
-    if (url.indexOf("/") === 0) return baseUrl + url;
-    return baseUrl + "/" + url;
+    if (url.indexOf("/") === 0) return baseUrl.replace(/\/$/, "") + url;
+    return baseUrl.replace(/\/$/, "") + "/" + url;
   }
 
   function extractNumber(url, title) {
@@ -60,6 +84,46 @@ function createSource(api, config) {
     src = makeAbsolute(src);
     if (!src || src.indexOf("data:image") === 0) return "";
     return src;
+  }
+
+  function cleanTitle(title) {
+    return String(title || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+  }
+
+  // Search-result fallback: .tab-thumb blocks (no .page-item-detail wrapper).
+  function parseTabThumbList(html) {
+    if (!html) return [];
+    var results = [];
+    var seen = {};
+    var tabRe = /<div[^>]*class="[^"]*tab-thumb[^"]*"[^>]*>([\s\S]*?)<\/div>/gi;
+    var tm;
+    while ((tm = tabRe.exec(html)) !== null) {
+      var block = tm[1];
+      var href = "", title = "";
+      var m1 = block.match(/<a[^>]*href="([^"]+)"[^>]*title="([^"]*)"/i);
+      var m2 = !m1 && block.match(/<a[^>]*title="([^"]*)"[^>]*href="([^"]+)"/i);
+      if (m1) {
+        href = m1[1].trim();
+        title = cleanTitle(m1[2]);
+      } else if (m2) {
+        title = cleanTitle(m2[1]);
+        href = m2[2].trim();
+      } else {
+        var m3 = block.match(/<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
+        if (m3) {
+          href = m3[1].trim();
+          title = cleanTitle(m3[2]);
+        }
+      }
+      var detailUrl = makeAbsolute(href);
+      if (!title || !detailUrl || seen[detailUrl]) continue;
+      seen[detailUrl] = true;
+      var cover = "";
+      var cm = block.match(/<img[^>]+(?:data-src|data-lazy-src|src)="([^"]+)"/i);
+      if (cm) cover = validImage(cm[1].trim());
+      results.push({ title: title, detailUrl: detailUrl, coverUrl: cover, contentType: "manga" });
+    }
+    return results;
   }
 
   function strip(s) {
@@ -151,10 +215,16 @@ function createSource(api, config) {
     async getHomepageManga(args) {
       try {
         var page = (args && args.page) || 1;
-        var url = page === 1
-          ? baseUrl + "/manga/?m_orderby=latest"
-          : baseUrl + "/manga/page/" + page + "/?m_orderby=latest";
-        return await parseList(await fetchHtml(url), ".page-item-detail");
+        // Primary: front page (/) + /page/N/ (proven wp-pagenavi scheme).
+        // Fallback: /manga/ archive pagination.
+        var urls = page === 1
+          ? [baseUrl + "/", baseUrl + "/manga/?m_orderby=latest"]
+          : [baseUrl + "/page/" + page + "/", baseUrl + "/manga/page/" + page + "/?m_orderby=latest"];
+        for (var i = 0; i < urls.length; i++) {
+          var list = await parseList(await fetchHtml(urls[i]), ".page-item-detail");
+          if (list.length) return list;
+        }
+        return [];
       } catch (e) {
         return [];
       }
@@ -168,7 +238,10 @@ function createSource(api, config) {
         var url = page === 1
           ? baseUrl + "/?s=" + encodeURIComponent(query) + "&post_type=wp-manga"
           : baseUrl + "/page/" + page + "/?s=" + encodeURIComponent(query) + "&post_type=wp-manga";
-        return await parseList(await fetchHtml(url), ".c-tabs-item__content");
+        var html = await fetchHtml(url);
+        var list = await parseList(html, ".c-tabs-item__content");
+        if (!list.length) list = parseTabThumbList(html);
+        return list;
       } catch (e) {
         return [];
       }
@@ -206,6 +279,7 @@ function createSource(api, config) {
 
       var title =
         (await api.cssText(pageHtml, ".post-title h1")) ||
+        (await api.cssText(pageHtml, ".post-title h2")) ||
         (await api.cssAttr(pageHtml, "meta[property='og:title']", "content")) ||
         "بدون عنوان";
 
@@ -300,13 +374,16 @@ function createSource(api, config) {
         }
       }
 
-      var imgs = await api.cssAll(pageHtml, ".reading-content img, .page-break img, #readerarea img, .wp-manga-chapter-img");
+      var imgs = await api.cssAll(pageHtml, "#readerarea img, .reader-area img, .reading-content img, .reading-content .page-break img, .page-break img, .wp-manga-chapter-img");
       var urls = [];
       for (var i = 0; i < imgs.length; i++) {
         var a = imgs[i].attrs || {};
-        var src = (a["src"] || a["data-src"] || a["data-lazy-src"] || "").trim();
-        if (!src) continue;
-        src = validImage(src);
+        var raw = (a["data-src"] || a["data-lazy-src"] || a["data-original"] || a["src"] || "").trim();
+        if (!raw && a["srcset"]) {
+          raw = String(a["srcset"]).split(",")[0].trim().split(/\s+/)[0];
+        }
+        if (!raw) continue;
+        var src = validImage(raw);
         if (src && urls.indexOf(src) === -1) urls.push(src);
       }
       return { kind: "image", imageUrls: urls };

@@ -831,7 +831,7 @@
             "id": "mangalionz",
             "sid": 114,
             "name": "Manga Lionz",
-            "version": "1.0.0",
+            "version": "1.1.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://manga-lionz.org",
@@ -847,7 +847,7 @@
             },
             "script": {
                 "url": "sources/mangalionz/source.js",
-                "sha256": "dc5de508cb18c44e9c8aa0c261612340006e24d296a35e9bd15301596dcc6b00",
+                "sha256": "5C84E9F9BBB118487F4D478619A87E4751ACEE45609499DC47735B956034FC52",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -871,7 +871,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Manga Lionz - Madara-based Arabic manga source with Cloudflare protection",
-                "changelog": "Initial release"
+                "changelog": "v1.1.0: Homepage via / + /page/N/ wp-pagenavi scheme with archive fallback; 3-tier fetch; widened reader selectors + srcset; search tab-thumb fallback."
             }
         },
         "manhasama": {
