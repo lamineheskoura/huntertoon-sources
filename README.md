@@ -28,7 +28,7 @@ huntertoon-sources/
    and stores them in the app-private documents directory.
 4. `SourceRegistry` loads them on the next launch.
 
-## Sources (34)
+## Sources (35)
 
 | # | ID | Name |
 |---|----|------|
@@ -66,6 +66,7 @@ huntertoon-sources/
 | 32 | `team_x` | Team X |
 | 33 | `three_asq` | Three ASQ |
 | 34 | `witanime` | WitAnime |
+| 35 | `anime4up` | Anime4up |
 
 ## Adding / updating a source
 

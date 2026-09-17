@@ -1,8 +1,8 @@
 {
-    "version": "1.28.1",
+    "version": "1.29.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.09.17.2",
+    "manifest_version": "2026.09.17.3",
     "generated_at": "2026-09-04T14:30:00Z",
     "last_updated": "2026-09-17T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -1604,6 +1604,51 @@
                 "author": "HunterToon Team",
                 "description": "WitAnime - Arabic anime WordPress source (Anime-Online-Theme). Homepage cards, WP search, anime details with XOR episode blob, episode servers via _zT/_zV decode (yonaplay/videa/hgcloud embeds).",
                 "changelog": "v1.0.1: native xorUtf8 episode decode (QuickJS-safe) + taxonomy slug dashes + genre spelling fixes."
+            }
+        },
+        "anime4up": {
+            "id": "anime4up",
+            "sid": 135,
+            "name": "أنمي فور أب (Anime4up)",
+            "version": "1.0.0",
+            "enabled": true,
+            "status": "beta",
+            "base_url": "https://w1.anime4up.rest",
+            "website_url": "https://w1.anime4up.rest",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64\u0026domain=w1.anime4up.rest",
+            "requires_cf": false,
+            "image_referer": "https://w1.anime4up.rest/",
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+                "Referer": "https://w1.anime4up.rest/"
+            },
+            "script": {
+                "url": "sources/anime4up/source.js",
+                "sha256": "ccad89a2e9b4d766e746830c6c7c907499d1cf6f5a207bbfbe640139e4a43181",
+                "entry": "createSource"
+            },
+            "capabilities": {
+                "content_types": [
+                    "anime"
+                ],
+                "supports_search": true,
+                "supports_filters": true,
+                "supports_lazy_chapters": false,
+                "supports_download": false,
+                "requires_cloudflare": false
+            },
+            "compatibility": {
+                "min_app_version": "1.4.0",
+                "runtime_api_version": "1.0"
+            },
+            "metadata": {
+                "language": "ar",
+                "adult": false,
+                "author": "HunterToon Team",
+                "description": "Anime4up - Arabic anime WordPress source (Anime4up v1.0 theme). Homepage cards, WP search, anime details with DOM episode list incl. load-more walk, direct data-watch servers (megamax/voe/videa/uqload/doodstream/mp4upload).",
+                "changelog": "v1.0.0: Initial release - anime listing, search, details, full episodes via load-more, direct servers, resolveServer passthrough."
             }
         }
     }
