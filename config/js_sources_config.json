@@ -1,10 +1,10 @@
 {
-    "version": "1.27.0",
+    "version": "1.28.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.09.05.1",
+    "manifest_version": "2026.09.17.1",
     "generated_at": "2026-09-04T14:30:00Z",
-    "last_updated": "2026-09-09T12:48:02Z",
+    "last_updated": "2026-09-17T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
     "min_app_version": "1.4.0",
     "repository": {
@@ -1559,6 +1559,51 @@
                 "author": "HunterToon Team",
                 "description": "MangaDar - WordPress/Alpine manga source, no Cloudflare protection",
                 "changelog": "v1.0.1: no Cloudflare protection - direct HTTP verified live (homepage/detail/chapter/search)"
+            }
+        },
+        "witanime": {
+            "id": "witanime",
+            "sid": 134,
+            "name": "ويت أنمي (WitAnime)",
+            "version": "1.0.0",
+            "enabled": true,
+            "status": "beta",
+            "base_url": "https://witanime.you",
+            "website_url": "https://witanime.you",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64\u0026domain=witanime.you",
+            "requires_cf": false,
+            "image_referer": "https://witanime.you/",
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+                "Referer": "https://witanime.you/"
+            },
+            "script": {
+                "url": "sources/witanime/source.js",
+                "sha256": "f722971872c0fea07787654528bd9babf50bbc85eec21c074e2501754b76b46b",
+                "entry": "createSource"
+            },
+            "capabilities": {
+                "content_types": [
+                    "anime"
+                ],
+                "supports_search": true,
+                "supports_filters": true,
+                "supports_lazy_chapters": false,
+                "supports_download": false,
+                "requires_cloudflare": false
+            },
+            "compatibility": {
+                "min_app_version": "1.4.0",
+                "runtime_api_version": "1.0"
+            },
+            "metadata": {
+                "language": "ar",
+                "adult": false,
+                "author": "HunterToon Team",
+                "description": "WitAnime - Arabic anime WordPress source (Anime-Online-Theme). Homepage cards, WP search, anime details with XOR episode blob, episode servers via _zT/_zV decode (yonaplay/videa/hgcloud embeds).",
+                "changelog": "v1.0.0: Initial release - anime listing, search, details, episodes, server extraction, resolveServer passthrough."
             }
         }
     }

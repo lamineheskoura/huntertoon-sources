@@ -28,7 +28,7 @@ huntertoon-sources/
    and stores them in the app-private documents directory.
 4. `SourceRegistry` loads them on the next launch.
 
-## Sources (31)
+## Sources (34)
 
 | # | ID | Name |
 |---|----|------|
@@ -44,25 +44,28 @@ huntertoon-sources/
 | 10 | `kawaii` | Kawaii |
 | 11 | `lava_scans` | Lava Scans |
 | 12 | `lekmanga` | Lek Manga |
-| 13 | `mangalionz` | Manga Lionz |
-| 14 | `mangasid` | Manga Sid |
-| 15 | `mangastarz` | Manga Starz |
-| 16 | `mangatek` | Manga Tek |
-| 17 | `mangatime` | Manga Time |
-| 18 | `manhasama` | Manhasama |
-| 19 | `manhuaus` | Manhua US |
-| 20 | `mgeko` | Mgeko |
-| 21 | `mnga4all` | Manga 4 All |
-| 22 | `nadi_al_riwayt` | Nadi al Riwayat |
-| 23 | `realmnovel` | Realm Novel |
-| 24 | `rocks_manga` | Rocks Manga |
-| 25 | `seanovel` | Sea Novel |
-| 26 | `sparkmanga` | Spark Manga |
-| 27 | `stellarsaber` | Stellar Saber |
-| 28 | `sunovels` | Sun Novels |
-| 29 | `swat` | Swat |
-| 30 | `team_x` | Team X |
-| 31 | `three_asq` | Three ASQ |
+| 13 | `mangadar` | Manga Dar |
+| 14 | `mangalionz` | Manga Lionz |
+| 15 | `mangasid` | Manga Sid |
+| 16 | `mangastarz` | Manga Starz |
+| 17 | `mangatek` | Manga Tek |
+| 18 | `mangatime` | Manga Time |
+| 19 | `manhasama` | Manhasama |
+| 20 | `manhuaus` | Manhua US |
+| 21 | `mgeko` | Mgeko |
+| 22 | `mknov` | MK Novels |
+| 23 | `mnga4all` | Manga 4 All |
+| 24 | `nadi_al_riwayt` | Nadi al Riwayat |
+| 25 | `realmnovel` | Realm Novel |
+| 26 | `rocks_manga` | Rocks Manga |
+| 27 | `seanovel` | Sea Novel |
+| 28 | `sparkmanga` | Spark Manga |
+| 29 | `stellarsaber` | Stellar Saber |
+| 30 | `sunovels` | Sun Novels |
+| 31 | `swat` | Swat |
+| 32 | `team_x` | Team X |
+| 33 | `three_asq` | Three ASQ |
+| 34 | `witanime` | WitAnime |
 
 ## Adding / updating a source
 
