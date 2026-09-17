@@ -23,13 +23,18 @@ function createSource(api, config) {
   // Anime-Online-Theme filter vocab (verified live on /قائمة-الانمي/).
   var defaultGenres = [
     "أكشن", "مغامرات", "كوميدي", "دراما", "خيال", "خيال علمي",
-    "رومانسي", "رعب", "غموض", "نفسي", "رياضة", "مدرسي",
+    "رومانسي", "رعب", "غموض", "نفسي", "رياضي", "مدرسي",
     "شونين", "شوجو", "سينين", "ايسيكاي", "قوة خارقة", "شريحة من الحياة",
-    "تاريخي", "حربي", "عسكري", "فضاء", "ميكان", "موسيقى",
+    "تاريخي", "عسكري", "فضاء", "ميكان", "موسيقى",
     "لعبة", "ساخر", "مصاصي دماء", "شياطين", "سحر", "ساموراي",
-    "تحقيق", "بوليسي", "إثارة", "تشويق", "خارق للطبيعة", "فنون قتالية",
-    "أطفال", "ايتشي", "حريم", "جوسي", "شوجو آي"
+    "تحقيق", "بوليسي", "ايتشي", "حريم", "جوسي", "شوجو آي",
+    "إثارة", "تشويق", "خارق للطبيعة", "فنون قتالية", "أطفال"
   ];
+
+  // Site taxonomy slugs use dashes, never spaces: "يعرض الان" -> "يعرض-الان".
+  function taxonomySlug(name) {
+    return encodeURIComponent(cleanTitle(name).replace(/\s+/g, "-"));
+  }
   var defaultTypes = ["TV", "Movie", "ONA", "OVA", "Special"];
 
   function mergeHeaders(a, b) {
@@ -113,12 +118,24 @@ function createSource(api, config) {
 
   // Anime page: var processedEpisodeData = 'B64DATA.B64KEY'
   // json = bytes(atob(data)[i] XOR atob(key)[i % keyLen])
-  function decodeEpisodesBlob(blob) {
+  // Preferred path is the native `api.xorUtf8` bridge (fast, no QuickJS
+  // big-string traps on 400KB+ blobs). Legacy sync path stays for old apps.
+  async function decodeEpisodesBlob(blob) {
+    var parts = String(blob || "").split(".");
+    if (parts.length < 2) return [];
+    if (api.xorUtf8) {
+      try {
+        var text = await api.xorUtf8(parts[0], parts[1]);
+        if (text) return JSON.parse(text) || [];
+      } catch (e) {}
+    }
+    return decodeEpisodesBlobLegacy(parts[0], parts[1]);
+  }
+
+  function decodeEpisodesBlobLegacy(dataB64, keyB64) {
     try {
-      var parts = String(blob || "").split(".");
-      if (parts.length < 2) return [];
-      var data = b64Bytes(parts[0]);
-      var key = b64Bytes(parts[1]);
+      var data = b64Bytes(dataB64);
+      var key = b64Bytes(keyB64);
       if (!data.length || !key.length) return [];
       var plain = [];
       for (var i = 0; i < data.length; i++) {
@@ -460,7 +477,7 @@ function createSource(api, config) {
     try {
       var blobMatch = String(html).match(/var processedEpisodeData\s*=\s*'([^']+)'/);
       if (blobMatch && blobMatch[1]) {
-        var raw = decodeEpisodesBlob(blobMatch[1]);
+        var raw = await decodeEpisodesBlob(blobMatch[1]);
         var seenEp = {};
         for (var j = 0; j < raw.length; j++) {
           var ep = raw[j] || {};
@@ -670,7 +687,7 @@ function createSource(api, config) {
         var status = cleanTitle((args && args.status) || "");
         var base = baseUrl;
         if (genre) {
-          base = baseUrl + "/anime-genre/" + encodeURIComponent(genre) + "/";
+          base = baseUrl + "/anime-genre/" + taxonomySlug(genre) + "/";
         } else if (type) {
           var t = type.toLowerCase();
           var slug = t.indexOf("movie") !== -1 || type.indexOf("فيلم") !== -1 ? "movie"
@@ -680,7 +697,7 @@ function createSource(api, config) {
             : t.indexOf("special") !== -1 ? "special" : "tv";
           base = baseUrl + "/anime-type/" + slug + "/";
         } else if (status) {
-          base = baseUrl + "/anime-status/" + encodeURIComponent(status) + "/";
+          base = baseUrl + "/anime-status/" + taxonomySlug(status) + "/";
         } else {
           base = baseUrl + "/قائمة-الانمي/";
         }

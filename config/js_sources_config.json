@@ -1,8 +1,8 @@
 {
-    "version": "1.28.0",
+    "version": "1.28.1",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.09.17.1",
+    "manifest_version": "2026.09.17.2",
     "generated_at": "2026-09-04T14:30:00Z",
     "last_updated": "2026-09-17T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -1565,7 +1565,7 @@
             "id": "witanime",
             "sid": 134,
             "name": "ويت أنمي (WitAnime)",
-            "version": "1.0.0",
+            "version": "1.0.1",
             "enabled": true,
             "status": "beta",
             "base_url": "https://witanime.you",
@@ -1581,7 +1581,7 @@
             },
             "script": {
                 "url": "sources/witanime/source.js",
-                "sha256": "f722971872c0fea07787654528bd9babf50bbc85eec21c074e2501754b76b46b",
+                "sha256": "5a9fdcf86997e25d155c6cb8c0a86f282b6c937aef53729b0f42f51df07fd2fd",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1603,7 +1603,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "WitAnime - Arabic anime WordPress source (Anime-Online-Theme). Homepage cards, WP search, anime details with XOR episode blob, episode servers via _zT/_zV decode (yonaplay/videa/hgcloud embeds).",
-                "changelog": "v1.0.0: Initial release - anime listing, search, details, episodes, server extraction, resolveServer passthrough."
+                "changelog": "v1.0.1: native xorUtf8 episode decode (QuickJS-safe) + taxonomy slug dashes + genre spelling fixes."
             }
         }
     }
