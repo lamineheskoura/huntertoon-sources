@@ -878,7 +878,7 @@
             "id": "manhasama",
             "sid": 119,
             "name": "مانها السماء (Manha Alsamaa)",
-            "version": "1.3.2",
+            "version": "1.3.3",
             "enabled": true,
             "status": "beta",
             "base_url": "https://realmnovel.com",
@@ -895,7 +895,7 @@
             },
             "script": {
                 "url": "sources/manhasama/source.js",
-                "sha256": "C9DAE3F48DD2FE403B1B57A442A62ADBD6E8A873CFDE29B3C821A8153D8ABC8D",
+                "sha256": "34B4C91393DACFB5055B61BF0114A384BAE916ECD1674900B89CC86E5E1896D7",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -918,7 +918,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Manha Alsamaa - Arabic manga/novel source using realmnovel.com API with guest auth",
-                "changelog": "v1.3.0: Added X-Device-ID header to bypass nginx 403 on /api/manga endpoints"
+                "changelog": "v1.3.3: Fix chapter 429 by replacing colliding static X-Device-ID with unique per-session ID + one-shot retry on /api/chapters; accept flat {url,nextPage} in fetchMoreChapters"
             }
         },
         "kawaii": {

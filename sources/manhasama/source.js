@@ -3,12 +3,33 @@ function createSource(api, config) {
   var apiUrl = baseUrl + "/api";
   var userAgent = (config && config.user_agent) || "Dart/3.6 (dart:io)";
 
-  var defaultHeaders = {
-    "User-Agent": userAgent,
-    "Accept": "application/json",
-    "Authorization": "Bearer guest",
-    "X-Device-ID": "manha-huntertoon-" + (config && config.deviceId ? config.deviceId : "app")
-  };
+  // Device ID: must be unique per install. The old static fallback "manha-huntertoon-app"
+  // (config.deviceId is never injected by Dart) collided for ALL users and the
+  // server now answers 429 abnormal-activity on /api/chapters/* for it.
+  // A random per-session ID returns 200 and stays reusable (verified live).
+  function hex8() {
+    var n = Math.floor(Math.random() * 4294967295);
+    var s = n.toString(16);
+    while (s.length < 8) s = "0" + s;
+    return s;
+  }
+  function newDeviceId() {
+    var t = "";
+    try { t = new Date().getTime().toString(16); } catch (e) {}
+    return "js-" + hex8() + hex8() + (t ? ("-" + t) : "");
+  }
+  var deviceId = (config && config.deviceId) ? String(config.deviceId) : newDeviceId();
+
+  function buildHeaders() {
+    return {
+      "User-Agent": userAgent,
+      "Accept": "application/json",
+      "Authorization": "Bearer guest",
+      "X-Device-ID": "manha-huntertoon-" + deviceId
+    };
+  }
+
+  var defaultHeaders = buildHeaders();
 
   var defaultGenres = [];
   var defaultTypes = ["manga", "manhwa", "manhua"];
@@ -51,12 +72,19 @@ function createSource(api, config) {
       .trim();
   }
 
-  async function apiGet(path) {
+  async function apiGet(path, retried) {
     var url = apiUrl + path;
     var res = await api.http(url, {
       method: "GET",
-      headers: defaultHeaders
+      headers: buildHeaders()
     });
+    // One-shot recovery: the legacy static ID ("...-app") is now 429-blocked on
+    // /api/chapters/* only. Rotate to a fresh random ID once and retry.
+    if (res && res.status === 429 && !retried && path.indexOf("/chapters/") === 0) {
+      deviceId = newDeviceId();
+      defaultHeaders = buildHeaders();
+      return apiGet(path, true);
+    }
     if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : 0) + " for " + url);
     return JSON.parse(res.body || "{}");
   }
@@ -250,13 +278,17 @@ function createSource(api, config) {
 
     async fetchMoreChapters(args) {
       try {
+        // Accept BOTH flat {url,nextPage} (app contract) and legacy {previousResult}.
         var prev = (args && args.previousResult) || {};
-        var rawUrl = prev.originalUrl || "";
+        var rawUrl = (args && args.url) || prev.originalUrl || "";
         var m = rawUrl.match(/\/manga\/([^/?#]+)/);
         var slug = m ? m[1] : "";
         if (!slug) return null;
 
-        var nextPage = (prev.lastFetchedPage || 1) + 1;
+        var nextPage = (args && args.nextPage) || ((prev.lastFetchedPage || 1) + 1);
+        nextPage = parseInt(nextPage, 10) || 2;
+        if (nextPage < 2) nextPage = 2;
+        if (nextPage > 100) return null;
         var chData = await apiGet("/manga/" + slug + "/chapters?limit=200&page=" + nextPage);
         var chItems = chData.items || [];
         if (chItems.length === 0) return null;
@@ -272,9 +304,14 @@ function createSource(api, config) {
           };
         });
 
+        var total = chData.total || 0;
+        var limit = chData.limit || 200;
+        var hasMore = (typeof chData.hasMore !== "undefined")
+          ? !!chData.hasMore
+          : (total ? (nextPage * limit < total) : (chItems.length === limit));
         return {
           chapters: chapters,
-          hasMoreChapters: !!chData.hasMore,
+          hasMoreChapters: hasMore,
           lastFetchedPage: nextPage
         };
       } catch (e) {
