@@ -400,6 +400,7 @@ function createSource(api, config) {
         out.push({
           id: String(i),
           name: name,
+          embedUrl: rawUrl,
           url: rawUrl,
           type: "embed",
           quality: quality

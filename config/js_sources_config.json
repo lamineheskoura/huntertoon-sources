@@ -1,8 +1,8 @@
 {
-    "version": "1.29.0",
+    "version": "1.29.1",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.09.17.3",
+    "manifest_version": "2026.09.17.4",
     "generated_at": "2026-09-04T14:30:00Z",
     "last_updated": "2026-09-17T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -1610,7 +1610,7 @@
             "id": "anime4up",
             "sid": 135,
             "name": "أنمي فور أب (Anime4up)",
-            "version": "1.0.0",
+            "version": "1.0.1",
             "enabled": true,
             "status": "beta",
             "base_url": "https://w1.anime4up.rest",
@@ -1626,7 +1626,7 @@
             },
             "script": {
                 "url": "sources/anime4up/source.js",
-                "sha256": "ccad89a2e9b4d766e746830c6c7c907499d1cf6f5a207bbfbe640139e4a43181",
+                "sha256": "8263da2b0f177bd9f232222894de3de45dd9c521c6f8df878e826fa51fdc9ada",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1648,7 +1648,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Anime4up - Arabic anime WordPress source (Anime4up v1.0 theme). Homepage cards, WP search, anime details with DOM episode list incl. load-more walk, direct data-watch servers (megamax/voe/videa/uqload/doodstream/mp4upload).",
-                "changelog": "v1.0.0: Initial release - anime listing, search, details, full episodes via load-more, direct servers, resolveServer passthrough."
+                "changelog": "v1.0.1: strict EpisodeServer contract (embedUrl field) alongside legacy url."
             }
         }
     }
