@@ -18,3 +18,6 @@ package-lock.json
 *.bak
 *.tmp
 *.log
+
+# Agent skill (local-only, NOT pushed to GitHub)
+.agents/
