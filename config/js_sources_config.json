@@ -1,10 +1,10 @@
 {
-    "version": "1.29.1",
+    "version": "1.30.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.09.17.4",
+    "manifest_version": "2026.09.19.1",
     "generated_at": "2026-09-04T14:30:00Z",
-    "last_updated": "2026-09-17T12:00:00Z",
+    "last_updated": "2026-09-19T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
     "min_app_version": "1.4.0",
     "repository": {
@@ -1565,23 +1565,23 @@
             "id": "witanime",
             "sid": 134,
             "name": "ويت أنمي (WitAnime)",
-            "version": "1.0.1",
+            "version": "1.1.0",
             "enabled": true,
             "status": "beta",
-            "base_url": "https://witanime.you",
-            "website_url": "https://witanime.you",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64\u0026domain=witanime.you",
+            "base_url": "https://witanime.site",
+            "website_url": "https://witanime.site",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64\u0026domain=witanime.site",
             "requires_cf": false,
-            "image_referer": "https://witanime.you/",
+            "image_referer": "https://witanime.site/",
             "headers": {
                 "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
                 "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://witanime.you/"
+                "Referer": "https://witanime.site/"
             },
             "script": {
                 "url": "sources/witanime/source.js",
-                "sha256": "5a9fdcf86997e25d155c6cb8c0a86f282b6c937aef53729b0f42f51df07fd2fd",
+                "sha256": "C57C0419934305A9BE6AFF33B826390BDC12299939CEBF28D0265FF5F5F7519D",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1602,8 +1602,8 @@
                 "language": "ar",
                 "adult": false,
                 "author": "HunterToon Team",
-                "description": "WitAnime - Arabic anime WordPress source (Anime-Online-Theme). Homepage cards, WP search, anime details with XOR episode blob, episode servers via _zT/_zV decode (yonaplay/videa/hgcloud embeds).",
-                "changelog": "v1.0.1: native xorUtf8 episode decode (QuickJS-safe) + taxonomy slug dashes + genre spelling fixes."
+                "description": "WitAnime - Arabic anime source on witanime.site (Laravel Livewire). Browse/movies cards, suggest search, anime+movie details, episode servers via CSRF POST sources chain (stream-gate embeds).",
+                "changelog": "v1.1.0: full rewrite for witanime.site (old witanime.you dead) — browse/movie cards, suggest+fallback search, Livewire details, CSRF POST episode servers with embedUrl+url."
             }
         },
         "anime4up": {

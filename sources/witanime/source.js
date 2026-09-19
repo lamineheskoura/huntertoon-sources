@@ -1,12 +1,15 @@
 function createSource(api, config) {
-  var baseUrl = ((config && config.base_url) || "https://witanime.you").replace(/\/+$/, "");
+  var baseUrl = ((config && config.base_url) || "https://witanime.site").replace(/\/+$/, "");
   var configHeaders = (config && config.headers) || {};
   var userAgent =
     configHeaders["User-Agent"] ||
     "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
   var lastPageUrl = baseUrl + "/";
-  var yonaplayKeyCache = null;
-  var yonaplayKeyTried = false;
+
+  // Minimal cookie jar: the Laravel backend gates POST /watch/.../sources
+  // behind session cookies (XSRF-TOKEN + witanime-session) + X-CSRF-TOKEN.
+  // GET without cookies -> POST returns 419; direct GET of sources -> 404.
+  var cookieJar = "";
 
   var defaultHeaders = {
     "User-Agent": userAgent,
@@ -30,11 +33,6 @@ function createSource(api, config) {
     "تحقيق", "بوليسي", "ايتشي", "حريم", "جوسي", "شوجو آي",
     "إثارة", "تشويق", "خارق للطبيعة", "فنون قتالية", "أطفال"
   ];
-
-  // Site taxonomy slugs use dashes, never spaces: "يعرض الان" -> "يعرض-الان".
-  function taxonomySlug(name) {
-    return encodeURIComponent(cleanTitle(name).replace(/\s+/g, "-"));
-  }
   var defaultTypes = ["TV", "Movie", "ONA", "OVA", "Special"];
 
   function mergeHeaders(a, b) {
@@ -44,12 +42,57 @@ function createSource(api, config) {
     return out;
   }
 
-  async function fetchHtml(url, extraHeaders, method) {
+  function rememberCookies(res) {
+    try {
+      var headers = (res && res.headers) || {};
+      var raw = headers["set-cookie"] || headers["Set-Cookie"] || headers["SET-COOKIE"] || "";
+      if (!raw) {
+        for (var k in headers) {
+          if (String(k).toLowerCase() === "set-cookie") {
+            raw = headers[k];
+            break;
+          }
+        }
+      }
+      var parts = [];
+      if (raw instanceof Array) {
+        parts = raw;
+      } else if (raw) {
+        parts = String(raw).split(/\n/);
+      }
+      var store = {};
+      var i, j;
+      var existing = String(cookieJar || "").split(/;\s*/);
+      for (i = 0; i < existing.length; i++) {
+        var kv = existing[i].split("=");
+        if (kv.length >= 2 && kv[0]) store[kv[0]] = existing[i].substring(kv[0].length + 1);
+      }
+      for (i = 0; i < parts.length; i++) {
+        var first = String(parts[i] || "").split(";")[0].trim();
+        var eq = first.indexOf("=");
+        if (eq > 0) store[first.substring(0, eq).trim()] = first.substring(eq + 1).trim();
+      }
+      var out = [];
+      for (j in store) {
+        if (store[j]) out.push(j + "=" + store[j]);
+      }
+      cookieJar = out.join("; ");
+    } catch (e) {}
+  }
+
+  function withCookies(headers) {
+    var out = mergeHeaders({}, headers);
+    if (cookieJar) out["Cookie"] = cookieJar;
+    return out;
+  }
+
+  async function fetchHtml(url, extraHeaders, method, body) {
     lastPageUrl = url || lastPageUrl;
-    var headers = mergeHeaders(defaultHeaders, extraHeaders);
+    var headers = withCookies(mergeHeaders(defaultHeaders, extraHeaders));
     if (api.http) {
-      var res = await api.http(url, { method: method || "GET", headers: headers });
+      var res = await api.http(url, { method: method || "GET", headers: headers, body: body });
       if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : 0) + " for " + url);
+      rememberCookies(res);
       return res.body || "";
     }
     if (method && method !== "GET") return "";
@@ -58,8 +101,40 @@ function createSource(api, config) {
     return html;
   }
 
+  async function fetchJson(url, extraHeaders, method, body) {
+    var headers = withCookies(mergeHeaders({
+      "User-Agent": userAgent,
+      "Accept": "application/json",
+      "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+      "Referer": lastPageUrl || (baseUrl + "/")
+    }, extraHeaders));
+    if (!api.http) throw new Error("No http bridge for " + url);
+    var res = await api.http(url, { method: method || "GET", headers: headers, body: body });
+    rememberCookies(res);
+    if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : 0) + " for " + url);
+    try {
+      return JSON.parse(res.body || "{}");
+    } catch (e) {
+      throw new Error("Bad JSON for " + url);
+    }
+  }
+
   function cleanTitle(s) {
     return String(s || "").replace(/\s+/g, " ").trim();
+  }
+
+  function stripTags(s) {
+    return cleanTitle(String(s || "").replace(/<[^>]*>/g, " "));
+  }
+
+  function unescapeHtml(s) {
+    return String(s || "")
+      .replace(/&quot;/g, "\"")
+      .replace(/&#39;/g, "'")
+      .replace(/&#x27;/g, "'")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">");
   }
 
   function makeAbsolute(url) {
@@ -72,442 +147,233 @@ function createSource(api, config) {
     return baseUrl + "/" + url;
   }
 
-  function isDefaultThumb(url) {
-    return !url || url.indexOf("thumbnail-default-category.png") !== -1;
-  }
-
   function parseEpisodeNumber(url) {
-    var m = String(url || "").match(/الحلقة-(\d+)/);
+    var m = String(url || "").match(/\/watch\/[^/?#]+\/(\d+)/);
     if (m) return m[1];
-    var m2 = String(url || "").match(/episode\/[^-]*?-(\d+)\/?$/);
+    var m2 = String(url || "").match(/الحلقة-(\d+)/);
     if (m2) return m2[1];
     return "0";
   }
 
   function qualityOf(serverName) {
     var n = String(serverName || "").toUpperCase();
-    if (n.indexOf("FHD") !== -1) return "FHD";
-    if (n.indexOf("HD") !== -1) return "HD";
-    if (n.indexOf("SD") !== -1) return "SD";
+    if (n.indexOf("4K") !== -1) return "4K";
+    if (n.indexOf("FHD") !== -1 || n.indexOf("1080") !== -1) return "FHD";
+    if (n.indexOf("HD") !== -1 || n.indexOf("720") !== -1) return "HD";
+    if (n.indexOf("SD") !== -1 || n.indexOf("480") !== -1) return "SD";
     return null;
   }
 
-  // ---- obfuscated payload decoders (theme: Anime-Online-Theme) ----
+  function getCsrfToken(html) {
+    var m = String(html || "").match(/<meta[^>]+name="csrf-token"[^>]+content="([^"]+)"/);
+    if (m) return m[1];
+    var m2 = String(html || "").match(/<meta[^>]+content="([^"]+)"[^>]+name="csrf-token"/);
+    return (m2 && m2[1]) || "";
+  }
 
-  function b64Bytes(b64) {
-    var bin = "";
+  // ---- card parser (browse / movies / search HTML) ----
+  // Card: <a class="group block w-full cursor-pointer" href="/anime/{slug}|/movie/{slug}">
+  //         <img src="...posters..." alt="..."> ... <h3>Title</h3>
+
+  async function parseCards(html) {
+    var anchors = [];
     try {
-      bin = atob(String(b64 || ""));
-    } catch (e) {
-      return [];
-    }
-    var out = [];
-    for (var i = 0; i < bin.length; i++) out.push(bin.charCodeAt(i) & 0xff);
-    return out;
-  }
-
-  function bytesToString(bytes) {
-    var s = "";
-    for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
-    try {
-      return decodeURIComponent(escape(s));
-    } catch (e) {
-      return s;
-    }
-  }
-
-  // Anime page: var processedEpisodeData = 'B64DATA.B64KEY'
-  // json = bytes(atob(data)[i] XOR atob(key)[i % keyLen])
-  // Preferred path is the native `api.xorUtf8` bridge (fast, no QuickJS
-  // big-string traps on 400KB+ blobs). Legacy sync path stays for old apps.
-  async function decodeEpisodesBlob(blob) {
-    var parts = String(blob || "").split(".");
-    if (parts.length < 2) return [];
-    if (api.xorUtf8) {
-      try {
-        var text = await api.xorUtf8(parts[0], parts[1]);
-        if (text) return JSON.parse(text) || [];
-      } catch (e) {}
-    }
-    return decodeEpisodesBlobLegacy(parts[0], parts[1]);
-  }
-
-  function decodeEpisodesBlobLegacy(dataB64, keyB64) {
-    try {
-      var data = b64Bytes(dataB64);
-      var key = b64Bytes(keyB64);
-      if (!data.length || !key.length) return [];
-      var plain = [];
-      for (var i = 0; i < data.length; i++) {
-        plain.push(data[i] ^ key[i % key.length]);
-      }
-      return JSON.parse(bytesToString(plain)) || [];
-    } catch (e) {
-      return [];
-    }
-  }
-
-  // Episode page: window.resourceRegistry/configRegistry from _zT/_zV.
-  // url = atob(reverse(entry).stripNonB64).slice(0, -d[atob(k)])
-  function decodeServerUrl(entry, cfg) {
-    try {
-      var rev = String(entry || "").split("").reverse().join("")
-        .replace(/[^A-Za-z0-9+/=]/g, "");
-      var idx = 0;
-      try {
-        idx = parseInt(atob(String((cfg && cfg.k) || "")), 10);
-      } catch (e) {
-        idx = 0;
-      }
-      var d = (cfg && cfg.d) || [];
-      var offset = d[idx] || 0;
-      var bin = "";
-      try {
-        bin = atob(rev);
-      } catch (e) {
-        return "";
-      }
-      var url = offset > 0 ? bin.slice(0, -offset) : bin;
-      return cleanTitle(url);
-    } catch (e) {
-      return "";
-    }
-  }
-
-  async function extractInlineVar(html, name) {
-    var m = String(html || "").match(
-      new RegExp("var " + name + '="([^"]+)"'));
-    return (m && m[1]) || "";
-  }
-
-  // FRAMEWORK_HASH lives split (_m1.._m4) in the theme player JS (yh00.js).
-  // Fetched once per session; null when unreachable (URL stays usable anyway
-  // except yonaplay embeds, which require the key per the theme logic).
-  async function getYonaplayKey() {
-    if (yonaplayKeyTried) return yonaplayKeyCache;
-    yonaplayKeyTried = true;
-    try {
-      var html = await fetchHtml(baseUrl + "/");
-      var srcs = [];
-      var re = /<script[^>]*src=["']([^"']+)["'][^>]*>/g;
-      var m;
-      while ((m = re.exec(html)) !== null) {
-        var src = makeAbsolute(m[1]);
-        if (src.indexOf("/assets/js/") !== -1 && src.slice(-3) === ".js") {
-          srcs.push(src);
-        }
-        if (srcs.length > 8) break;
-      }
-      for (var i = 0; i < srcs.length; i++) {
-        var js = "";
-        try {
-          js = await fetchHtml(srcs[i]);
-        } catch (e) {
-          continue;
-        }
-        var parts = [];
-        for (var n = 1; n <= 4; n++) {
-          // Single statement form: var _m1 = "x", _m2 = "y", ...
-          var mm = js.match(new RegExp("_m" + n + '\\s*=\\s*"([^"]+)"'));
-          if (!mm) break;
-          parts.push(mm[1]);
-        }
-        if (parts.length === 4) {
-          yonaplayKeyCache = parts.join("");
-          return yonaplayKeyCache;
-        }
-      }
+      anchors = anchors.concat(await api.cssAll(html, "a[href*='/anime/']") || []);
     } catch (e) {}
-    return null;
-  }
-
-  async function decodeEpisodeServers(html) {
-    var out = [];
     try {
-      var links = await api.cssAll(html, "#episode-servers a.server-link");
-      var zT = await extractInlineVar(html, "_zT");
-      var zV = await extractInlineVar(html, "_zV");
-      var entries = [];
-      var configs = [];
-      try {
-        entries = JSON.parse(atob(zT)) || [];
-      } catch (e) {
-        entries = [];
-      }
-      try {
-        configs = JSON.parse(atob(zV)) || [];
-      } catch (e) {
-        configs = [];
-      }
-      var apiKey = null;
-      for (var i = 0; i < links.length; i++) {
-        var item = links[i] || {};
-        var attrs = item.attrs || {};
-        var sid = attrs["data-server-id"];
-        if (sid === undefined || sid === null || sid === "") continue;
-        var idx = parseInt(sid, 10);
-        if (isNaN(idx)) continue;
-        var name = cleanTitle(item.text || "");
-        if (!name) {
-          var inner = item.html || "";
-          try {
-            name = cleanTitle(await api.cssText(inner, ".ser")) || cleanTitle(await api.cssText(inner, "span")) || ("سيرفر " + (idx + 1));
-          } catch (e) {
-            name = "سيرفر " + (idx + 1);
-          }
-        }
-        var entry = entries[idx];
-        var cfg = configs[idx] || {};
-        var url = entry !== undefined ? decodeServerUrl(entry, cfg) : "";
-        if (!url) continue;
-        if (/^https:\/\/yonaplay\.net\/embed\.php\?id=\d+$/.test(url)) {
-          if (apiKey === null) apiKey = await getYonaplayKey();
-          if (apiKey) url = url + "&apiKey=" + apiKey;
-        }
-        out.push({
-          id: String(idx),
-          name: name,
-          url: makeAbsolute(url),
-          type: "embed",
-          quality: qualityOf(name)
-        });
-      }
+      anchors = anchors.concat(await api.cssAll(html, "a[href*='/movie/']") || []);
     } catch (e) {}
-    return out;
-  }
-
-  // ---- card parsers ----
-
-  async function parseAnimeCards(html) {
-    var items = await api.cssAll(html, ".anime-card-container");
+    if (!anchors.length) return parseCardsRegex(html);
     var out = [];
     var seen = {};
-    for (var i = 0; i < items.length; i++) {
-      var item = items[i] || {};
+    for (var i = 0; i < anchors.length; i++) {
+      var item = anchors[i] || {};
       var attrs = item.attrs || {};
       var inner = item.html || "";
       var href = attrs.href || "";
-      if (!href) {
-        try {
-          href = await api.cssAttr(inner, "a.overlay[href*='/anime/']", "href") || "";
-        } catch (e) {
-          href = "";
-        }
-      }
-      if (!href || href.indexOf("/anime/") === -1) continue;
+      if (!href) continue;
+      if (href.indexOf("/anime/") === -1 && href.indexOf("/movie/") === -1) continue;
+      if (href.indexOf("/watch/") !== -1) continue;
       var detailUrl = makeAbsolute(href);
       if (seen[detailUrl]) continue;
       seen[detailUrl] = true;
+      if (inner.indexOf("<h3") === -1 && inner.indexOf("<img") === -1) continue;
       var title = "";
       try {
-        title = cleanTitle(await api.cssText(inner, ".anime-card-title")) || "";
+        title = unescapeHtml(cleanTitle(await api.cssText(inner, "h3"))) || "";
       } catch (e) {}
       if (!title) {
         try {
-          title = cleanTitle(await api.cssAttr(inner, "img", "alt")) || "";
+          title = unescapeHtml(cleanTitle(await api.cssAttr(inner, "img", "alt"))) || "";
         } catch (e) {}
       }
       if (!title) continue;
       var cover = "";
       try {
-        cover = makeAbsolute(await api.cssAttr(inner, ".anime-card-poster img", "src") || "");
+        cover = makeAbsolute(await api.cssAttr(inner, "img", "src") || "");
       } catch (e) {}
       if (!cover) {
         try {
-          cover = makeAbsolute(await api.cssAttr(inner, "img", "src") || "");
+          cover = makeAbsolute(await api.cssAttr(inner, "img", "data-src") || "");
         } catch (e) {}
       }
       out.push({
         title: title,
-        coverUrl: isDefaultThumb(cover) ? "" : cover,
+        coverUrl: cover,
         detailUrl: detailUrl,
         contentType: "anime"
       });
     }
+    if (!out.length) return parseCardsRegex(html);
     return out;
   }
 
-  async function parseEpisodeCards(html) {
-    var items = await api.cssAll(html, ".episodes-card-container");
+  function parseCardsRegex(html) {
     var out = [];
     var seen = {};
-    for (var i = 0; i < items.length; i++) {
-      var item = items[i] || {};
-      var inner = item.html || "";
-      var href = "";
-      try {
-        href = await api.cssAttr(inner, ".episodes-card-title a[href*='/episode/']", "href") || "";
-      } catch (e) {}
-      if (!href || href.indexOf("/episode/") === -1) continue;
-      var episodeUrl = makeAbsolute(href);
-      if (seen[episodeUrl]) continue;
-      seen[episodeUrl] = true;
-      var epLabel = "";
-      try {
-        epLabel = cleanTitle(await api.cssText(inner, ".episodes-card-title")) || "";
-      } catch (e) {}
-      var animeName = "";
-      try {
-        animeName = cleanTitle(await api.cssText(inner, ".ep-card-anime-title")) || "";
-      } catch (e) {}
-      var title = animeName || epLabel;
-      if (epLabel && animeName && epLabel !== animeName) title = animeName + " " + epLabel;
-      if (!title) continue;
-      var cover = "";
-      try {
-        cover = makeAbsolute(await api.cssAttr(inner, ".episodes-card img", "src") || "");
-      } catch (e) {}
-      out.push({
-        title: title,
-        coverUrl: isDefaultThumb(cover) ? "" : cover,
-        detailUrl: episodeUrl,
-        contentType: "anime"
-      });
-    }
-    return out;
-  }
-
-  // WP search: ul.category-posts-list > li (.cat-post-details h2 a).
-  // Results point at /episode/... (single films too) — resolvable on demand
-  // via getMangaDetails (episode -> parent anime link).
-  async function parseSearchItems(html) {
-    var items = await api.cssAll(html, "ul.category-posts-list > li");
-    var out = [];
-    var seen = {};
-    for (var i = 0; i < items.length; i++) {
-      var inner = (items[i] || {}).html || "";
-      var href = "";
-      try {
-        href = await api.cssAttr(inner, ".cat-post-details h2 a", "href") || "";
-      } catch (e) {}
-      if (!href) continue;
-      var url = makeAbsolute(href);
-      if (seen[url]) continue;
-      seen[url] = true;
+    var re = /<a[^>]+href="([^"]*(?:\/anime\/|\/movie\/)[^"]+)"[^>]*>([\s\S]*?)<\/a>/g;
+    var m;
+    while ((m = re.exec(String(html || ""))) !== null) {
+      var href = m[1] || "";
+      var inner = m[2] || "";
+      if (href.indexOf("/watch/") !== -1) continue;
+      var detailUrl = makeAbsolute(href);
+      if (seen[detailUrl]) continue;
+      if (inner.indexOf("<h3") === -1 && inner.indexOf("<img") === -1) continue;
+      seen[detailUrl] = true;
       var title = "";
-      try {
-        title = cleanTitle(await api.cssText(inner, ".cat-post-details h2 a")) || "";
-      } catch (e) {}
+      var hm = inner.match(/<h3[^>]*>([\s\S]*?)<\/h3>/);
+      if (hm) title = unescapeHtml(stripTags(hm[1]));
+      if (!title) {
+        var am = inner.match(/<img[^>]+alt="([^"]*)"/);
+        if (am) title = unescapeHtml(cleanTitle(am[1]));
+      }
       if (!title) continue;
       var cover = "";
-      try {
-        cover = makeAbsolute(await api.cssAttr(inner, ".cat-post-thumbnail img", "src") || "");
-      } catch (e) {}
+      var sm = inner.match(/<img[^>]+src="([^"]+)"/);
+      if (sm) cover = makeAbsolute(sm[1]);
+      if (!cover) {
+        var dm = inner.match(/<img[^>]+data-src="([^"]+)"/);
+        if (dm) cover = makeAbsolute(dm[1]);
+      }
       out.push({
         title: title,
-        coverUrl: isDefaultThumb(cover) ? "" : cover,
-        detailUrl: url,
+        coverUrl: cover,
+        detailUrl: detailUrl,
         contentType: "anime"
       });
+      if (out.length > 300) break;
     }
     return out;
   }
 
-  async function parseAnimeDetails(html, url) {
+  // ---- anime / movie details ----
+  // h1 title, p.mb-6.leading-relaxed story, span.rounded-full.border genres,
+  // div.mb-6.grid info rows (label span.text-neutral-400 + value p.text-white),
+  // episodes a[href*=/watch/] "الحلقة N".
+
+  async function parseDetails(html, url) {
+    html = String(html || "");
     var title = "";
     try {
-      title = cleanTitle(await api.cssText(html, "h1.anime-details-title")) || "";
+      title = unescapeHtml(stripTags(await api.cssText(html, "h1"))) || "";
     } catch (e) {}
     if (!title) {
+      var hm = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/);
+      if (hm) title = unescapeHtml(stripTags(hm[1]));
+    }
+    if (!title) {
       try {
-        title = cleanTitle(await api.cssAttr(html, "meta[property='og:title']", "content")) || "";
+        title = unescapeHtml(cleanTitle(await api.cssAttr(html, "meta[property='og:title']", "content"))) || "";
       } catch (e) {}
     }
+
     var cover = "";
     try {
-      cover = makeAbsolute(await api.cssAttr(html, ".anime-thumbnail img", "src") || "");
+      cover = makeAbsolute(await api.cssAttr(html, "meta[property='og:image']", "content") || "");
     } catch (e) {}
     if (!cover) {
-      try {
-        cover = makeAbsolute(await api.cssAttr(html, "meta[property='og:image']", "content") || "");
-      } catch (e) {}
+      var pm = html.match(/<img[^>]+src="(https:\/\/images\.witanime\.site\/posters\/[^"]+)"/);
+      if (pm) cover = pm[1];
     }
+
     var description = "";
-    try {
-      description = cleanTitle(await api.cssText(html, "p.anime-story")) || "";
-    } catch (e) {}
-    if (!description) {
-      try {
-        description = cleanTitle(await api.cssAttr(html, "meta[name='description']", "content")) || "";
-      } catch (e) {}
+    var sm = html.match(/<p[^>]*class="[^"]*leading-relaxed[^"]*"[^>]*>([\s\S]*?)<\/p>/);
+    if (sm) description = unescapeHtml(stripTags(sm[1]));
+    if (description.length < 60) {
+      var dm = html.match(/<meta[^>]+name="description"[^>]+content="([^"]+)"/);
+      if (!dm) dm = html.match(/<meta[^>]+content="([^"]+)"[^>]+name="description"/);
+      if (dm && dm[1] && dm[1].length > description.length) description = unescapeHtml(cleanTitle(dm[1]));
     }
+
     var genres = [];
     try {
-      genres = (await api.cssList(html, "ul.anime-genres li a") || []).map(cleanTitle).filter(Boolean);
-    } catch (e) {}
-
-    var animeType = "", season = "", year = "", status = "";
-    var episodeDurationMin = null, sourceMaterial = "";
-    try {
-      var rows = await api.cssAll(html, ".anime-info");
-      for (var i = 0; i < rows.length; i++) {
-        var text = cleanTitle((rows[i] || {}).text || "");
-        var link = "";
-        try {
-          link = await api.cssAttr((rows[i] || {}).html || "", "a", "href") || "";
-        } catch (e) {}
-        if (text.indexOf("النوع") !== -1) {
-          animeType = text.replace(/.*النوع\s*:?\s*/, "").trim() || animeType;
-        } else if (text.indexOf("بداية العرض") !== -1) {
-          var ym = text.match(/(\d{4})/);
-          year = ym ? ym[1] : "";
-        } else if (text.indexOf("حالة الأنمي") !== -1) {
-          status = text.replace(/.*حالة الأنمي\s*:?\s*/, "").trim();
-        } else if (text.indexOf("مدة الحلقة") !== -1) {
-          var dm = text.match(/(\d+)/);
-          episodeDurationMin = dm ? parseInt(dm[1], 10) : null;
-        } else if (text.indexOf("الموسم") !== -1) {
-          season = text.replace(/.*الموسم\s*:?\s*/, "").trim();
-        } else if (text.indexOf("المصدر") !== -1) {
-          sourceMaterial = text.replace(/.*المصدر\s*:?\s*/, "").trim();
-        }
+      var genreSpans = await api.cssList(html, "span.rounded-full") || [];
+      for (var gi = 0; gi < genreSpans.length; gi++) {
+        var g = unescapeHtml(cleanTitle(genreSpans[gi]));
+        if (g && genres.indexOf(g) === -1) genres.push(g);
       }
     } catch (e) {}
+    if (!genres.length) {
+      var gre = /<span[^>]*class="[^"]*rounded-full[^"]*"[^>]*>([^<]*)<\/span>/g;
+      var gm;
+      while ((gm = gre.exec(html)) !== null) {
+        var gt = unescapeHtml(cleanTitle(gm[1]));
+        if (gt && genres.indexOf(gt) === -1) genres.push(gt);
+      }
+    }
+
+    var status = "", year = "", animeType = "", season = "", sourceMaterial = "";
+    var episodeDurationMin = null;
+    var ire = /<span[^>]*class="[^"]*text-neutral-400[^"]*"[^>]*>([^<]*)<\/span>\s*<p[^>]*>([\s\S]*?)<\/p>/g;
+    var im;
+    while ((im = ire.exec(html)) !== null) {
+      var label = cleanTitle(im[1]);
+      var value = unescapeHtml(stripTags(im[2]));
+      if (!value) continue;
+      if (label.indexOf("الحالة") !== -1 || label.indexOf("حالة") !== -1) {
+        status = value;
+      } else if (label.indexOf("النوع") !== -1) {
+        animeType = value;
+      } else if (label.indexOf("الموسم") !== -1) {
+        season = value;
+      } else if (label.indexOf("السنة") !== -1 || label.indexOf("سنة") !== -1) {
+        var ym = value.match(/(\d{4})/);
+        year = ym ? ym[1] : value;
+      } else if (label.indexOf("المدة") !== -1 || label.indexOf("مدة") !== -1) {
+        var dm = value.match(/(\d+)/);
+        episodeDurationMin = dm ? parseInt(dm[1], 10) : null;
+      } else if (label.indexOf("المصدر") !== -1) {
+        sourceMaterial = value;
+      }
+    }
 
     var trailerUrl = "";
     try {
-      trailerUrl = makeAbsolute(await api.cssAttr(html, "a.anime-trailer", "href") || "");
-    } catch (e) {}
-    var malUrl = "";
-    try {
-      malUrl = makeAbsolute(await api.cssAttr(html, "a.anime-mal", "href") || "");
+      trailerUrl = makeAbsolute(await api.cssAttr(html, "a[href*='youtube']", "href") || "");
     } catch (e) {}
 
-    var episodes = [];
-    try {
-      var blobMatch = String(html).match(/var processedEpisodeData\s*=\s*'([^']+)'/);
-      if (blobMatch && blobMatch[1]) {
-        var raw = await decodeEpisodesBlob(blobMatch[1]);
-        var seenEp = {};
-        for (var j = 0; j < raw.length; j++) {
-          var ep = raw[j] || {};
-          var epUrl = makeAbsolute(ep.url || "");
-          if (!epUrl || seenEp[epUrl]) continue;
-          seenEp[epUrl] = true;
-          var num = String(ep.number || parseEpisodeNumber(epUrl) || "0");
-          var epType = String(ep.type || "");
-          episodes.push({
-            number: num,
-            title: /فيلم|movie/i.test(epType) ? ("فيلم " + title) : ("الحلقة " + num),
-            url: epUrl,
-            views: 0,
-            isLocked: false,
-            date: "",
-            isFiller: /فلر|filler/i.test(epType),
-            thumbnailUrl: ep.screenshot ? makeAbsolute(ep.screenshot) : null,
-            durationSeconds: null,
-            servers: []
-          });
+    // Type badge on the hero (TV / فيلم / OVA / ONA / Special ...).
+    if (!animeType) {
+      var bm = html.match(/<div[^>]*class="[^"]*rounded-md[^"]*bg-white[^"]*"[^>]*>([^<]*)<\/div>/);
+      if (bm) {
+        var cand = unescapeHtml(cleanTitle(bm[1]));
+        var known = ["TV", "Movie", "OVA", "ONA", "Special", "فيلم"];
+        for (var bi = 0; bi < known.length; bi++) {
+          if (cand === known[bi] || cand.toLowerCase() === known[bi].toLowerCase()) {
+            animeType = known[bi] === "فيلم" ? "Movie" : known[bi];
+            break;
+          }
         }
-        episodes.sort(function(a, b) {
-          return (parseFloat(b.number) || 0) - (parseFloat(a.number) || 0);
-        });
       }
-    } catch (e) {}
+    }
+    if (!animeType && url.indexOf("/movie/") !== -1) animeType = "Movie";
+
+    var episodes = parseEpisodes(html, title, url.indexOf("/movie/") !== -1);
 
     return {
       title: title || "غير معروف",
-      coverUrl: isDefaultThumb(cover) ? "" : cover,
+      coverUrl: cover,
       description: description,
       genres: genres,
       status: status,
@@ -522,21 +388,102 @@ function createSource(api, config) {
       episodeDurationMin: episodeDurationMin,
       sourceMaterial: sourceMaterial || null,
       trailerUrl: trailerUrl || null,
-      malUrl: malUrl || null
+      malUrl: null
     };
   }
 
-  async function resolveParentAnime(episodeUrl) {
-    // Episode pages carry .anime-page-link a[href*='/anime/'] to the parent.
+  function parseEpisodes(html, title, isMoviePage) {
+    var out = [];
+    var seen = {};
+    var re = /<a[^>]+href="([^"]*\/watch\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/g;
+    var m;
+    while ((m = re.exec(String(html || ""))) !== null) {
+      var href = m[1] || "";
+      var epUrl = makeAbsolute(href);
+      if (!epUrl || seen[epUrl]) continue;
+      seen[epUrl] = true;
+      var label = unescapeHtml(stripTags(m[2]));
+      var nm = label.match(/الحلقة\s*(\d+)/) || epUrl.match(/\/watch\/[^/?#]+\/(\d+)/);
+      var num = nm ? nm[1] : parseEpisodeNumber(epUrl);
+      out.push({
+        number: String(num),
+        title: isMoviePage ? ("فيلم " + (title || "")) : ("الحلقة " + num),
+        url: epUrl,
+        views: 0,
+        isLocked: false,
+        date: "",
+        isFiller: false,
+        thumbnailUrl: null,
+        durationSeconds: null,
+        servers: []
+      });
+      if (out.length > 2000) break;
+    }
+    out.sort(function (a, b) {
+      return (parseFloat(b.number) || 0) - (parseFloat(a.number) || 0);
+    });
+    return out;
+  }
+
+  function parentAnimeUrls(episodeUrl) {
+    var m = String(episodeUrl || "").match(/\/watch\/([^/?#]+)\/\d+/);
+    if (!m) return [];
+    return [baseUrl + "/anime/" + m[1], baseUrl + "/movie/" + m[1]];
+  }
+
+  function streamToken(serverUrl) {
+    var m = String(serverUrl || "").match(/([a-f0-9]{64})/);
+    return (m && m[1]) || "";
+  }
+
+  // ---- episode servers (Laravel CSRF chain, verified live) ----
+  // GET {watchUrl} (cookies + csrf-token meta)
+  // -> POST {watchUrl}/sources (X-CSRF-TOKEN + Cookie + Referer)
+  // -> {players:{FHD:[{token,label,version,lang}],...}, downloads:{...}}
+  // playback url = /watch/stream-gate/{token} (verified in watchPlayer bundle).
+
+  async function decodeEpisodeServers(watchUrl) {
+    var out = [];
     try {
-      var html = await fetchHtml(episodeUrl);
-      var parent = "";
+      var html = await fetchHtml(watchUrl);
+      var csrf = getCsrfToken(html);
+      if (!csrf) return [];
+      var sourcesUrl = String(watchUrl).replace(/\/+$/, "") + "/sources";
+      var data;
       try {
-        parent = makeAbsolute(await api.cssAttr(html, ".anime-page-link a[href*='/anime/']", "href") || "");
-      } catch (e) {}
-      if (parent && parent.indexOf("/anime/") !== -1) return parent;
+        data = await fetchJson(sourcesUrl, {
+          "X-CSRF-TOKEN": csrf,
+          "X-Requested-With": "XMLHttpRequest",
+          "Referer": watchUrl,
+          "Origin": baseUrl
+        }, "POST", "");
+      } catch (e) {
+        return [];
+      }
+      var players = (data && data.players) || {};
+      var bucket;
+      for (bucket in players) {
+        var list = players[bucket] || [];
+        for (var i = 0; i < list.length; i++) {
+          var entry = list[i] || {};
+          var token = entry.token || "";
+          if (!/^[a-f0-9]{64}$/.test(token)) continue;
+          var label = cleanTitle(entry.label || "") || ("سيرفر " + (out.length + 1));
+          var ver = cleanTitle(entry.version || "");
+          var name = ver ? (label + " " + ver) : label;
+          var gate = baseUrl + "/watch/stream-gate/" + token;
+          out.push({
+            id: token,
+            name: name,
+            embedUrl: gate,
+            url: gate,
+            type: "embed",
+            quality: qualityOf(bucket) || qualityOf(name)
+          });
+        }
+      }
     } catch (e) {}
-    return "";
+    return out;
   }
 
   return {
@@ -545,14 +492,8 @@ function createSource(api, config) {
     async getHomepageManga(args) {
       try {
         var page = (args && args.page) || 1;
-        if (page === 1) {
-          var html = await fetchHtml(baseUrl + "/");
-          var anime = await parseAnimeCards(html);
-          var eps = await parseEpisodeCards(html);
-          return anime.concat(eps);
-        }
-        var listHtml = await fetchHtml(baseUrl + "/قائمة-الانمي/page/" + page + "/");
-        return await parseAnimeCards(listHtml);
+        var url = page > 1 ? baseUrl + "/browse/page/" + page : baseUrl + "/browse";
+        return await parseCards(await fetchHtml(url));
       } catch (e) {
         return [];
       }
@@ -562,11 +503,39 @@ function createSource(api, config) {
       try {
         var query = (args && args.query) || "";
         if (!query.trim()) return [];
-        var page = (args && args.page) || 1;
-        var url = page === 1
-          ? baseUrl + "/?s=" + encodeURIComponent(query)
-          : baseUrl + "/page/" + page + "/?s=" + encodeURIComponent(query);
-        return await parseSearchItems(await fetchHtml(url));
+        // Suggest API first (verified live). NOTE: no X-Requested-With here —
+        // the endpoint answers 404 when that header is present.
+        try {
+          var data = await fetchJson(
+            baseUrl + "/search/suggest?q=" + encodeURIComponent(query),
+            { "Referer": baseUrl + "/" },
+            "GET"
+          );
+          var results = (data && data.results) || [];
+          var out = [];
+          var seen = {};
+          for (var i = 0; i < results.length; i++) {
+            var r = results[i] || {};
+            var url = makeAbsolute(r.url || "");
+            if (!url || seen[url]) continue;
+            seen[url] = true;
+            var title = unescapeHtml(cleanTitle(r.title || ""));
+            if (!title) continue;
+            out.push({
+              title: title,
+              coverUrl: makeAbsolute(r.poster || ""),
+              detailUrl: url,
+              contentType: "anime"
+            });
+          }
+          if (out.length) return out;
+        } catch (e) {}
+        // Fallbacks: /search?q= HTML, then /browse?search= HTML.
+        try {
+          var cards = await parseCards(await fetchHtml(baseUrl + "/search?q=" + encodeURIComponent(query)));
+          if (cards.length) return cards;
+        } catch (e) {}
+        return await parseCards(await fetchHtml(baseUrl + "/browse?search=" + encodeURIComponent(query)));
       } catch (e) {
         return [];
       }
@@ -575,18 +544,21 @@ function createSource(api, config) {
     async getMangaDetails(args) {
       var url = makeAbsolute((args && args.url) || "");
       try {
-        if (url.indexOf("/episode/") !== -1) {
-          var parent = await resolveParentAnime(url);
-          if (parent) {
-            var details = await parseAnimeDetails(await fetchHtml(parent), parent);
-            details.originalUrl = parent;
-            return details;
+        if (url.indexOf("/watch/") !== -1) {
+          var parents = parentAnimeUrls(url);
+          for (var pi = 0; pi < parents.length; pi++) {
+            try {
+              var details = await parseDetails(await fetchHtml(parents[pi]), parents[pi]);
+              if (details.chapters && details.chapters.length) {
+                details.originalUrl = parents[pi];
+                return details;
+              }
+            } catch (e) {}
           }
-          // Fallback: minimal row so the tap never renders an empty page.
           var epHtml = await fetchHtml(url);
           var epTitle = "";
           try {
-            epTitle = cleanTitle(await api.cssText(epHtml, ".main-section h3")) || url;
+            epTitle = unescapeHtml(stripTags(await api.cssText(epHtml, "h1"))) || url;
           } catch (e) {
             epTitle = url;
           }
@@ -598,7 +570,7 @@ function createSource(api, config) {
             status: "",
             chapters: [{
               number: parseEpisodeNumber(url),
-              title: epTitle,
+              title: "الحلقة " + parseEpisodeNumber(url),
               url: url,
               views: 0,
               isLocked: false,
@@ -614,7 +586,7 @@ function createSource(api, config) {
             contentType: "anime"
           };
         }
-        return await parseAnimeDetails(await fetchHtml(url), url);
+        return await parseDetails(await fetchHtml(url), url);
       } catch (e) {
         return {
           title: "غير معروف",
@@ -639,7 +611,7 @@ function createSource(api, config) {
     async getChapterContent(args) {
       try {
         var url = makeAbsolute((args && args.url) || "");
-        if (url.indexOf("/episode/") !== -1) {
+        if (url.indexOf("/watch/") !== -1) {
           var servers = await this.getEpisodeServers({ url: url });
           return { kind: "video", servers: servers };
         }
@@ -653,8 +625,7 @@ function createSource(api, config) {
       try {
         var url = makeAbsolute((args && args.url) || "");
         if (!url) return [];
-        var html = await fetchHtml(url);
-        return await decodeEpisodeServers(html);
+        return await decodeEpisodeServers(url);
       } catch (e) {
         return [];
       }
@@ -664,8 +635,36 @@ function createSource(api, config) {
       try {
         var serverUrl = makeAbsolute((args && (args.serverUrl || args.url)) || "");
         if (!serverUrl) return null;
+        var token = streamToken(serverUrl);
+        if (!token) {
+          return {
+            url: serverUrl,
+            type: "embed",
+            headers: {
+              "User-Agent": userAgent,
+              "Referer": baseUrl + "/",
+              "Accept": "*/*",
+              "Accept-Language": "ar,en-US;q=0.9,en;q=0.8"
+            }
+          };
+        }
+        // Verify the token resolves (same chain the player uses).
+        try {
+          var csrfPage = makeAbsolute((args && args.episodeUrl) || "");
+          if (csrfPage.indexOf("/watch/") === -1) csrfPage = baseUrl + "/";
+          var watchHtml = await fetchHtml(csrfPage);
+          var csrf = getCsrfToken(watchHtml);
+          if (csrf) {
+            await fetchJson(baseUrl + "/watch/stream-source/" + token, {
+              "X-CSRF-TOKEN": csrf,
+              "X-Requested-With": "XMLHttpRequest",
+              "Referer": csrfPage,
+              "Origin": baseUrl
+            }, "POST", "");
+          }
+        } catch (e) {}
         return {
-          url: serverUrl,
+          url: baseUrl + "/watch/stream-gate/" + token,
           type: "embed",
           headers: {
             "User-Agent": userAgent,
@@ -682,27 +681,13 @@ function createSource(api, config) {
     async getFilteredManga(args) {
       try {
         var page = (args && args.page) || 1;
-        var genre = cleanTitle((args && args.genre) || "");
         var type = cleanTitle((args && args.type) || "");
-        var status = cleanTitle((args && args.status) || "");
-        var base = baseUrl;
-        if (genre) {
-          base = baseUrl + "/anime-genre/" + taxonomySlug(genre) + "/";
-        } else if (type) {
-          var t = type.toLowerCase();
-          var slug = t.indexOf("movie") !== -1 || type.indexOf("فيلم") !== -1 ? "movie"
-            : t.indexOf("tv") !== -1 ? "tv"
-            : t.indexOf("ova") !== -1 ? "ova"
-            : t.indexOf("ona") !== -1 ? "ona"
-            : t.indexOf("special") !== -1 ? "special" : "tv";
-          base = baseUrl + "/anime-type/" + slug + "/";
-        } else if (status) {
-          base = baseUrl + "/anime-status/" + taxonomySlug(status) + "/";
-        } else {
-          base = baseUrl + "/قائمة-الانمي/";
-        }
-        var url = page > 1 ? base.replace(/\/+$/, "") + "/page/" + page + "/" : base;
-        return await parseAnimeCards(await fetchHtml(url));
+        // Genre/status have no GET routes on the new site (Livewire only) —
+        // downgrade to the browse list instead of returning nothing.
+        var isMovie = type.indexOf("فيلم") !== -1 || type.toLowerCase().indexOf("movie") !== -1;
+        var base = isMovie ? baseUrl + "/movies" : baseUrl + "/browse";
+        var url = page > 1 ? base + "/page/" + page : base;
+        return await parseCards(await fetchHtml(url));
       } catch (e) {
         return [];
       }
@@ -713,7 +698,7 @@ function createSource(api, config) {
     },
 
     async fetchMoreChapters() {
-      // Episode lists ship complete inside processedEpisodeData.
+      // Episode lists ship complete inside the anime page.
       return null;
     },
 
