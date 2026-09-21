@@ -1,8 +1,8 @@
 {
-    "version": "1.32.0",
+    "version": "1.33.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.09.21.1",
+    "manifest_version": "2026.09.21.2",
     "generated_at": "2026-09-04T14:30:00Z",
     "last_updated": "2026-09-21T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -1581,7 +1581,7 @@
             },
             "script": {
                 "url": "sources/witanime/source.js",
-                "sha256": "FF217D8B7AB8279A9753CA3AFBDD8A15AABEF56F37AE85DDFE1C284D0B27E255",
+                "sha256": "1FCA466DADDB0F7A1E270D4D7330F05DC8CEB443DB7BFDACAFDBC6D565E37A69",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1626,7 +1626,7 @@
             },
             "script": {
                 "url": "sources/anime4up/source.js",
-                "sha256": "182C3697B9D331BA43553DF1788638F549159F585C00BF58106A8C05B5E77B0C",
+                "sha256": "B14133F2C526D35B6FD4E1C83484D3C57202685B3D7A973F3991DD61EA189BBF",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1649,6 +1649,51 @@
                 "author": "HunterToon Team",
                 "description": "Anime4up - Arabic anime WordPress source (Anime4up v1.0 theme). Homepage cards, WP search, anime details with DOM episode list incl. load-more walk, direct data-watch servers (megamax/voe/videa/uqload/doodstream/mp4upload).",
                 "changelog": "v1.2.0: native-only servers — direct HLS/mp4 for S1S2/mp4upload/uqload/voe/dood/videa/vk with cost-order resolution; drop share4max/rubyvidhub."
+            }
+        },
+        "animeslayer": {
+            "id": "animeslayer",
+            "sid": 136,
+            "name": "أنمي سلاير (AnimeSlayer)",
+            "version": "1.0.0",
+            "enabled": true,
+            "status": "beta",
+            "base_url": "https://anslayer.com/anime/public",
+            "website_url": "https://anslayer.com",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=anslayer.com",
+            "requires_cf": false,
+            "image_referer": "https://anslayer.com/",
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                "Accept": "application/json, text/plain, */*",
+                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+                "Referer": "https://anslayer.com/"
+            },
+            "script": {
+                "url": "sources/animeslayer/source.js",
+                "sha256": "3071465F99BD0B6BF38439D4844DCE96B758C6FB04E0EDF9396185952F622377",
+                "entry": "createSource"
+            },
+            "capabilities": {
+                "content_types": [
+                    "anime"
+                ],
+                "supports_search": true,
+                "supports_filters": true,
+                "supports_lazy_chapters": false,
+                "supports_download": false,
+                "requires_cloudflare": false
+            },
+            "compatibility": {
+                "min_app_version": "1.4.0",
+                "runtime_api_version": "1.0"
+            },
+            "metadata": {
+                "language": "ar",
+                "adult": false,
+                "author": "HunterToon Team",
+                "description": "AnimeSlayer - Arabic anime source on anslayer.com public JSON API. Lists, search, details, episodes, native direct-mp4 servers plus drive passthrough.",
+                "changelog": "v1.0.0: initial JS source - public API lists/search/details, muilt mirror merge, native direct servers."
             }
         }
     }

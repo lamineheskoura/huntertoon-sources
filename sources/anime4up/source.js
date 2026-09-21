@@ -812,6 +812,44 @@ function createSource(api, config) {
     }
   }
 
+  // Per-file headers: the app NEVER reads server.headers (zero consumers)
+  // and getVideoHeaders(url) is the only channel reaching the player.
+  // mp4upload-class hosts reject source-domain Referer (403), so every
+  // resolved file remembers the embed page that serves it.
+  var mediaHeaders = {};
+
+  function rememberMedia(fileUrl, referer) {
+    if (!fileUrl || !referer) return;
+    mediaHeaders[String(fileUrl)] = String(referer);
+    var bare = String(fileUrl).split("#")[0];
+    if (bare && bare !== fileUrl) mediaHeaders[bare] = String(referer);
+  }
+
+  function embedRefererFor(url) {
+    var u = String(url || "").toLowerCase();
+    if (u.indexOf("mp4upload.com") !== -1) return "https://www.mp4upload.com/";
+    if (u.indexOf("uqload.") !== -1) return "https://uqload.vc/";
+    if (u.indexOf("videa.hu") !== -1) return "https://videa.hu/";
+    if (u.indexOf("4shared.com") !== -1) return "https://www.4shared.com/";
+    if (u.indexOf("vkvideo.ru") !== -1 || u.indexOf("okcdn.ru") !== -1) return "https://vkvideo.ru/";
+    if (u.indexOf("k1c6x8p.shop") !== -1 || u.indexOf("3bnh2lt.shop") !== -1) return baseUrl + "/";
+    return "";
+  }
+
+  function videoHeadersFor(url) {
+    var u = String(url || "");
+    var ref = mediaHeaders[u] || mediaHeaders[u.split("#")[0]] || embedRefererFor(u) || baseUrl + "/";
+    return {
+      "User-Agent": userAgent,
+      "Referer": ref,
+      "Accept": "*/*",
+      "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+      "Sec-Fetch-Dest": "video",
+      "Sec-Fetch-Mode": "no-cors",
+      "Sec-Fetch-Site": "cross-site"
+    };
+  }
+
   // Episode page servers: ul#episode-servers (or ul#watch-servers) with
   // li[data-watch="DIRECT-EMBED-URL"]. No obfuscation on this theme.
   async function decodeEpisodeServers(html) {
@@ -915,10 +953,10 @@ function createSource(api, config) {
               if (s1tried >= 2) continue;
               s1tried++;
               var res = await resolveS1S2(out[s].embedUrl, bud);
-              if (res) {
-                out[s].directUrl = res.master + "#.m3u8";
+              if (res && res.qualities && res.qualities.length) {
                 out[s].type = "m3u8";
                 out[s].qualities = res.qualities;
+                out[s].quality = res.qualities[0].label;
               } else {
                 out[s].dropped = true;
               }
@@ -932,19 +970,29 @@ function createSource(api, config) {
               }
             } else if (tier === 2) {
               var uq = await resolveUqload(out[s].embedUrl, bud);
-              if (uq) {
-                out[s].directUrl = uq.url;
+              if (uq && uq.url) {
                 out[s].type = "m3u8";
-                out[s].qualities = uq.qualities;
+                out[s].qualities = uq.qualities && uq.qualities.length ? uq.qualities : [{
+                  label: out[s].quality || "HD",
+                  url: uq.url,
+                  height: 0,
+                  isDefault: true
+                }];
+                out[s].quality = out[s].qualities[0].label;
               } else {
                 out[s].dropped = true;
               }
             } else if (tier === 3) {
               var vo = await resolveVoe(out[s].embedUrl, bud);
-              if (vo) {
-                out[s].directUrl = vo.url;
+              if (vo && vo.url) {
                 out[s].type = "m3u8";
-                out[s].qualities = vo.qualities;
+                out[s].qualities = [{
+                  label: out[s].quality || "HD",
+                  url: vo.url,
+                  height: 0,
+                  isDefault: true
+                }];
+                out[s].quality = out[s].qualities[0].label;
               } else {
                 out[s].dropped = true;
               }
@@ -966,10 +1014,15 @@ function createSource(api, config) {
               }
             } else if (tier === 6) {
               var vk = await resolveVk(out[s].embedUrl, bud);
-              if (vk) {
-                out[s].directUrl = vk.url;
+              if (vk && vk.url) {
                 out[s].type = "mp4";
-                out[s].qualities = vk.qualities;
+                out[s].qualities = vk.qualities && vk.qualities.length ? vk.qualities : [{
+                  label: out[s].quality || "HD",
+                  url: vk.url,
+                  height: 0,
+                  isDefault: true
+                }];
+                out[s].quality = out[s].qualities[0].label;
               } else {
                 out[s].dropped = true;
               }
@@ -981,7 +1034,8 @@ function createSource(api, config) {
       }
       var ordered = [];
       for (var q = 0; q < out.length; q++) {
-        if (!out[q].dropped && out[q].directUrl) ordered.push(out[q]);
+        var hasMedia = out[q].directUrl || (out[q].qualities && out[q].qualities.length);
+        if (!out[q].dropped && hasMedia) ordered.push(out[q]);
       }
       ordered.sort(function (a, b) {
         var ra = tierOf(a.name, a.embedUrl);
@@ -991,16 +1045,39 @@ function createSource(api, config) {
       });
       var servers = [];
       for (var k = 0; k < ordered.length; k++) {
+        var src = ordered[k];
+        var qh = [];
+        if (src.qualities && src.qualities.length) {
+          for (var qi = 0; qi < src.qualities.length; qi++) {
+            var q = src.qualities[qi];
+            qh.push({
+              label: q.label,
+              url: q.url,
+              height: q.height || 0,
+              isDefault: qi === 0,
+              headers: { "Referer": src.embedUrl, "User-Agent": userAgent }
+            });
+            rememberMedia(q.url, src.embedUrl);
+          }
+        }
         var srv = {
-          id: ordered[k].id,
-          name: ordered[k].name,
-          embedUrl: ordered[k].embedUrl,
-          url: ordered[k].url,
-          directUrl: ordered[k].directUrl,
-          type: ordered[k].type,
-          quality: ordered[k].quality
+          id: src.id,
+          name: src.name,
+          embedUrl: src.embedUrl,
+          url: src.url,
+          type: src.type,
+          quality: src.quality,
+          headers: { "Referer": src.embedUrl, "User-Agent": userAgent }
         };
-        if (ordered[k].qualities && ordered[k].qualities.length) srv.qualities = ordered[k].qualities;
+        if (qh.length) {
+          srv.qualities = qh;
+          srv.selectedQualityIndex = 0;
+          srv.quality = qh[0].label;
+        }
+        if (src.directUrl) {
+          srv.directUrl = src.directUrl;
+          rememberMedia(src.directUrl, src.embedUrl);
+        }
         servers.push(srv);
       }
       return servers;
@@ -1197,16 +1274,8 @@ function createSource(api, config) {
       };
     },
 
-    getVideoHeaders() {
-      return {
-        "User-Agent": userAgent,
-        "Referer": baseUrl + "/",
-        "Accept": "*/*",
-        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-        "Sec-Fetch-Dest": "video",
-        "Sec-Fetch-Mode": "no-cors",
-        "Sec-Fetch-Site": "cross-site"
-      };
+    getVideoHeaders(args) {
+      return videoHeadersFor(args && args.url);
     },
 
     sanitizeCoverUrl(args) {

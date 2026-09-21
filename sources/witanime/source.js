@@ -436,6 +436,43 @@ function createSource(api, config) {
     return (m && m[1]) || "";
   }
 
+  // Per-file headers: the app NEVER reads server.headers (zero consumers)
+  // and getVideoHeaders(url) is the only channel reaching the player.
+  // Hosts like 4shared/mp4upload/videa reject source-domain Referer, so
+  // every resolved file remembers the page that serves it.
+  var mediaHeaders = {};
+
+  function rememberMedia(fileUrl, referer) {
+    if (!fileUrl || !referer) return;
+    mediaHeaders[String(fileUrl)] = String(referer);
+    var bare = String(fileUrl).split("#")[0];
+    if (bare && bare !== fileUrl) mediaHeaders[bare] = String(referer);
+  }
+
+  function embedRefererFor(url) {
+    var u = String(url || "").toLowerCase();
+    if (u.indexOf("mp4upload.com") !== -1) return "https://www.mp4upload.com/";
+    if (u.indexOf("uqload.") !== -1) return "https://uqload.vc/";
+    if (u.indexOf("videa.hu") !== -1) return "https://videa.hu/";
+    if (u.indexOf("4shared.com") !== -1) return "https://www.4shared.com/";
+    if (u.indexOf("vkvideo.ru") !== -1 || u.indexOf("okcdn.ru") !== -1) return "https://vkvideo.ru/";
+    return "";
+  }
+
+  function videoHeadersFor(url) {
+    var u = String(url || "");
+    var ref = mediaHeaders[u] || mediaHeaders[u.split("#")[0]] || embedRefererFor(u) || baseUrl + "/";
+    return {
+      "User-Agent": userAgent,
+      "Referer": ref,
+      "Accept": "*/*",
+      "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+      "Sec-Fetch-Dest": "video",
+      "Sec-Fetch-Mode": "no-cors",
+      "Sec-Fetch-Site": "cross-site"
+    };
+  }
+
   // Pure-JS crypto/text helpers (QuickJS-safe: var/Math/String/regex only).
 
   function randStr(n) {
@@ -743,6 +780,15 @@ function createSource(api, config) {
           }
         } catch (e) {}
         if (!durl) continue;
+        // Referer must be same-host, never the gate or source domain
+        // (both 403 live; root referers proven 206).
+        var nl2 = String(it.label || "").toLowerCase();
+        var ref = it.gate;
+        if (nl2.indexOf("videa") !== -1) ref = "https://videa.hu/";
+        else if (nl2.indexOf("4shared") !== -1) ref = "https://www.4shared.com/";
+        else if (nl2.indexOf("mp4upload") !== -1) ref = "https://www.mp4upload.com/";
+        else if (isOkLabel(it.label)) ref = "https://ok.ru/";
+        rememberMedia(durl, ref);
         out.push({
           id: it.token,
           name: it.name,
@@ -750,7 +796,8 @@ function createSource(api, config) {
           url: it.gate,
           directUrl: durl,
           type: "mp4",
-          quality: qualityOf(it.bucket) || qualityOf(it.name)
+          quality: qualityOf(it.bucket) || qualityOf(it.name),
+          headers: { "Referer": ref, "User-Agent": userAgent }
         });
       }
     } catch (e) {}
@@ -985,16 +1032,8 @@ function createSource(api, config) {
       };
     },
 
-    getVideoHeaders() {
-      return {
-        "User-Agent": userAgent,
-        "Referer": baseUrl + "/",
-        "Accept": "*/*",
-        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-        "Sec-Fetch-Dest": "video",
-        "Sec-Fetch-Mode": "no-cors",
-        "Sec-Fetch-Site": "cross-site"
-      };
+    getVideoHeaders(args) {
+      return videoHeadersFor(args && args.url);
     },
 
     sanitizeCoverUrl(args) {
