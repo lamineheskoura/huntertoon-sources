@@ -368,15 +368,16 @@ function createSource(api, config) {
     return String(url || "").toLowerCase().indexOf("drive.google") !== -1;
   }
 
-  // muilt: merge official + mirror link lists, dedup.
+  // muilt: mirror first (superset: 12 links incl. drive), official fallback.
+  // Saves one fetch per episode on slow networks (12s bridge timeouts).
   async function fetchMuiltLinks(n, bud) {
     var seen = {};
     var out = [];
     // NOTE: official mirror lives on siteUrl (/la/...), NOT under baseUrl
     // (/anime/public/la/... 404s). ALT_API is the a-reslayer mirror.
     var urls = [
-      siteUrl + "/la/public/api/f2?n=" + encodeURIComponent(n),
-      ALT_API + "?n=" + encodeURIComponent(n)
+      ALT_API + "?n=" + encodeURIComponent(n),
+      siteUrl + "/la/public/api/f2?n=" + encodeURIComponent(n)
     ];
     for (var i = 0; i < urls.length; i++) {
       try {
@@ -396,12 +397,15 @@ function createSource(api, config) {
         } catch (e) {}
         if (!(arr instanceof Array)) continue;
         for (var j = 0; j < arr.length; j++) {
-          var u = makeAbsolute(arr[j]);
+          // Normalize: some entries escape slashes (mediafire\/?h8...) which
+          // 404s verbatim; real file otherwise.
+          var u = makeAbsolute(String(arr[j] || "").replace(/\\/g, "/"));
           if (u && !seen[u]) {
             seen[u] = true;
             out.push(u);
           }
         }
+        if (out.length) break;
       } catch (e) {}
     }
     return out;
@@ -461,12 +465,22 @@ function createSource(api, config) {
       }
       var links = await fetchMuiltLinks(muiltN, bud);
       // Cost order: drive liveness-check is free-ish (no media fetch).
+      // Then mediafire (proven pattern) before lander-prone mixdrop.
+      function linkRank(u) {
+        var lb = serverNameFor(u);
+        if (isDrive(u)) return 0;
+        if (lb === "mediafire") return 1;
+        if (lb === "mixdrop") return 2;
+        if (lb === "streamtape") return 3;
+        return 4;
+      }
       var first = [];
       var mid = [];
       for (var o = 0; o < links.length; o++) {
         if (isDrive(links[o])) first.push(links[o]);
         else mid.push(links[o]);
       }
+      mid.sort(function (a, b) { return linkRank(a) - linkRank(b); });
       links = first.concat(mid);
       var idx = 0;
       for (var l = 0; l < links.length; l++) {

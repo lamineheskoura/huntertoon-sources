@@ -1671,7 +1671,7 @@
             },
             "script": {
                 "url": "sources/animeslayer/source.js",
-                "sha256": "FCE00F8B7C301730BCDF5EB7FC3BE152A815612C3D49E60CDEEC266958EAD17B",
+                "sha256": "CDE87ADAA117B98A7824FE23E22CAC289C830531567825F24EF82DDB45CABB05",
                 "entry": "createSource"
             },
             "capabilities": {
