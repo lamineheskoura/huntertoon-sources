@@ -436,12 +436,179 @@ function createSource(api, config) {
     return (m && m[1]) || "";
   }
 
-  // Only these labels ever carry a directly downloadable mp4 in the gate
-  // target page (verified live; mega/videa/hgcloud/ok are JS-only pages
-  // with no direct media and no canonical URL).
-  function isMp4Capable(label) {
-    var n = String(label || "").toLowerCase();
-    return n.indexOf("4shared") !== -1 || n.indexOf("mp4upload") !== -1;
+  // Pure-JS crypto/text helpers (QuickJS-safe: var/Math/String/regex only).
+
+  function randStr(n) {
+    var chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    var out = "";
+    for (var i = 0; i < (n || 8); i++) {
+      out += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return out;
+  }
+
+  function strToBytes(s) {
+    var o = [];
+    s = String(s || "");
+    for (var i = 0; i < s.length; i++) o.push(s.charCodeAt(i) & 255);
+    return o;
+  }
+
+  function rc4Bytes(data, key) {
+    var s = [], i, j = 0, out = [];
+    for (i = 0; i < 256; i++) s[i] = i;
+    for (i = 0; i < 256; i++) {
+      j = (j + s[i] + key[i % key.length]) & 255;
+      var t = s[i]; s[i] = s[j]; s[j] = t;
+    }
+    i = 0; j = 0;
+    for (var k = 0; k < data.length; k++) {
+      i = (i + 1) & 255; j = (j + s[i]) & 255;
+      var u = s[i]; s[i] = s[j]; s[j] = u;
+      out.push(data[k] ^ s[(s[i] + s[j]) & 255]);
+    }
+    return out;
+  }
+
+  function bytesToText(b) {
+    try {
+      return new TextDecoder().decode(new Uint8Array(b));
+    } catch (e) {
+      var s = "";
+      for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+      return s;
+    }
+  }
+
+  function b64ToBytes(b64) {
+    var clean = String(b64 || "").replace(/\s+/g, "");
+    while (clean.length % 4 !== 0) clean += "=";
+    var bin = "";
+    try {
+      bin = atob(clean);
+    } catch (e) {
+      return [];
+    }
+    return strToBytes(bin);
+  }
+
+  function budDec(bud) {
+    if (!bud || bud.n <= 0) return false;
+    bud.n--;
+    return true;
+  }
+
+  // Videa player crypto (reverse-engineered from the live player bundle,
+  // verified end-to-end 2026-09-21: params -> xml 200 -> RC4 -> video_src).
+  var VIDEA_CONST = "xHb0ZvME5q8CBcoQi6AngerDu3FGO9fkUlwPmLVY_RTzj2hJIS4NasXWKy1td7p";
+
+  function videaParams(xt, rnd) {
+    try {
+      var e = String(xt || "").split("");
+      var r = ["e", "a", "g", "j", "d", "c", "h", "i", "b", "f"];
+      var c = {}, i;
+      for (i = 0; i < e.length; i++) {
+        if (i % 8 === 0) c[r[Math.floor(i / 8) + 1]] = "";
+        c[r[Math.floor(i / 8) + 1]] += e[i];
+      }
+      c[r[0]] = rnd;
+      var d = (c.a || "") + (c.g || "") + (c.j || "") + (c.d || "");
+      var u = (c.c || "") + (c.h || "") + (c.i || "") + (c.b || "");
+      var mm = "";
+      for (i = 0; i < d.length; i++) {
+        var idx = VIDEA_CONST.indexOf(d.charAt(i));
+        var at = i - (idx - 31);
+        mm += (at >= 0 && at < u.length) ? u.charAt(at) : "";
+      }
+      r = ["f", "h", "c", "b", "i"];
+      var n = {};
+      for (i = 0; i < mm.length; i++) {
+        if (i % 8 === 0) n[r[Math.floor(i / 8) + 1]] = "";
+        n[r[Math.floor(i / 8) + 1]] += mm.charAt(i);
+      }
+      if (!n.h || !n.c) return null;
+      return { s: rnd, t: n.h + n.c, kb: n.b || "", ki: n.i || "" };
+    } catch (e2) {
+      return null;
+    }
+  }
+
+  // playerHtml: videa player page body (gate follows to it). Returns direct
+  // mp4 (video/mp4 sources only) or "". Needs raw headers (X-Videa-XS).
+  async function resolveVideaUrl(playerHtml, bud) {
+    try {
+      var html = String(playerHtml || "");
+      var xm = html.match(/var\s+_xt\s*=\s*"([^"]+)"/);
+      var vm = html.match(/var\s+vcode\s*=\s*"([^"]+)"/);
+      if (!xm || !vm || !budDec(bud)) return "";
+      var pr = videaParams(xm[1], randStr(8));
+      if (!pr) return "";
+      var xmlUrl = "https://videa.hu/player/xml?v=" + encodeURIComponent(vm[1]) +
+        "&_s=" + encodeURIComponent(pr.s) + "&_t=" + encodeURIComponent(pr.t);
+      var res = await api.http(xmlUrl, {
+        method: "GET",
+        headers: withCookies({
+          "User-Agent": userAgent,
+          "Accept": "*/*",
+          "Referer": "https://videa.hu/",
+          "X-Requested-With": "XMLHttpRequest"
+        })
+      });
+      rememberCookies(res);
+      if (!res || !res.ok) return "";
+      var xs = "";
+      try {
+        var hs = res.headers || {};
+        for (var k in hs) {
+          if (String(k).toLowerCase() === "x-videa-xs") xs = hs[k];
+        }
+      } catch (e) {}
+      if (!xs) return "";
+      var dec = bytesToText(rc4Bytes(b64ToBytes(res.body || ""), strToBytes(pr.kb + pr.ki + pr.s + xs)));
+      var expm = dec.match(/exp="(\d+)"/);
+      var exp = expm ? expm[1] : "";
+      var re = /<video_source\b([^>]*)>([^<]*)<\/video_source>/g, m;
+      var best = "", bestH = -1, bestHash = "";
+      while ((m = re.exec(dec)) !== null) {
+        var attrs = m[1] || "";
+        if (attrs.indexOf("video/mp4") === -1) continue;
+        var src = cleanTitle(m[2]);
+        if (!src || src.indexOf("http") !== 0 && src.indexOf("//") !== 0) continue;
+        var qm = attrs.match(/name="(\w+)"/);
+        var qn = qm ? qm[1] : "";
+        var hm = attrs.match(/height="(\d+)"/);
+        var h = hm ? parseInt(hm[1], 10) : 0;
+        var hm2 = qn.match(/(\d+)/);
+        if (!h && hm2) h = parseInt(hm2[1], 10);
+        var hhm = dec.match(new RegExp("<hash_value_" + qn + ">([^<]+)<"));
+        if (hhm && exp && h > bestH) {
+          bestH = h;
+          bestHash = hhm[1];
+          best = src;
+        }
+      }
+      if (!best || !bestHash) return "";
+      if (best.indexOf("//") === 0) best = "https:" + best;
+      else if (best.indexOf("http") !== 0) best = "https://videa.hu" + (best.charAt(0) === "/" ? "" : "/") + best;
+      return withMediaSuffix(best + "?md5=" + bestHash + "&expires=" + exp, ".mp4");
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function extractOkMp4(body) {
+    var html = String(body || "");
+    var pats = [
+      /"url1080"\s*:\s*"(https:[^"]+?\.mp4[^"]*)"/,
+      /"url720"\s*:\s*"(https:[^"]+?\.mp4[^"]*)"/,
+      /"url480"\s*:\s*"(https:[^"]+?\.mp4[^"]*)"/,
+      /(https?:\/\/[^"'\s<>]+\.mp4[^"'\s<>]*)/
+    ];
+    for (var i = 0; i < pats.length; i++) {
+      var m = html.match(pats[i]);
+      if (m) return (m[1] || m[0]).replace(/\\\//g, "/");
+    }
+    return "";
   }
 
   // App native playback requires a .mp4/.m3u8 suffix (extract case 1).
@@ -506,42 +673,85 @@ function createSource(api, config) {
             label: label,
             name: name,
             gate: baseUrl + "/watch/stream-gate/" + token,
-            bucket: bucket,
-            directUrl: ""
+            bucket: bucket
           });
         }
       }
-      // Resolve direct mp4 for capable hosts only (max 3 extra fetches).
-      var tried = 0;
-      for (var r = 0; r < base.length; r++) {
-        if (tried < 3 && isMp4Capable(base[r].label)) {
-          tried++;
-          try {
-            var target = await fetchHtml(base[r].gate, { "Referer": watchUrl });
-            var mp4 = extractDirectMp4(target);
-            if (mp4) base[r].directUrl = mp4;
-          } catch (e) {}
+      // Owner rule: only natively playable (direct mp4) servers are listed.
+      // Dropped with zero direct proof (verified live 2026-09-21): mega
+      // (key never leaves browser), hgcloud (dynamic crypto), yonaplay /
+      // soraplay / google (gate targets unknown), workupload / wtsrv /
+      // wahmi / mediafire / gofile (download buckets, stream-only app).
+      // ok is attempted (flashvars) and dropped on failure.
+      var DROP_LABELS = ["mega", "hgcloud", "yonaplay", "soraplay", "google",
+        "workupload", "wtsrv", "wahmi", "mediafire", "gofile"];
+      function dropLabel(label) {
+        var n = String(label || "").toLowerCase();
+        for (var i = 0; i < DROP_LABELS.length; i++) {
+          if (n.indexOf(DROP_LABELS[i]) !== -1) return true;
         }
+        return false;
       }
-      // Direct-media servers first (they play natively); gate embeds after.
-      var ordered = [];
-      var gated = [];
-      for (var o = 0; o < base.length; o++) {
-        if (base[o].directUrl) ordered.push(base[o]);
-        else gated.push(base[o]);
+      function isOkLabel(label) {
+        return /(^|[\s\-_])ok($|[\s\-_])/i.test(String(label || ""));
       }
-      base = ordered.concat(gated);
-      for (var s = 0; s < base.length; s++) {
-        var srv = {
-          id: base[s].token,
-          name: base[s].name,
-          embedUrl: base[s].gate,
-          url: base[s].gate,
-          type: base[s].directUrl ? "mp4" : "embed",
-          quality: qualityOf(base[s].bucket) || qualityOf(base[s].name)
-        };
-        if (base[s].directUrl) srv.directUrl = base[s].directUrl;
-        out.push(srv);
+      function isMp4Capable(label) {
+        var n = String(label || "").toLowerCase();
+        return n.indexOf("4shared") !== -1 || n.indexOf("mp4upload") !== -1;
+      }
+      // Resolution budget: watch+POST above, max 7 extra fetches here.
+      // Soft 12s deadline keeps slow networks responsive:
+      // resolved-so-far is returned, the rest is dropped (owner rule).
+      var bud = { n: 7 };
+      var t0 = 0;
+      try {
+        t0 = new Date().getTime();
+      } catch (e0) {}
+      for (var r = 0; r < base.length; r++) {
+        var it = base[r];
+        if (dropLabel(it.label)) continue;
+        if (t0) {
+          var nowMs = 0;
+          try {
+            nowMs = new Date().getTime();
+          } catch (e1) {}
+          if (nowMs && nowMs - t0 > 12000) break;
+        }
+        var nl = String(it.label || "").toLowerCase();
+        var durl = "";
+        try {
+          if (nl.indexOf("videa") !== -1) {
+            if (bud.n >= 2) {
+              var ph = await fetchHtml(it.gate, { "Referer": watchUrl });
+              bud.n--;
+              durl = await resolveVideaUrl(ph, bud);
+            }
+          } else if (isMp4Capable(it.label)) {
+            if (bud.n >= 1) {
+              var tg = await fetchHtml(it.gate, { "Referer": watchUrl });
+              bud.n--;
+              durl = extractDirectMp4(tg);
+            }
+          } else if (isOkLabel(it.label)) {
+            if (bud.n >= 1) {
+              var og = await fetchHtml(it.gate, { "Referer": watchUrl });
+              bud.n--;
+              durl = extractOkMp4(og);
+            }
+          } else {
+            continue;
+          }
+        } catch (e) {}
+        if (!durl) continue;
+        out.push({
+          id: it.token,
+          name: it.name,
+          embedUrl: it.gate,
+          url: it.gate,
+          directUrl: durl,
+          type: "mp4",
+          quality: qualityOf(it.bucket) || qualityOf(it.name)
+        });
       }
     } catch (e) {}
     return out;
