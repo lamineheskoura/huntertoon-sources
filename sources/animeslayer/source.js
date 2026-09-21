@@ -330,24 +330,26 @@ function createSource(api, config) {
     }
   }
 
-  // ok.ru: flashvars mp4 (best effort, fail-closed).
-  async function resolveOk(embedUrl, bud) {
+  // ok.ru: STATIC EXTRACTION DEAD (verified 2026-09-21: video/videoembed
+  // pages carry zero media even with session cookies; metadata needs
+  // authenticated XHR). Dropped like mega/hgcloud — app WebView only.
+
+  // drive: passthrough only when the share link is alive (many are
+  // deleted: "Page Not Found"). 1 cheap GET, fail-closed.
+  async function driveAlive(url, bud) {
     try {
-      if (!budDec(bud)) return "";
-      var html = await fetchText(embedUrl, "https://ok.ru/");
-      var pats = [
-        /"url1080"\s*:\s*"(https:[^"]+?\.mp4[^"]*)"/,
-        /"url720"\s*:\s*"(https:[^"]+?\.mp4[^"]*)"/,
-        /"url480"\s*:\s*"(https:[^"]+?\.mp4[^"]*)"/,
-        /(https?:\/\/[^"'\s<>]+\.mp4[^"'\s<>]*)/
-      ];
-      for (var i = 0; i < pats.length; i++) {
-        var m = html.match(pats[i]);
-        if (m) return withMp4Suffix((m[1] || m[0]).replace(/\\\//g, "/"));
-      }
-      return "";
+      if (!budDec(bud)) return false;
+      var html = await fetchText(url, "https://drive.google.com/");
+      if (!html || html.length < 2000) return false;
+      if (html.indexOf("Page Not Found") !== -1) return false;
+      if (html.indexOf("no longer available") !== -1) return false;
+      if (html.indexOf("cannot be found") !== -1) return false;
+      // Positive marker required: live file pages embed viewer/download refs.
+      if (html.indexOf("/file/d/") === -1 && html.indexOf("downloadUrl") === -1 &&
+        html.indexOf("viewerng") === -1) return false;
+      return true;
     } catch (e) {
-      return "";
+      return false;
     }
   }
 
@@ -443,8 +445,7 @@ function createSource(api, config) {
         }
       }
       if (!muiltN) return [];
-      // Resolution budget max 14 fetches + soft 12s deadline (ok.ru can
-      // hang ~20s on some networks, so it resolves strictly last).
+      // Resolution budget max 14 fetches + soft 12s deadline.
       var bud = { n: 14 };
       var t0 = 0;
       try {
@@ -459,17 +460,14 @@ function createSource(api, config) {
         }
       }
       var links = await fetchMuiltLinks(muiltN, bud);
-      // Cost order: drive passthrough is free (no fetch) first,
-      // ok.ru strictly last (can hang ~20s on some networks).
+      // Cost order: drive liveness-check is free-ish (no media fetch).
       var first = [];
       var mid = [];
-      var last = [];
       for (var o = 0; o < links.length; o++) {
         if (isDrive(links[o])) first.push(links[o]);
-        else if (serverNameFor(links[o]) === "ok") last.push(links[o]);
         else mid.push(links[o]);
       }
-      links = first.concat(mid).concat(last);
+      links = first.concat(mid);
       var idx = 0;
       for (var l = 0; l < links.length; l++) {
         if (deadlineHit()) break;
@@ -480,17 +478,20 @@ function createSource(api, config) {
         var label = serverNameFor(link);
         try {
           if (isDrive(link)) {
-            // Drive is resolved natively by the app extractor: passthrough.
-            out.push({
-              id: "drive-" + idx,
-              name: "drive",
-              embedUrl: link,
-              url: link,
-              type: "embed",
-              quality: null,
-              headers: { "Referer": "https://drive.google.com/", "User-Agent": userAgent }
-            });
-            idx++;
+            // Drive is resolved natively by the app extractor: passthrough
+            // only when alive (many shares are deleted).
+            if (await driveAlive(link, bud)) {
+              out.push({
+                id: "drive-" + idx,
+                name: "drive",
+                embedUrl: link,
+                url: link,
+                type: "embed",
+                quality: null,
+                headers: { "Referer": "https://drive.google.com/", "User-Agent": userAgent }
+              });
+              idx++;
+            }
             continue;
           } else if (label === "mediafire") {
             durl = await resolveMediafire(link, bud);
@@ -499,7 +500,8 @@ function createSource(api, config) {
           } else if (label === "streamtape") {
             durl = await resolveStreamtape(link, bud);
           } else if (label === "ok") {
-            durl = await resolveOk(link, bud);
+            // Static ok.ru extraction verified dead (needs session XHR).
+            continue;
           } else {
             continue;
           }
