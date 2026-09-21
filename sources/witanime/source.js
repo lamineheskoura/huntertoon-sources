@@ -436,6 +436,35 @@ function createSource(api, config) {
     return (m && m[1]) || "";
   }
 
+  // Only these labels ever carry a directly downloadable mp4 in the gate
+  // target page (verified live; mega/videa/hgcloud/ok are JS-only pages
+  // with no direct media and no canonical URL).
+  function isMp4Capable(label) {
+    var n = String(label || "").toLowerCase();
+    return n.indexOf("4shared") !== -1 || n.indexOf("mp4upload") !== -1;
+  }
+
+  // App native playback requires a .mp4/.m3u8 suffix (extract case 1).
+  // '#' fragments are never sent to the server (verified 206), so they
+  // only satisfy the suffix check without changing the request.
+  function withMediaSuffix(url, suffix) {
+    var u = String(url || "");
+    if (!u) return "";
+    if (u.indexOf(suffix) !== -1) return u;
+    return u + "#" + suffix;
+  }
+
+  function extractDirectMp4(body) {
+    var html = String(body || "");
+    var m = html.match(/https?:\/\/dc\d+\.4shared\.com\/[^"'\s<>]+/);
+    if (m) return withMediaSuffix(m[0], ".mp4");
+    var p = html.match(/player\.src\(\{\s*[^}]*src:\s*"([^"]+)"/) || html.match(/src:\s*"([^"]+\.mp4[^"]*)"/);
+    if (p) return withMediaSuffix(p[1], ".mp4");
+    var g = html.match(/https?:\/\/[^\s"'<>]+\.mp4[^\s"'<>]*/);
+    if (g) return g[0];
+    return "";
+  }
+
   // ---- episode servers (Laravel CSRF chain, verified live) ----
   // GET {watchUrl} (cookies + csrf-token meta)
   // -> POST {watchUrl}/sources (X-CSRF-TOKEN + Cookie + Referer)
@@ -461,6 +490,7 @@ function createSource(api, config) {
         return [];
       }
       var players = (data && data.players) || {};
+      var base = [];
       var bucket;
       for (bucket in players) {
         var list = players[bucket] || [];
@@ -468,19 +498,50 @@ function createSource(api, config) {
           var entry = list[i] || {};
           var token = entry.token || "";
           if (!/^[a-f0-9]{64}$/.test(token)) continue;
-          var label = cleanTitle(entry.label || "") || ("سيرفر " + (out.length + 1));
+          var label = cleanTitle(entry.label || "") || ("سيرفر " + (base.length + 1));
           var ver = cleanTitle(entry.version || "");
           var name = ver ? (label + " " + ver) : label;
-          var gate = baseUrl + "/watch/stream-gate/" + token;
-          out.push({
-            id: token,
+          base.push({
+            token: token,
+            label: label,
             name: name,
-            embedUrl: gate,
-            url: gate,
-            type: "embed",
-            quality: qualityOf(bucket) || qualityOf(name)
+            gate: baseUrl + "/watch/stream-gate/" + token,
+            bucket: bucket,
+            directUrl: ""
           });
         }
+      }
+      // Resolve direct mp4 for capable hosts only (max 3 extra fetches).
+      var tried = 0;
+      for (var r = 0; r < base.length; r++) {
+        if (tried < 3 && isMp4Capable(base[r].label)) {
+          tried++;
+          try {
+            var target = await fetchHtml(base[r].gate, { "Referer": watchUrl });
+            var mp4 = extractDirectMp4(target);
+            if (mp4) base[r].directUrl = mp4;
+          } catch (e) {}
+        }
+      }
+      // Direct-media servers first (they play natively); gate embeds after.
+      var ordered = [];
+      var gated = [];
+      for (var o = 0; o < base.length; o++) {
+        if (base[o].directUrl) ordered.push(base[o]);
+        else gated.push(base[o]);
+      }
+      base = ordered.concat(gated);
+      for (var s = 0; s < base.length; s++) {
+        var srv = {
+          id: base[s].token,
+          name: base[s].name,
+          embedUrl: base[s].gate,
+          url: base[s].gate,
+          type: base[s].directUrl ? "mp4" : "embed",
+          quality: qualityOf(base[s].bucket) || qualityOf(base[s].name)
+        };
+        if (base[s].directUrl) srv.directUrl = base[s].directUrl;
+        out.push(srv);
       }
     } catch (e) {}
     return out;

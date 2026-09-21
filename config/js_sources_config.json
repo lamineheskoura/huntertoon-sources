@@ -1,8 +1,8 @@
 {
-    "version": "1.30.0",
+    "version": "1.31.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.09.19.1",
+    "manifest_version": "2026.09.19.2",
     "generated_at": "2026-09-04T14:30:00Z",
     "last_updated": "2026-09-19T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -1565,7 +1565,7 @@
             "id": "witanime",
             "sid": 134,
             "name": "ويت أنمي (WitAnime)",
-            "version": "1.1.0",
+            "version": "1.2.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://witanime.site",
@@ -1581,7 +1581,7 @@
             },
             "script": {
                 "url": "sources/witanime/source.js",
-                "sha256": "C57C0419934305A9BE6AFF33B826390BDC12299939CEBF28D0265FF5F5F7519D",
+                "sha256": "88E3F4FF8AECE0CD7FB3C366F223BB50FCE0F7B06DB2DFA3E751D16B3FD9924D",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1603,14 +1603,14 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "WitAnime - Arabic anime source on witanime.site (Laravel Livewire). Browse/movies cards, suggest search, anime+movie details, episode servers via CSRF POST sources chain (stream-gate embeds).",
-                "changelog": "v1.1.0: full rewrite for witanime.site (old witanime.you dead) — browse/movie cards, suggest+fallback search, Livewire details, CSRF POST episode servers with embedUrl+url."
+                "changelog": "v1.2.0: resolve 4shared/mp4upload gates to direct mp4 (native playback) + direct-first server order; gate embeds kept for the rest."
             }
         },
         "anime4up": {
             "id": "anime4up",
             "sid": 135,
             "name": "أنمي فور أب (Anime4up)",
-            "version": "1.0.1",
+            "version": "1.1.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://w1.anime4up.rest",
@@ -1626,7 +1626,7 @@
             },
             "script": {
                 "url": "sources/anime4up/source.js",
-                "sha256": "8263da2b0f177bd9f232222894de3de45dd9c521c6f8df878e826fa51fdc9ada",
+                "sha256": "160FD18EF142A77C400A5C5139F754333BFAFFD48CA219E9DCF36503B0805DF3",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1648,7 +1648,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Anime4up - Arabic anime WordPress source (Anime4up v1.0 theme). Homepage cards, WP search, anime details with DOM episode list incl. load-more walk, direct data-watch servers (megamax/voe/videa/uqload/doodstream/mp4upload).",
-                "changelog": "v1.0.1: strict EpisodeServer contract (embedUrl field) alongside legacy url."
+                "changelog": "v1.1.0: resolve first-party S1/S2 to live HLS master with qualities + playback-capable server order (direct/dood/mp4upload/videa/vk first)."
             }
         }
     }

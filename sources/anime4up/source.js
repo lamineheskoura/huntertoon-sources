@@ -357,6 +357,106 @@ function createSource(api, config) {
     return "";
   }
 
+  // First-party S1/S2 servers: data-watch points at a same-network page
+  // that embeds a live HLS master (streamUrl). Any query change 403s, so the
+  // master URL is used exactly as minted (verified live 2026-09-19).
+  function isS1S2(name, rawUrl) {
+    var n = String(name || "").toUpperCase();
+    var u = String(rawUrl || "");
+    return n.indexOf("S1") !== -1 || n.indexOf("S2") !== -1 ||
+      u.indexOf("Anime4up-S1") !== -1 || u.indexOf("Anime4up-S2") !== -1 ||
+      u.indexOf("Anime4up-S") !== -1;
+  }
+
+  function resolveUrl(base, rel) {
+    var r = String(rel || "").trim();
+    if (/^https?:\/\//i.test(r)) return r;
+    var b = String(base || "").split("?")[0].split("#")[0];
+    var hm = b.match(/^(https?:\/\/[^\/]+)/);
+    if (r.charAt(0) === "/") return hm ? (hm[1] + r) : r;
+    var i = b.lastIndexOf("/");
+    return b.substring(0, i + 1) + r;
+  }
+
+  function parseHlsVariants(masterUrl, body) {
+    var lines = String(body || "").split("\n");
+    var found = [];
+    var i;
+    for (i = 0; i < lines.length && found.length < 6; i++) {
+      var inf = lines[i].match(/RESOLUTION=\d+x(\d+)/);
+      if (inf && i + 1 < lines.length) {
+        var vu = cleanTitle(lines[i + 1]);
+        if (vu && vu.charAt(0) !== "#") {
+          var abs = resolveUrl(masterUrl, vu);
+          if (abs.indexOf("http") === 0) {
+            found.push({ h: parseInt(inf[1], 10) || 0, url: abs });
+          }
+        }
+      }
+    }
+    if (!found.length) {
+      for (i = 0; i < lines.length && found.length < 6; i++) {
+        var l = cleanTitle(lines[i]);
+        if (l.charAt(0) !== "#" && l.indexOf("http") === 0) {
+          found.push({ h: 0, url: l });
+        }
+      }
+    }
+    var seen = {};
+    var uniq = [];
+    for (var j = 0; j < found.length; j++) {
+      if (!seen[found[j].url]) {
+        seen[found[j].url] = true;
+        uniq.push(found[j]);
+      }
+    }
+    uniq.sort(function (a, b) { return b.h - a.h; });
+    var out = [];
+    for (var k = 0; k < uniq.length; k++) {
+      out.push({
+        label: (uniq[k].h > 0 ? uniq[k].h + "p" : ("Q" + (k + 1))),
+        url: uniq[k].url + "#.m3u8",
+        height: uniq[k].h,
+        isDefault: k === 0
+      });
+    }
+    return out;
+  }
+
+  async function resolveS1S2(rawUrl) {
+    try {
+      var page = await fetchHtml(rawUrl);
+      var m = page.match(/streamUrl\s*=\s*"([^"]+)"/);
+      var master = m ? m[1] : "";
+      if (!master || master.indexOf("http") !== 0) return null;
+      var body = await fetchHtml(master, { "Accept": "*/*", "Referer": rawUrl });
+      if (body.indexOf("#EXTM3U") === -1) return null;
+      var quals = parseHlsVariants(master, body);
+      if (!quals.length) return null;
+      return { master: master, qualities: quals };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Playback-capable servers first so the default pick plays.
+  // rubyvidhub content verified deleted/expired live 2026-09-19; kept for
+  // embed fallback, ranked last (not removed).
+  function serverRank(name, rawUrl, hasDirect) {
+    if (hasDirect) return 0;
+    var n = String(name || "").toLowerCase();
+    var u = String(rawUrl || "").toLowerCase();
+    if (n.indexOf("dood") !== -1 || u.indexOf("dood") !== -1 ||
+        n.indexOf("playmogo") !== -1 || u.indexOf("playmogo") !== -1 ||
+        n.indexOf("mp4upload") !== -1 || u.indexOf("mp4upload") !== -1) return 1;
+    if (n.indexOf("videa") !== -1 || u.indexOf("videa") !== -1 ||
+        n.indexOf("vkvideo") !== -1 || u.indexOf("vkvideo") !== -1 ||
+        u.indexOf("vk.com/") !== -1) return 2;
+    if (n.indexOf("ruby") !== -1 || u.indexOf("rubyvidhub") !== -1 ||
+        u.indexOf("streamruby") !== -1) return 9;
+    return 5;
+  }
+
   // Episode page servers: ul#episode-servers (or ul#watch-servers) with
   // li[data-watch="DIRECT-EMBED-URL"]. No obfuscation on this theme.
   async function decodeEpisodeServers(html) {
@@ -398,14 +498,51 @@ function createSource(api, config) {
           quality = qualityOf(name);
         }
         out.push({
+          idx: out.length,
           id: String(i),
           name: name,
           embedUrl: rawUrl,
           url: rawUrl,
           type: "embed",
-          quality: quality
+          quality: quality,
+          directUrl: "",
+          qualities: []
         });
       }
+      // Resolve first-party S1/S2 to live HLS (max 2 servers x 2 fetches).
+      var s1tried = 0;
+      for (var s = 0; s < out.length; s++) {
+        if (s1tried < 2 && isS1S2(out[s].name, out[s].embedUrl)) {
+          s1tried++;
+          var res = await resolveS1S2(out[s].embedUrl);
+          if (res) {
+            out[s].directUrl = res.master + "#.m3u8";
+            out[s].type = "m3u8";
+            out[s].qualities = res.qualities;
+          }
+        }
+      }
+      out.sort(function (a, b) {
+        var ra = serverRank(a.name, a.embedUrl, !!a.directUrl);
+        var rb = serverRank(b.name, b.embedUrl, !!b.directUrl);
+        if (ra !== rb) return ra - rb;
+        return a.idx - b.idx;
+      });
+      var servers = [];
+      for (var k = 0; k < out.length; k++) {
+        var srv = {
+          id: out[k].id,
+          name: out[k].name,
+          embedUrl: out[k].embedUrl,
+          url: out[k].url,
+          type: out[k].type,
+          quality: out[k].quality
+        };
+        if (out[k].directUrl) srv.directUrl = out[k].directUrl;
+        if (out[k].qualities && out[k].qualities.length) srv.qualities = out[k].qualities;
+        servers.push(srv);
+      }
+      return servers;
     } catch (e) {}
     return out;
   }
