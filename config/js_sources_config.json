@@ -1,8 +1,8 @@
 {
-    "version": "1.34.0",
+    "version": "1.36.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.09.21.3",
+    "manifest_version": "2026.09.21.5",
     "generated_at": "2026-09-04T14:30:00Z",
     "last_updated": "2026-09-21T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -1655,7 +1655,7 @@
             "id": "animeslayer",
             "sid": 136,
             "name": "أنمي سلاير (AnimeSlayer)",
-            "version": "1.0.1",
+            "version": "1.2.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://anslayer.com/anime/public",
@@ -1671,7 +1671,7 @@
             },
             "script": {
                 "url": "sources/animeslayer/source.js",
-                "sha256": "464594D2A0112F179FE826E70C0474EAFFE197E28ADC33FA10F5C000DFAD9177",
+                "sha256": "8FF8CC668196716A348F6CAF67C32423F4872867B1E2309A5F98B3D798B29903",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1693,7 +1693,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "AnimeSlayer - Arabic anime source on anslayer.com public JSON API. Lists, search, details, episodes, native direct-mp4 servers plus drive passthrough.",
-                "changelog": "v1.0.1: Kotatsu-faithful resolvers - ok.ru data-options/videos, streamtape script assembly, muilt URL forms, filter search, eid matching."
+                "changelog": "v1.2.0: true pagination p1/p2/p3-stop, per-list dedup, mp4 HEAD-probe gate, ok/videos + single-slash fixes."
             }
         }
     }

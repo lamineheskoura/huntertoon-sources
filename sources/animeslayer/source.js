@@ -200,19 +200,71 @@ function createSource(api, config) {
     };
   }
 
-  async function parseList(url) {
-    var data = await apiGet(url.substring(baseUrl.length));
-    var items = (data && data.response && data.response.data) || [];
+  // Browse pagination: the API ignores limit/offset/page (always the same
+  // 25). Page 1 = alphabetical list, page 2 = latest updates (25 distinct
+  // items, 0 overlap verified live), page 3+ = [] so infinite scroll stops
+  // instead of repeating. Per-list seen-guards (browse/search/filter are
+  // independent; a shared map would corrupt one list with another).
+  var seenBrowse = {};
+  var seenSearch = {};
+  var seenFilter = {};
+
+  // HEAD-probe: file pages can masquerade as mp4 (URL contains .mp4 but
+  // serves HTML). Accept 2xx with non-HTML content-type; 405/501 (no HEAD
+  // support) falls back to trust; anything else drops. 1 cheap fetch.
+  async function probeMedia(url, referer) {
+    try {
+      var res = await api.http(url, {
+        method: "HEAD",
+        headers: {
+          "User-Agent": userAgent,
+          "Accept": "*/*",
+          "Referer": referer || siteUrl + "/"
+        }
+      });
+      if (!res) return false;
+      if (res.status === 405 || res.status === 501) return true;
+      if (!res.ok) return false;
+      var ct = "";
+      try {
+        var hs = res.headers || {};
+        for (var k in hs) {
+          if (String(k).toLowerCase() === "content-type") ct = hs[k];
+        }
+      } catch (e) {}
+      ct = String(ct).toLowerCase();
+      if (ct.indexOf("text/html") !== -1) return false;
+      if (ct.indexOf("application/json") !== -1) return false;
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function guardCards(cards, seen) {
     var out = [];
-    var seen = {};
-    for (var i = 0; i < items.length; i++) {
-      var c = toCard(items[i]);
-      if (c && !seen[c.detailUrl]) {
-        seen[c.detailUrl] = true;
-        out.push(c);
+    for (var i = 0; i < cards.length; i++) {
+      if (!seen[cards[i].detailUrl]) {
+        seen[cards[i].detailUrl] = true;
+        out.push(cards[i]);
       }
     }
     return out;
+  }
+
+  async function browsePage(page) {
+    page = page || 1;
+    if (page > 2) return [];
+    if (page <= 1) seenBrowse = {};
+    var type = page > 1 ? "latest_updated_episode_new" : "anime_list";
+    var extra = type === "latest_updated_episode_new" ? { order: "latest_first" } : null;
+    return await parseList(listUrl(type, 1, extra), page, seenBrowse);
+  }
+
+  async function parseList(url, page, seen) {
+    var data = await apiGet(url.substring(baseUrl.length));
+    var items = (data && data.response && data.response.data) || [];
+    return guardCards(items.map(toCard).filter(Boolean), seen || {});
   }
 
   function animeIdFromUrl(url) {
@@ -269,24 +321,32 @@ function createSource(api, config) {
 
   // ---- direct resolvers (native playback only, fail-closed) ----
 
-  // mediafire: file page anchors first, then kDownloadUrl/download host.
+  // mediafire: kDownloadUrl/download host first, then page anchors.
+  // Anchors must exclude the file page itself (mediafire file URLs often
+  // end with /filename.mp4 and would self-match as "direct").
+  // Final URL is HEAD-probed (pages can masquerade as mp4 in URL).
   async function resolveMediafire(pageUrl, bud) {
     try {
       if (!budDec(bud)) return "";
       var html = await fetchText(pageUrl, "https://www.mediafire.com/", FIREFOX_MOBILE);
-      var am = html.match(/<a\b[^>]+href="([^"]+)"[^>]*>(?:[^<]*download[^<]*)?</i);
-      if (am) {
-        var ah = am[1];
-        if (ah.indexOf(".mp4") !== -1 && ah.indexOf("http") === 0) return ah;
-      }
       var m = html.match(/kDownloadUrl\s*=\s*"([^"]+)"/);
       var direct = m ? m[1] : "";
       if (!direct) {
         var g = html.match(/https?:\/\/download\d*\.mediafire\.com[^"'\s<>]+/);
         if (g) direct = g[0];
       }
+      if (!direct) {
+        var am = html.match(/<a\b[^>]+href="([^"]+)"[^>]*>(?:[^<]*download[^<]*)?</i);
+        if (am) {
+          var ah = am[1];
+          if (ah.indexOf(".mp4") !== -1 && ah.indexOf("http") === 0 &&
+            ah.indexOf("/file/") === -1 && ah !== pageUrl) direct = ah;
+        }
+      }
       if (!direct || direct.indexOf("http") !== 0) return "";
-      return withMp4Suffix(direct);
+      direct = withMp4Suffix(direct);
+      if (!budDec(bud)) return direct;
+      return (await probeMedia(direct, pageUrl)) ? direct : "";
     } catch (e) {
       return "";
     }
@@ -380,14 +440,52 @@ function createSource(api, config) {
     return u + (u.indexOf("?") !== -1 ? "&" : "?") + "stream=1";
   }
 
+  // NOTE: node text like "/streamtape.com/get_video?.." is a
+  // protocol-relative URL missing one slash -> repair to https://, it is
+  // NOT a site-relative path (verified live: naive resolve doubles host).
+  function fixSingleSlash(u) {
+    var m = String(u || "").match(/^\/([^\/][^\/]*\.[^\/]+\/.*)$/);
+    if (m) return "https:/" + u;
+    return u;
+  }
+
+  function streamtapeMirrors(embedUrl) {
+    var out = [embedUrl];
+    var u = String(embedUrl || "");
+    if (u.indexOf("streamtape.to/") !== -1) {
+      out.push(u.replace("streamtape.to/", "streamtape.com/"));
+    } else if (u.indexOf("streamtape.com/") !== -1) {
+      out.push(u.replace("streamtape.com/", "streamtape.to/"));
+    }
+    return out;
+  }
+
   async function resolveStreamtape(embedUrl, bud) {
     try {
-      if (!budDec(bud)) return "";
-      var html = await fetchText(embedUrl, embedUrl, FIREFOX_MOBILE);
-      var dec = String(html).replace(/\\\//g, "/");
-      // 1. direct node text (must contain /get_video? or token is invalid).
-      var nm = dec.match(/id=["'](?:captchalink|ideoooolink|norobotlink)["'][^>]*>([^<]*\/get_video\?[^<]*)</i);
-      if (nm) return ensureStreamtapeUrl(resolveUrl(embedUrl, cleanTitle(nm[1])));
+      var pages = streamtapeMirrors(embedUrl);
+      for (var pi = 0; pi < pages.length; pi++) {
+        if (!budDec(bud)) return "";
+        var html = "";
+        try {
+          html = await fetchText(pages[pi], pages[pi], FIREFOX_MOBILE);
+        } catch (e) {
+          continue;
+        }
+        var got = extractStreamtapeDirect(html, pages[pi]);
+        if (got) return got;
+      }
+      return "";
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function extractStreamtapeDirect(html, base) {
+    try {
+    var dec = String(html).replace(/\\\//g, "/");
+    // 1. direct node text (must contain /get_video? or token is invalid).
+    var nm = dec.match(/id=["'](?:captchalink|ideoooolink|norobotlink)["'][^>]*>([^<]*\/get_video\?[^<]*)</i);
+    if (nm) return ensureStreamtapeUrl(resolveUrl(base, fixSingleSlash(cleanTitle(nm[1]))));
       // 2. script assembly, captchalink first.
       var re = /document\.getElementById\(\s*(["'])(captchalink|ideoooolink|norobotlink)\1\s*\)\.innerHTML\s*=\s*([^;]+);/gi, m;
       var cands = [];
@@ -397,15 +495,15 @@ function createSource(api, config) {
         return w(a) - w(b);
       });
       for (var ci = 0; ci < cands.length; ci++) {
-        var val = evalConcat(cands[ci].expr);
+        var val = fixSingleSlash(evalConcat(cands[ci].expr));
         if (val && val.indexOf("/get_video?") !== -1) {
-          return ensureStreamtapeUrl(resolveUrl(embedUrl, val));
+          return ensureStreamtapeUrl(resolveUrl(base, val));
         }
       }
       // 3. robotlink fragment + generic fallbacks.
       var r = dec.match(/(?:robotlink|norobotlink)[^=]{0,100}=\s*["']([^"']+)["']/i);
       if (r && r[1].indexOf("/get_video?") !== -1) {
-        return ensureStreamtapeUrl(resolveUrl(embedUrl, r[1]));
+        return ensureStreamtapeUrl(resolveUrl(base, fixSingleSlash(r[1])));
       }
       var g = dec.match(/(https?:\/\/[^\s"'<>]*streamtape[^\s"'<>]*\/get_video\?[^\s"'<>]+)/i);
       if (g) return ensureStreamtapeUrl(g[1]);
@@ -553,6 +651,10 @@ function createSource(api, config) {
 
   function isDrive(url) {
     return String(url || "").toLowerCase().indexOf("drive.google") !== -1;
+  }
+
+  function isFilemoon(url) {
+    return String(url || "").toLowerCase().indexOf("filemoon") !== -1;
   }
 
   // muilt: entry URL in 3 encodings first (raw, %5C, slash) like the
@@ -721,6 +823,20 @@ function createSource(api, config) {
               idx++;
             }
             continue;
+          } else if (isFilemoon(link)) {
+            // Filemoon is resolved natively by the app extractor
+            // (packer + jwplayer): passthrough like drive.
+            out.push({
+              id: "filemoon-" + idx,
+              name: "filemoon",
+              embedUrl: link,
+              url: link,
+              type: "embed",
+              quality: null,
+              headers: { "Referer": link, "User-Agent": FIREFOX_MOBILE }
+            });
+            idx++;
+            continue;
           } else if (label === "mediafire") {
             durl = await resolveMediafire(link, bud);
           } else if (label === "mixdrop") {
@@ -760,6 +876,15 @@ function createSource(api, config) {
           }
         } catch (e) {}
         if (!durl) continue;
+        // Final gate: HEAD-probe kills file-pages masquerading as mp4.
+        // No budget left -> trust the pattern (previous behavior).
+        if (budDec(bud)) {
+          var okProbe = false;
+          try {
+            okProbe = await probeMedia(durl, link);
+          } catch (e) {}
+          if (!okProbe) continue;
+        }
         rememberMedia(durl, link);
         out.push({
           id: "sl-" + idx,
@@ -783,7 +908,7 @@ function createSource(api, config) {
     async getHomepageManga(args) {
       try {
         var page = (args && args.page) || 1;
-        return await parseList(listUrl("anime_list", page));
+        return await browsePage(page);
       } catch (e) {
         return [];
       }
@@ -794,7 +919,8 @@ function createSource(api, config) {
         var query = (args && args.query) || "";
         if (!query.trim()) return [];
         var page = (args && args.page) || 1;
-        return await parseList(listUrl("filter", page, { anime_name: query }));
+        if (page <= 1) seenSearch = {};
+        return await parseList(listUrl("filter", page, { anime_name: query }), page, seenSearch);
       } catch (e) {
         return [];
       }
@@ -876,6 +1002,14 @@ function createSource(api, config) {
       try {
         var serverUrl = makeAbsolute((args && (args.serverUrl || args.url)) || "");
         if (!serverUrl) return null;
+        // Same allow-list as getEpisodeServers: drive/filemoon passthrough
+        // or direct media only. Anything else -> null (no fake embeds).
+        if (dropHost(serverUrl)) return null;
+        var u = serverUrl.toLowerCase();
+        var okHost = u.indexOf("drive.google") !== -1 || u.indexOf("filemoon") !== -1 ||
+          u.indexOf("mediafire.com") !== -1 || u.indexOf("mixdrop") !== -1 ||
+          u.indexOf("streamtape") !== -1 || u.indexOf("ok.ru") !== -1;
+        if (!okHost) return null;
         return {
           url: serverUrl,
           type: "embed",
@@ -896,7 +1030,11 @@ function createSource(api, config) {
         // No GET filter routes on this API (dropdowns are Livewire-side):
         // downgrade to the browse list instead of returning nothing.
         var page = (args && args.page) || 1;
-        return await parseList(listUrl("anime_list", page));
+        if (page <= 1) seenFilter = {};
+        var type = page > 1 ? "latest_updated_episode_new" : "anime_list";
+        var extra = type === "latest_updated_episode_new" ? { order: "latest_first" } : null;
+        if (page > 2) return [];
+        return await parseList(listUrl(type, 1, extra), page, seenFilter);
       } catch (e) {
         return [];
       }
