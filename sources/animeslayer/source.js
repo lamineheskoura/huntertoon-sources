@@ -103,10 +103,14 @@ function createSource(api, config) {
     }
   }
 
-  async function fetchText(url, referer) {
+  // Proven-working client identity for provider pages (matches the
+  // reference implementation; some hosts reject other identities).
+  var FIREFOX_MOBILE = "Mozilla/5.0 (Android 14; Mobile; rv:124.0) Gecko/124.0 Firefox/124.0";
+
+  async function fetchText(url, referer, ua) {
     lastPageUrl = url || lastPageUrl;
     var headers = {
-      "User-Agent": userAgent,
+      "User-Agent": ua || userAgent,
       "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
       "Referer": referer || siteUrl + "/"
@@ -114,6 +118,27 @@ function createSource(api, config) {
     var res = await api.http(url, { method: "GET", headers: headers });
     if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : 0) + " for " + url);
     return res.body || "";
+  }
+
+  function unescapeHtml(s) {
+    return String(s || "")
+      .replace(/&quot;/g, "\"")
+      .replace(/&#39;/g, "'")
+      .replace(/&#x27;/g, "'")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">");
+  }
+
+  function resolveUrl(base, rel) {
+    var r = String(rel || "").trim();
+    if (/^https?:\/\//i.test(r)) return r;
+    if (r.indexOf("//") === 0) return "https:" + r;
+    var b = String(base || "").split("?")[0].split("#")[0];
+    var hm = b.match(/^(https?:\/\/[^\/]+)/);
+    if (r.charAt(0) === "/") return hm ? (hm[1] + r) : r;
+    var i = b.lastIndexOf("/");
+    return b.substring(0, i + 1) + r;
   }
 
   function cleanTitle(s) {
@@ -198,7 +223,8 @@ function createSource(api, config) {
   function parseEpisodeRef(url) {
     var m = String(url || "").match(/\/anime\/(\d+)\/episode\/(\d+)/);
     if (!m) return null;
-    return { aid: m[1], num: m[2] };
+    var em = String(url || "").match(/[?&]eid=([0-9]+)/);
+    return { aid: m[1], num: m[2], eid: em ? em[1] : "" };
   }
 
   function genresOf(d) {
@@ -226,10 +252,11 @@ function createSource(api, config) {
 
   function episodeToChapter(aid, ep) {
     var num = String(ep.episode_number != null ? ep.episode_number : "0");
+    var eid = ep.episode_id != null ? String(ep.episode_id) : "";
     return {
       number: num,
       title: "الحلقة " + num,
-      url: siteUrl + "/anime/" + aid + "/episode/" + num,
+      url: siteUrl + "/anime/" + aid + "/episode/" + num + (eid ? "?eid=" + eid : ""),
       views: 0,
       isLocked: false,
       date: "",
@@ -242,11 +269,16 @@ function createSource(api, config) {
 
   // ---- direct resolvers (native playback only, fail-closed) ----
 
-  // mediafire: file page -> kDownloadUrl / download host mp4.
+  // mediafire: file page anchors first, then kDownloadUrl/download host.
   async function resolveMediafire(pageUrl, bud) {
     try {
       if (!budDec(bud)) return "";
-      var html = await fetchText(pageUrl, "https://www.mediafire.com/");
+      var html = await fetchText(pageUrl, "https://www.mediafire.com/", FIREFOX_MOBILE);
+      var am = html.match(/<a\b[^>]+href="([^"]+)"[^>]*>(?:[^<]*download[^<]*)?</i);
+      if (am) {
+        var ah = am[1];
+        if (ah.indexOf(".mp4") !== -1 && ah.indexOf("http") === 0) return ah;
+      }
       var m = html.match(/kDownloadUrl\s*=\s*"([^"]+)"/);
       var direct = m ? m[1] : "";
       if (!direct) {
@@ -304,35 +336,190 @@ function createSource(api, config) {
     }
   }
 
-  // streamtape: page -> videolink robot -> mp4.
+  // streamtape: node text must contain /get_video? (else invalid token),
+  // else evaluate ONLY string-concat/substring ops (never page JS).
+  function applyJsTransforms(value, calls) {
+    var res = String(value || "");
+    var re = /\.(substring|substr|slice)\(\s*(-?\d+)(?:\s*,\s*(-?\d+))?\s*\)/gi, m;
+    while ((m = re.exec(calls)) !== null) {
+      var op = m[1].toLowerCase();
+      var a = parseInt(m[2], 10) || 0;
+      var b = (m[3] === undefined || m[3] === "") ? null : (parseInt(m[3], 10) || 0);
+      if (op === "substring") {
+        var s1 = Math.max(0, Math.min(a, res.length));
+        var e1 = b === null ? res.length : Math.max(0, Math.min(b, res.length));
+        res = res.substring(Math.min(s1, e1), Math.max(s1, e1));
+      } else if (op === "substr") {
+        var st = a < 0 ? Math.max(0, res.length + a) : Math.min(a, res.length);
+        var en = b === null ? res.length : Math.min(st + Math.max(0, b), res.length);
+        res = res.substring(st, en);
+      } else if (op === "slice") {
+        var s2 = a < 0 ? Math.max(0, res.length + a) : Math.min(a, res.length);
+        var r2 = b === null ? res.length : (b < 0 ? Math.max(0, res.length + b) : Math.min(b, res.length));
+        res = (r2 < s2) ? "" : res.substring(s2, r2);
+      }
+    }
+    return res;
+  }
+
+  function evalConcat(expr) {
+    var out = "";
+    var re = /(["'])((?:\\.|(?!\1).)*)\1((?:\s*\)*\s*\.\s*(?:substring|substr|slice)\s*\([^)]*\))*)/g, m;
+    while ((m = re.exec(expr)) !== null) {
+      var part = m[2].replace(/\\\//g, "/").replace(/\\u0026/gi, "&")
+        .replace(/\\"/g, "\"").replace(/\\'/g, "'");
+      out += applyJsTransforms(part, m[3] || "");
+    }
+    return out;
+  }
+
+  function ensureStreamtapeUrl(url) {
+    var u = String(url || "");
+    if (!u) return "";
+    if (/[?&]stream=/i.test(u)) return u;
+    return u + (u.indexOf("?") !== -1 ? "&" : "?") + "stream=1";
+  }
+
   async function resolveStreamtape(embedUrl, bud) {
     try {
       if (!budDec(bud)) return "";
-      var html = await fetchText(embedUrl, embedUrl);
-      var m = html.match(/getElementById\(['"]videoolink['"]\)[^>]*>([^<]+)</) ||
-        html.match(/id=['"]videoolink['"][^>]*value=['"]([^'"]+)/) ||
-        html.match(/robotlink['"]?\s*[:=]\s*['"]([^'"]+)/);
-      var link = m ? cleanTitle(m[1]) : "";
-      if (!link) {
-        var g = html.match(/(https?:\/\/[^\s"'<>]*streamtape[^\s"'<>]*\.mp4[^\s"'<>]*)/);
-        return g ? g[1] : "";
+      var html = await fetchText(embedUrl, embedUrl, FIREFOX_MOBILE);
+      var dec = String(html).replace(/\\\//g, "/");
+      // 1. direct node text (must contain /get_video? or token is invalid).
+      var nm = dec.match(/id=["'](?:captchalink|ideoooolink|norobotlink)["'][^>]*>([^<]*\/get_video\?[^<]*)</i);
+      if (nm) return ensureStreamtapeUrl(resolveUrl(embedUrl, cleanTitle(nm[1])));
+      // 2. script assembly, captchalink first.
+      var re = /document\.getElementById\(\s*(["'])(captchalink|ideoooolink|norobotlink)\1\s*\)\.innerHTML\s*=\s*([^;]+);/gi, m;
+      var cands = [];
+      while ((m = re.exec(dec)) !== null) cands.push({ id: m[2].toLowerCase(), expr: m[3] });
+      cands.sort(function (a, b) {
+        var w = function (x) { return x.id === "captchalink" ? 0 : (x.id === "ideoooolink" ? 1 : 2); };
+        return w(a) - w(b);
+      });
+      for (var ci = 0; ci < cands.length; ci++) {
+        var val = evalConcat(cands[ci].expr);
+        if (val && val.indexOf("/get_video?") !== -1) {
+          return ensureStreamtapeUrl(resolveUrl(embedUrl, val));
+        }
       }
-      if (link.indexOf("http") !== 0) {
-        if (link.indexOf("//") === 0) link = "https:" + link;
-        else return "";
+      // 3. robotlink fragment + generic fallbacks.
+      var r = dec.match(/(?:robotlink|norobotlink)[^=]{0,100}=\s*["']([^"']+)["']/i);
+      if (r && r[1].indexOf("/get_video?") !== -1) {
+        return ensureStreamtapeUrl(resolveUrl(embedUrl, r[1]));
       }
-      if (!budDec(bud)) return "";
-      var html2 = await fetchText(link, embedUrl);
-      var g2 = html2.match(/(https?:\/\/[^\s"'<>]+\.mp4[^\s"'<>]*)/);
-      return g2 ? g2[1] : "";
+      var g = dec.match(/(https?:\/\/[^\s"'<>]*streamtape[^\s"'<>]*\/get_video\?[^\s"'<>]+)/i);
+      if (g) return ensureStreamtapeUrl(g[1]);
+      return "";
     } catch (e) {
       return "";
     }
   }
 
-  // ok.ru: STATIC EXTRACTION DEAD (verified 2026-09-21: video/videoembed
-  // pages carry zero media even with session cookies; metadata needs
-  // authenticated XHR). Dropped like mega/hgcloud — app WebView only.
+  // ok.ru: [data-options] JSON -> flashvars.metadata/videos[]/hlsManifest.
+  // Structure mirrors the proven reference implementation.
+  function okRuEmbedUrl(value) {
+    var m = String(value || "").match(/\/(?:video|videoembed)\/(\d+)/i);
+    return m ? ("https://ok.ru/videoembed/" + m[1]) : "";
+  }
+
+  function okRuQuality(name) {
+    var n = String(name || "").toLowerCase();
+    if (n === "mobile") return "144p";
+    if (n === "lowest") return "240p";
+    if (n === "low") return "360p";
+    if (n === "sd") return "480p";
+    if (n === "hd") return "720p";
+    if (n === "full") return "1080p";
+    if (n === "quad") return "1440p";
+    if (n === "ultra") return "2160p";
+    return "";
+  }
+
+  async function resolveOk(embedUrl, bud) {
+    try {
+      var page = okRuEmbedUrl(embedUrl) || embedUrl;
+      if (!budDec(bud)) return null;
+      var html = await fetchText(page, siteUrl + "/", FIREFOX_MOBILE);
+      var re = /<[^>]+data-options\s*=\s*(?:"([^"]*)"|'([^']*)')[^>]*>/g, m;
+      var found = {};
+      var order = [];
+      while ((m = re.exec(html)) !== null) {
+        var raw = unescapeHtml(m[1] || m[2] || "");
+        var obj = null;
+        try {
+          obj = JSON.parse(raw);
+        } catch (e) {}
+        if (!obj) continue;
+        var meta = null;
+        try {
+          var fv = obj.flashvars;
+          var mstr = (fv && fv.metadata) || obj.metadata;
+          if (typeof mstr === "string") {
+            try {
+              meta = JSON.parse(mstr);
+            } catch (e2) {}
+          } else if (mstr) {
+            meta = mstr;
+          }
+        } catch (e) {}
+        if (!meta) continue;
+        var singles = ["hlsManifestUrl", "hlsMasterPlaylistUrl", "manifestUrl"];
+        for (var s = 0; s < singles.length; s++) {
+          var su = cleanTitle(meta[singles[s]] || "");
+          if (su && !found[su]) {
+            found[su] = true;
+            order.push({ url: su, q: "" });
+          }
+        }
+        var mov = meta.movie;
+        var vids = meta.videos || (mov && mov.videos) || [];
+        for (var v = 0; v < (vids instanceof Array ? vids.length : 0); v++) {
+          var vu = cleanTitle(vids[v].url || "");
+          if (!vu) continue;
+          var vl = vu.toLowerCase();
+          if (vl.indexOf("http://") !== 0 && vl.indexOf("https://") !== 0 && vu.indexOf("//") !== 0) continue;
+          if (vl.indexOf("youtube.com/") !== -1 || vl.indexOf("youtu.be/") !== -1) continue;
+          if (vu.indexOf("//") === 0) vu = "https:" + vu;
+          if (!found[vu]) {
+            found[vu] = true;
+            order.push({ url: vu, q: okRuQuality(vids[v].name || "") });
+          }
+        }
+        if (mov) {
+          var mu = [mov.hlsManifestUrl, mov.hlsMasterPlaylistUrl, mov.manifestUrl];
+          for (var mi = 0; mi < mu.length; mi++) {
+            var muu = cleanTitle(mu[mi] || "");
+            if (muu && !found[muu]) {
+              found[muu] = true;
+              order.push({ url: muu, q: "" });
+            }
+          }
+        }
+      }
+      if (!order.length) return null;
+      var quals = [];
+      for (var q = 0; q < order.length; q++) {
+        var h = 0;
+        var qm = String(order[q].q || "").match(/(\d+)/);
+        if (qm) h = parseInt(qm[1], 10) || 0;
+        quals.push({ label: order[q].q || ("Q" + (q + 1)), url: order[q].url, height: h });
+      }
+      quals.sort(function (a, b) { return b.height - a.height; });
+      var hasM3u8 = false;
+      for (var qi = 0; qi < quals.length; qi++) {
+        if (quals[qi].url.toLowerCase().indexOf(".m3u8") !== -1) hasM3u8 = true;
+      }
+      var out = [];
+      for (qi = 0; qi < quals.length; qi++) {
+        out.push({ label: quals[qi].label, url: quals[qi].url, height: quals[qi].height, isDefault: qi === 0,
+          headers: { "Referer": page, "User-Agent": FIREFOX_MOBILE } });
+        rememberMedia(quals[qi].url, page);
+      }
+      return { type: hasM3u8 ? "m3u8" : "mp4", qualities: out };
+    } catch (e) {
+      return null;
+    }
+  }
 
   // drive: passthrough only when the share link is alive (many are
   // deleted: "Page Not Found"). 1 cheap GET, fail-closed.
@@ -368,17 +555,32 @@ function createSource(api, config) {
     return String(url || "").toLowerCase().indexOf("drive.google") !== -1;
   }
 
-  // muilt: mirror first (superset: 12 links incl. drive), official fallback.
-  // Saves one fetch per episode on slow networks (12s bridge timeouts).
-  async function fetchMuiltLinks(n, bud) {
+  // muilt: entry URL in 3 encodings first (raw, %5C, slash) like the
+  // reference client, then mirror (superset) + official fallback.
+  // Saves fetches on slow networks (12s bridge timeouts).
+  async function fetchMuiltLinks(n, bud, entryUrl) {
     var seen = {};
     var out = [];
     // NOTE: official mirror lives on siteUrl (/la/...), NOT under baseUrl
     // (/anime/public/la/... 404s). ALT_API is the a-reslayer mirror.
-    var urls = [
-      ALT_API + "?n=" + encodeURIComponent(n),
-      siteUrl + "/la/public/api/f2?n=" + encodeURIComponent(n)
-    ];
+    var cands = [];
+    if (entryUrl) {
+      cands.push(entryUrl);
+      if (entryUrl.indexOf("\\") !== -1) {
+        cands.push(entryUrl.split("\\").join("%5C"));
+        cands.push(entryUrl.split("\\").join("/"));
+      }
+    }
+    cands.push(ALT_API + "?n=" + encodeURIComponent(n));
+    cands.push(siteUrl + "/la/public/api/f2?n=" + encodeURIComponent(n));
+    var urls = [];
+    for (var c = 0; c < cands.length; c++) {
+      if (!seen[cands[c]]) {
+        seen[cands[c]] = true;
+        urls.push(cands[c]);
+      }
+    }
+    seen = {};
     for (var i = 0; i < urls.length; i++) {
       try {
         if (bud && !budDec(bud)) break;
@@ -427,25 +629,37 @@ function createSource(api, config) {
     return "سيرفر";
   }
 
-  async function decodeEpisodeServers(aid, num) {
+  async function decodeEpisodeServers(aid, num, eid) {
     var out = [];
     try {
       var eps = await fetchEpisodes(aid);
       var ep = null;
-      for (var i = 0; i < eps.length; i++) {
-        if (String(eps[i].episode_number) === String(num)) {
-          ep = eps[i];
-          break;
+      if (eid) {
+        for (var e = 0; e < eps.length; e++) {
+          if (String(eps[e].episode_id) === String(eid)) {
+            ep = eps[e];
+            break;
+          }
+        }
+      }
+      if (!ep) {
+        for (var i = 0; i < eps.length; i++) {
+          if (String(eps[i].episode_number) === String(num)) {
+            ep = eps[i];
+            break;
+          }
         }
       }
       if (!ep) return [];
       var muiltN = "";
+      var muiltEntry = "";
       var urls = ep.episode_urls || [];
       for (var u = 0; u < urls.length; u++) {
         var nm = (urls[u] && urls[u].episode_server_name) || "";
         if (nm === "muilt" && urls[u].episode_url) {
+          if (!muiltEntry) muiltEntry = String(urls[u].episode_url);
           var mm = String(urls[u].episode_url).match(/[?&]n=([^&]+)/);
-          if (mm) muiltN = decodeURIComponent(mm[1]);
+          if (mm && !muiltN) muiltN = decodeURIComponent(mm[1]);
         }
       }
       if (!muiltN) return [];
@@ -463,7 +677,7 @@ function createSource(api, config) {
           return false;
         }
       }
-      var links = await fetchMuiltLinks(muiltN, bud);
+      var links = await fetchMuiltLinks(muiltN, bud, muiltEntry);
       // Cost order: drive liveness-check is free-ish (no media fetch).
       // Then mediafire (proven pattern) before lander-prone mixdrop.
       function linkRank(u) {
@@ -514,7 +728,32 @@ function createSource(api, config) {
           } else if (label === "streamtape") {
             durl = await resolveStreamtape(link, bud);
           } else if (label === "ok") {
-            // Static ok.ru extraction verified dead (needs session XHR).
+            var okr = await resolveOk(link, bud);
+            if (okr && okr.qualities && okr.qualities.length) {
+              var qh = [];
+              for (var qi = 0; qi < okr.qualities.length; qi++) {
+                qh.push({
+                  label: okr.qualities[qi].label,
+                  url: okr.qualities[qi].url,
+                  height: okr.qualities[qi].height,
+                  isDefault: qi === 0,
+                  headers: okr.qualities[qi].headers || { "Referer": link, "User-Agent": FIREFOX_MOBILE }
+                });
+                rememberMedia(okr.qualities[qi].url, link);
+              }
+              out.push({
+                id: "sl-" + idx,
+                name: label,
+                embedUrl: link,
+                url: link,
+                type: okr.type,
+                quality: qh[0].label,
+                qualities: qh,
+                selectedQualityIndex: 0,
+                headers: { "Referer": link, "User-Agent": FIREFOX_MOBILE }
+              });
+              idx++;
+            }
             continue;
           } else {
             continue;
@@ -555,7 +794,7 @@ function createSource(api, config) {
         var query = (args && args.query) || "";
         if (!query.trim()) return [];
         var page = (args && args.page) || 1;
-        return await parseList(listUrl("anime_list", page, { anime_name: query }));
+        return await parseList(listUrl("filter", page, { anime_name: query }));
       } catch (e) {
         return [];
       }
@@ -627,7 +866,7 @@ function createSource(api, config) {
         var url = makeAbsolute((args && args.url) || "");
         var ref = parseEpisodeRef(url);
         if (!ref) return [];
-        return await decodeEpisodeServers(ref.aid, ref.num);
+        return await decodeEpisodeServers(ref.aid, ref.num, ref.eid);
       } catch (e) {
         return [];
       }
