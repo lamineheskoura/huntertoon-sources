@@ -1565,7 +1565,7 @@
             "id": "witanime",
             "sid": 134,
             "name": "ويت أنمي (WitAnime)",
-            "version": "1.3.0",
+            "version": "1.3.1",
             "enabled": true,
             "status": "beta",
             "base_url": "https://witanime.site",
@@ -1581,7 +1581,7 @@
             },
             "script": {
                 "url": "sources/witanime/source.js",
-                "sha256": "1FCA466DADDB0F7A1E270D4D7330F05DC8CEB443DB7BFDACAFDBC6D565E37A69",
+                "sha256": "4F0BD48145558160076111301D973439CE547F3B7CA170215858B6FD25B327B2",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1603,14 +1603,14 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "WitAnime - Arabic anime source on witanime.site (Laravel Livewire). Browse/movies cards, suggest search, anime+movie details, native direct-mp4 episode servers (4shared/mp4upload/videa).",
-                "changelog": "v1.3.0: native-only servers — direct mp4 for 4shared/mp4upload/videa (RC4 XML chain)/ok-flashvars; drop unresolvable gates; 12s deadline."
+                "changelog": "v1.3.1: honest embed broadcast — failed resolutions emit live gate + reason instead of dropping; DROP/budget/deadline untouched. v1.3.0: native-only servers — direct mp4 for 4shared/mp4upload/videa (RC4 XML chain)/ok-flashvars; drop unresolvable gates; 12s deadline."
             }
         },
         "anime4up": {
             "id": "anime4up",
             "sid": 135,
             "name": "أنمي فور أب (Anime4up)",
-            "version": "1.3.0",
+            "version": "1.3.1",
             "enabled": true,
             "status": "beta",
             "base_url": "https://w1.anime4up.rest",
@@ -1626,7 +1626,7 @@
             },
             "script": {
                 "url": "sources/anime4up/source.js",
-                "sha256": "F23A59F2BF78D1A5437409CBD33F45DB6D31659C825249F92DB0D6DB8A88EF1E",
+                "sha256": "89BD61B4E3A7F2E69DF7D218B14C41C8EF8191DDEAC2399C99A4585D05DD9B64",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1648,14 +1648,14 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Anime4up - Arabic anime WordPress source (Anime4up v1.0 theme). Homepage cards, WP search, anime details with DOM episode list incl. load-more walk, direct data-watch servers (megamax/voe/videa/uqload/doodstream/mp4upload).",
-                "changelog": "v1.3.0: embed allow-list (drive/filemoon only), 4shared/drive/vidbem tiers, leak-proof emit filter. — direct HLS/mp4 for S1S2/mp4upload/uqload/voe/dood/videa/vk with cost-order resolution; drop share4max/rubyvidhub."
+                "changelog": "v1.3.1: honest embed broadcast (ok-no-resolver, vk-unresolved, tier-unresolved) + vk redirect fix + ok.ru in okHost; budgets/dead-lists untouched. v1.3.0: embed allow-list (drive/filemoon only), 4shared/drive/vidbem tiers, leak-proof emit filter."
             }
         },
         "animeslayer": {
             "id": "animeslayer",
             "sid": 136,
             "name": "أنمي سلاير (AnimeSlayer)",
-            "version": "1.3.0",
+            "version": "1.3.1",
             "enabled": true,
             "status": "beta",
             "base_url": "https://anslayer.com/anime/public",
@@ -1671,7 +1671,7 @@
             },
             "script": {
                 "url": "sources/animeslayer/source.js",
-                "sha256": "CD4FF14365925CB1F5FAB127AC557AE7D4702413CCB15DC014D223EB83977F96",
+                "sha256": "496C854B6408A6A3580E1AD8AB1610DADF77F93A0ADC95C376CAC9BCF30D8392",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1693,7 +1693,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "AnimeSlayer - Arabic anime source on anslayer.com public JSON API. Lists, search, details, episodes, native direct-mp4 servers plus drive passthrough.",
-                "changelog": "v1.3.0: Kotatsu-faithful extractors (ok data-options, streamtape assembly, mediafire API), true pagination, mp4 HEAD-probe gate, real type/status/season filters."
+                "changelog": "v1.3.1: vk passthrough + failed-ok honest embed (reason) instead of dropping; drop-list/budget/deadline untouched. v1.3.0: Kotatsu-faithful extractors (ok data-options, streamtape assembly, mediafire API), true pagination, mp4 HEAD-probe gate."
             }
         },
         "anime3rb": {

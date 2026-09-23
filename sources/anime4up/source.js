@@ -874,7 +874,31 @@ function createSource(api, config) {
   async function resolveVk(embedUrl, bud) {
     try {
       if (!budDec(bud)) return null;
-      var html = await fetchHtml(embedUrl);
+      const vkLiveReferer = baseUrl + "/";
+      var vkFinalUrl = embedUrl;
+      var vkPrefetched = "";
+      try {
+        if (api.http) {
+          const vkInitRes = await api.http(embedUrl, { method: "GET", headers: mergeHeaders(defaultHeaders, { "Referer": vkLiveReferer }) });
+          if (vkInitRes) {
+            const vkInitHeaders = vkInitRes.headers || {};
+            var vkLoc = "";
+            for (const vkHk in vkInitHeaders) {
+              if (String(vkHk).toLowerCase() === "location") vkLoc = vkInitHeaders[vkHk];
+            }
+            if (vkLoc) {
+              vkFinalUrl = makeAbsolute(String(vkLoc));
+            } else if (vkInitRes.body) {
+              vkPrefetched = vkInitRes.body;
+            }
+          }
+        }
+      } catch (e) {}
+      if (!vkPrefetched || vkPrefetched.indexOf("mp4_") === -1) {
+        if (vkFinalUrl !== embedUrl && !budDec(bud)) return null;
+        vkPrefetched = await fetchHtml(vkFinalUrl, { "Referer": vkLiveReferer });
+      }
+      var html = vkPrefetched;
       var re = /mp4_(\d+)"\s*:\s*"(https:[^"]+)"/g, m;
       var cands = [];
       while ((m = re.exec(html)) !== null) {
@@ -1030,6 +1054,13 @@ function createSource(api, config) {
       // stays in value order (tierOf). Display order != resolution order.
       // Cost order: mp4(1) 4shared(1) S1(2) uqload(2) drive(1) voe(2)
       // dood(2) videa(2) vk(1) vidbem(1-2) filemoon(0).
+      // W-S1 honest embed reasons (live embedUrl, not dropped, truthful).
+      const embedReasonDrive = "drive-alive";
+      const embedReasonFilemoon = "filemoon-passthrough";
+      const embedReasonOk = "ok-no-resolver";
+      const embedReasonVkFallback = "vk-unresolved";
+      const embedReasonTierFallback = "tier-unresolved";
+      const okHostToken = "ok.ru";
       var costOrder = [1, 7, 0, 2, 8, 3, 4, 5, 6, 9, 10];
       var s1tried = 0;
       for (var ci = 0; ci < costOrder.length && bud.n > 0; ci++) {
@@ -1147,13 +1178,40 @@ function createSource(api, config) {
           }
         }
       }
+      // W-S1: honest embed fallback (ok has no resolver; vk/tier failures keep live embed).
+      for (var fs = 0; fs < out.length; fs++) {
+        if (out[fs].directUrl || (out[fs].qualities && out[fs].qualities.length)) continue;
+        if (!out[fs].embedUrl) continue;
+        var ft = tierOf(out[fs].name, out[fs].embedUrl);
+        const fsUrl = String(out[fs].embedUrl || "").toLowerCase();
+        if (out[fs].type === "embed" && (ft === 8 || ft === 10) && !out[fs].dropped) {
+          out[fs].embedReason = (ft === 8 ? embedReasonDrive : embedReasonFilemoon);
+          continue;
+        }
+        if (fsUrl.indexOf(okHostToken) !== -1 && !out[fs].dropped) {
+          out[fs].type = "embed";
+          out[fs].embedReason = embedReasonOk;
+          continue;
+        }
+        if (out[fs].dropped && out[fs].embedUrl) {
+          out[fs].dropped = false;
+          out[fs].type = "embed";
+          out[fs].embedReason = (ft === 6 ? embedReasonVkFallback : embedReasonTierFallback);
+        }
+      }
       var ordered = [];
       for (var q = 0; q < out.length; q++) {
         // Embeds pass ONLY for app-extracted hosts (drive/filemoon tiers);
         // everything else must carry direct media (owner rule).
+        // W-S1: plus honest embed fallback (ok no-resolver, vk/tier unresolved) with named reason.
         var t = tierOf(out[q].name, out[q].embedUrl);
-        var hasMedia = out[q].directUrl || (out[q].qualities && out[q].qualities.length) ||
-          (out[q].type === "embed" && (t === 8 || t === 10) && !out[q].dropped);
+        const hasDirectMedia = out[q].directUrl || (out[q].qualities && out[q].qualities.length);
+        const isDriveFilemoonEmbed = (out[q].type === "embed" && (t === 8 || t === 10) && !out[q].dropped);
+        const isHonestEmbed = (out[q].type === "embed" && out[q].embedUrl && !out[q].dropped && out[q].embedReason &&
+          (out[q].embedReason === embedReasonDrive || out[q].embedReason === embedReasonFilemoon ||
+           out[q].embedReason === embedReasonOk || out[q].embedReason === embedReasonVkFallback ||
+           out[q].embedReason === embedReasonTierFallback));
+        var hasMedia = hasDirectMedia || isDriveFilemoonEmbed || isHonestEmbed;
         if (!out[q].dropped && hasMedia) ordered.push(out[q]);
       }
       ordered.sort(function (a, b) {
@@ -1346,7 +1404,8 @@ function createSource(api, config) {
           u.indexOf("voe.") !== -1 || u.indexOf("videa.hu") !== -1 ||
           u.indexOf("vkvideo") !== -1 || u.indexOf("vk.com/") !== -1 ||
           u.indexOf("4shared.com") !== -1 || u.indexOf("k1c6x8p.shop") !== -1 ||
-          u.indexOf("3bnh2lt.shop") !== -1 || u.indexOf("vidbem") !== -1;
+          u.indexOf("3bnh2lt.shop") !== -1 || u.indexOf("vidbem") !== -1 ||
+          u.indexOf("ok.ru") !== -1;
         if (!okHost) return null;
         return {
           url: serverUrl,

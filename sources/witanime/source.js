@@ -779,7 +779,6 @@ function createSource(api, config) {
             continue;
           }
         } catch (e) {}
-        if (!durl) continue;
         // Referer must be same-host, never the gate or source domain
         // (both 403 live; root referers proven 206).
         var nl2 = String(it.label || "").toLowerCase();
@@ -788,6 +787,22 @@ function createSource(api, config) {
         else if (nl2.indexOf("4shared") !== -1) ref = "https://www.4shared.com/";
         else if (nl2.indexOf("mp4upload") !== -1) ref = "https://www.mp4upload.com/";
         else if (isOkLabel(it.label)) ref = "https://ok.ru/";
+        if (!durl) {
+          const embedReason = nl2.indexOf("videa") !== -1 ? "videa_resolve_failed" : isMp4Capable(it.label) ? "mp4_extract_failed" : "ok_extract_failed";
+          const embedQuality = qualityOf(it.bucket) || qualityOf(it.name);
+          out.push({
+            id: it.token,
+            name: it.name,
+            embedUrl: it.gate,
+            url: it.gate,
+            directUrl: "",
+            type: "embed",
+            quality: embedQuality,
+            headers: { "Referer": ref, "User-Agent": userAgent },
+            reason: embedReason
+          });
+          continue;
+        }
         rememberMedia(durl, ref);
         out.push({
           id: it.token,

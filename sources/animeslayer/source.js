@@ -934,6 +934,22 @@ function createSource(api, config) {
             });
             idx++;
             continue;
+          } else if (label === "vk") {
+            // Vk is resolved natively by the app extractor: passthrough
+            // like drive/filemoon (no resolve here).
+            const vkReason = "vk_passthrough";
+            out.push({
+              id: "vk-" + idx,
+              name: "vk",
+              embedUrl: link,
+              url: link,
+              type: "embed",
+              quality: null,
+              headers: { "Referer": link, "User-Agent": FIREFOX_MOBILE },
+              reason: vkReason
+            });
+            idx++;
+            continue;
           } else if (label === "mediafire") {
             durl = await resolveMediafire(link, bud);
           } else if (label === "mixdrop") {
@@ -966,7 +982,21 @@ function createSource(api, config) {
                 headers: { "Referer": link, "User-Agent": FIREFOX_MOBILE }
               });
               idx++;
+              continue;
             }
+            // Honest fallback: resolve failed -> keep live embed, no fake direct.
+            const okReason = "ok_resolve_failed";
+            out.push({
+              id: "ok-" + idx,
+              name: label,
+              embedUrl: link,
+              url: link,
+              type: "embed",
+              quality: null,
+              headers: { "Referer": link, "User-Agent": FIREFOX_MOBILE },
+              reason: okReason
+            });
+            idx++;
             continue;
           } else {
             continue;
