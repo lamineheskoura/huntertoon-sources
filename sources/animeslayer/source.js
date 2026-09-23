@@ -861,7 +861,6 @@ function createSource(api, config) {
           if (mm && !muiltN) muiltN = decodeURIComponent(mm[1]);
         }
       }
-      if (!muiltN) return [];
       // Resolution budget max 14 fetches + soft 12s deadline.
       var bud = { n: 14 };
       var t0 = 0;
@@ -876,7 +875,21 @@ function createSource(api, config) {
           return false;
         }
       }
-      var links = await fetchMuiltLinks(muiltN, bud, muiltEntry);
+      var links = [];
+      if (muiltN) {
+        links = await fetchMuiltLinks(muiltN, bud, muiltEntry);
+      } else {
+        // No muilt?n= gate: accept any non-empty episode_urls live link
+        // (first valid http entry) instead of instant []; fail-closed
+        // when no signal at all.
+        var fallbackCandidates = [];
+        for (u = 0; u < urls.length; u++) {
+          var fallbackRaw = urls[u] && urls[u].episode_url ? String(urls[u].episode_url) : "";
+          if (fallbackRaw && fallbackRaw.indexOf("http") === 0) fallbackCandidates.push(fallbackRaw);
+        }
+        if (!fallbackCandidates.length) return [];
+        links = fallbackCandidates;
+      }
       // Cost order: drive liveness-check is free-ish (no media fetch).
       // Then mediafire (proven pattern) before lander-prone mixdrop.
       function linkRank(u) {
@@ -999,6 +1012,21 @@ function createSource(api, config) {
             idx++;
             continue;
           } else {
+            // Honest passthrough: muilt host without dedicated resolver
+            // (voe/videa/dood/mp4upload/uqload/...) stays playable via
+            // native embed instead of being dropped.
+            var unresolvedReason = "unresolved_passthrough";
+            out.push({
+              id: label + "-" + idx,
+              name: label,
+              embedUrl: link,
+              url: link,
+              type: "embed",
+              quality: null,
+              headers: { "Referer": link, "User-Agent": FIREFOX_MOBILE },
+              reason: unresolvedReason
+            });
+            idx++;
             continue;
           }
         } catch (e) {}
