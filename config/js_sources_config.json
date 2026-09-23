@@ -1,8 +1,8 @@
 {
-    "version": "1.36.0",
+    "version": "1.37.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.09.21.5",
+    "manifest_version": "2026.09.21.6",
     "generated_at": "2026-09-04T14:30:00Z",
     "last_updated": "2026-09-21T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -1610,7 +1610,7 @@
             "id": "anime4up",
             "sid": 135,
             "name": "أنمي فور أب (Anime4up)",
-            "version": "1.2.0",
+            "version": "1.3.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://w1.anime4up.rest",
@@ -1626,7 +1626,7 @@
             },
             "script": {
                 "url": "sources/anime4up/source.js",
-                "sha256": "B14133F2C526D35B6FD4E1C83484D3C57202685B3D7A973F3991DD61EA189BBF",
+                "sha256": "F23A59F2BF78D1A5437409CBD33F45DB6D31659C825249F92DB0D6DB8A88EF1E",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1648,14 +1648,14 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Anime4up - Arabic anime WordPress source (Anime4up v1.0 theme). Homepage cards, WP search, anime details with DOM episode list incl. load-more walk, direct data-watch servers (megamax/voe/videa/uqload/doodstream/mp4upload).",
-                "changelog": "v1.2.0: native-only servers — direct HLS/mp4 for S1S2/mp4upload/uqload/voe/dood/videa/vk with cost-order resolution; drop share4max/rubyvidhub."
+                "changelog": "v1.3.0: embed allow-list (drive/filemoon only), 4shared/drive/vidbem tiers, leak-proof emit filter. — direct HLS/mp4 for S1S2/mp4upload/uqload/voe/dood/videa/vk with cost-order resolution; drop share4max/rubyvidhub."
             }
         },
         "animeslayer": {
             "id": "animeslayer",
             "sid": 136,
             "name": "أنمي سلاير (AnimeSlayer)",
-            "version": "1.2.0",
+            "version": "1.3.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://anslayer.com/anime/public",
@@ -1671,7 +1671,7 @@
             },
             "script": {
                 "url": "sources/animeslayer/source.js",
-                "sha256": "8FF8CC668196716A348F6CAF67C32423F4872867B1E2309A5F98B3D798B29903",
+                "sha256": "E2C0C3B5DB549E96CC4DFD60E63DE22BDB036E7BB7FAE138A9DE80BE68AE4349",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1693,7 +1693,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "AnimeSlayer - Arabic anime source on anslayer.com public JSON API. Lists, search, details, episodes, native direct-mp4 servers plus drive passthrough.",
-                "changelog": "v1.2.0: true pagination p1/p2/p3-stop, per-list dedup, mp4 HEAD-probe gate, ok/videos + single-slash fixes."
+                "changelog": "v1.3.0: Kotatsu-faithful extractors (ok data-options, streamtape assembly, mediafire API), true pagination, mp4 HEAD-probe gate."
             }
         }
     }

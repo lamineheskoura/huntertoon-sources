@@ -55,6 +55,14 @@ function createSource(api, config) {
     return html;
   }
 
+  async function fetchText(url, referer, ua) {
+    return await fetchHtml(url, {
+      "Referer": referer || baseUrl + "/",
+      "User-Agent": ua || userAgent,
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+    });
+  }
+
   // Pure-JS helpers (QuickJS-safe: var/Math/String/regex/atob only).
 
   function randStr(n) {
@@ -607,6 +615,84 @@ function createSource(api, config) {
     }
   }
 
+  // Dean Edwards packer unpack (vidbem/filemoon family). Pure regex+base36.
+  function unpackPacker(src) {
+    try {
+      var m = String(src || "").match(/eval\(function\(p,a,c,k,e,d\)[\s\S]*?\}\('([\s\S]*?)',(\d+),(\d+),'([\s\S]*?)'\.split\('\|'\)/);
+      if (!m) return "";
+      var p = m[1], a = parseInt(m[2], 10) || 36, c = parseInt(m[3], 10) || 0;
+      var k = m[4].split("|");
+      function enc(n) {
+        var s = "";
+        do {
+          var d = n % a;
+          s = (d > 35 ? String.fromCharCode(d + 29) : d.toString(36)) + s;
+          n = Math.floor(n / a);
+        } while (n > 0);
+        return s || "0";
+      }
+      while (c--) {
+        if (k[c]) {
+          var re = new RegExp("\\b" + enc(c) + "\\b", "g");
+          p = p.replace(re, k[c]);
+        }
+      }
+      return p;
+    } catch (e) {
+      return "";
+    }
+  }
+
+  // 4shared page -> direct file (same shapes as witanime gates).
+  async function resolve4sharedPage(embedUrl, bud) {
+    try {
+      if (!budDec(bud)) return "";
+      var html = await fetchHtml(embedUrl);
+      var m = html.match(/https?:\/\/dc\d+\.4shared\.com\/[^"'\s<>]+/);
+      if (m) return withMp4Suffix(m[0]);
+      var p = html.match(/player\.src\(\{\s*[^}]*src:\s*"([^"]+)"/) || html.match(/src:\s*"([^"]+\.mp4[^"]*)"/);
+      if (p) return withMp4Suffix(p[1]);
+      var g = html.match(/https?:\/\/[^\s"'<>]+\.mp4[^\s"'<>]*/);
+      return g ? g[0] : "";
+    } catch (e) {
+      return "";
+    }
+  }
+
+  // drive: alive-gate passthrough (many shares deleted).
+  async function driveAlivePage(url, bud) {
+    try {
+      if (!budDec(bud)) return false;
+      var html = await fetchText(url, "https://drive.google.com/");
+      if (!html || html.length < 2000) return false;
+      if (html.indexOf("Page Not Found") !== -1) return false;
+      if (html.indexOf("no longer available") !== -1) return false;
+      if (html.indexOf("cannot be found") !== -1) return false;
+      if (html.indexOf("/file/d/") === -1 && html.indexOf("downloadUrl") === -1 &&
+        html.indexOf("viewerng") === -1) return false;
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // vidbem (vidhide family): packer -> sources file.
+  async function resolveVidbem(embedUrl, bud) {
+    try {
+      if (!budDec(bud)) return "";
+      var html = await fetchHtml(embedUrl);
+      var up = unpackPacker(html);
+      var src = up || html;
+      var m = src.match(/sources\s*:\s*\[\s*\{\s*file\s*:\s*"([^"]+)"/) ||
+        src.match(/file\s*:\s*"(https?:[^"]+?\.mp4[^"]*)"/) ||
+        src.match(/(https?:\/\/[^\s"'<>]+\.mp4[^\s"'<>]*)/);
+      if (!m) return "";
+      return withMp4Suffix(m[1] || m[0]);
+    } catch (e) {
+      return "";
+    }
+  }
+
   function withMp4Suffix(url) {
     var u = String(url || "");
     if (!u) return "";
@@ -832,6 +918,7 @@ function createSource(api, config) {
     if (u.indexOf("videa.hu") !== -1) return "https://videa.hu/";
     if (u.indexOf("4shared.com") !== -1) return "https://www.4shared.com/";
     if (u.indexOf("vkvideo.ru") !== -1 || u.indexOf("okcdn.ru") !== -1) return "https://vkvideo.ru/";
+    if (u.indexOf("drive.google") !== -1) return "https://drive.google.com/";
     if (u.indexOf("k1c6x8p.shop") !== -1 || u.indexOf("3bnh2lt.shop") !== -1) return baseUrl + "/";
     return "";
   }
@@ -902,14 +989,13 @@ function createSource(api, config) {
           qualities: []
         });
       }
-      // Owner rule: list ONLY natively playable (direct) servers.
-      // Dropped with zero direct proof (verified live 2026-09-21):
-      // share4max (embed aggregator), rubyvidhub (deleted/expired),
-      // mega/hgcloud/yonaplay/soraplay/google (unknown/unplayable targets),
-      // download buckets (stream-only app). tierOf==99 never resolves.
-      // Resolution budget: 14 extra fetches max + soft 12s deadline;
-      // resolved-so-far is returned (all listed = direct, owner rule).
-      var bud = { n: 14 };
+      // Owner rule: list ONLY natively playable (direct) servers, plus
+      // app-extracted passthroughs (drive/filemoon: the app owns packer
+      // + jwplayer extractors for them). Everything else with zero direct
+      // proof is dropped (verified live 2026-09-21/22).
+      // Resolution budget: 16 extra fetches max + soft 12s deadline;
+      // resolved-so-far is returned (owner rule).
+      var bud = { n: 16 };
       var t0 = 0;
       try {
         t0 = new Date().getTime();
@@ -934,12 +1020,17 @@ function createSource(api, config) {
         if (n.indexOf("videa") !== -1 || u.indexOf("videa") !== -1) return 5;
         if (n.indexOf("vkvideo") !== -1 || u.indexOf("vkvideo") !== -1 ||
           u.indexOf("vk.com/") !== -1 || n === "vk") return 6;
+        if (n.indexOf("4shared") !== -1 || u.indexOf("4shared") !== -1) return 7;
+        if (n.indexOf("drive") !== -1 || u.indexOf("drive.google") !== -1) return 8;
+        if (n.indexOf("vidbem") !== -1 || u.indexOf("vidbem") !== -1) return 9;
+        if (n.indexOf("filemoon") !== -1 || u.indexOf("filemoon") !== -1) return 10;
         return 99;
       }
       // Resolve cheapest-proven first (deadline economics); emission below
       // stays in value order (tierOf). Display order != resolution order.
-      // Cost order: mp4(1) S1S2(2+2) uqload(2) voe(2) dood(2) videa(2) vk(1).
-      var costOrder = [1, 0, 2, 3, 4, 5, 6];
+      // Cost order: mp4(1) 4shared(1) S1(2) uqload(2) drive(1) voe(2)
+      // dood(2) videa(2) vk(1) vidbem(1-2) filemoon(0).
+      var costOrder = [1, 7, 0, 2, 8, 3, 4, 5, 6, 9, 10];
       var s1tried = 0;
       for (var ci = 0; ci < costOrder.length && bud.n > 0; ci++) {
         var tier = costOrder[ci];
@@ -1026,6 +1117,30 @@ function createSource(api, config) {
               } else {
                 out[s].dropped = true;
               }
+            } else if (tier === 7) {
+              var f4 = await resolve4sharedPage(out[s].embedUrl, bud);
+              if (f4) {
+                out[s].directUrl = f4;
+                out[s].type = "mp4";
+              } else {
+                out[s].dropped = true;
+              }
+            } else if (tier === 8) {
+              if (await driveAlivePage(out[s].embedUrl, bud)) {
+                out[s].type = "embed";
+              } else {
+                out[s].dropped = true;
+              }
+            } else if (tier === 9) {
+              var vb = await resolveVidbem(out[s].embedUrl, bud);
+              if (vb) {
+                out[s].directUrl = vb;
+                out[s].type = "mp4";
+              } else {
+                out[s].dropped = true;
+              }
+            } else if (tier === 10) {
+              out[s].type = "embed";
             }
           } catch (e) {
             out[s].dropped = true;
@@ -1034,7 +1149,11 @@ function createSource(api, config) {
       }
       var ordered = [];
       for (var q = 0; q < out.length; q++) {
-        var hasMedia = out[q].directUrl || (out[q].qualities && out[q].qualities.length);
+        // Embeds pass ONLY for app-extracted hosts (drive/filemoon tiers);
+        // everything else must carry direct media (owner rule).
+        var t = tierOf(out[q].name, out[q].embedUrl);
+        var hasMedia = out[q].directUrl || (out[q].qualities && out[q].qualities.length) ||
+          (out[q].type === "embed" && (t === 8 || t === 10) && !out[q].dropped);
         if (!out[q].dropped && hasMedia) ordered.push(out[q]);
       }
       ordered.sort(function (a, b) {
@@ -1210,6 +1329,25 @@ function createSource(api, config) {
       try {
         var serverUrl = makeAbsolute((args && (args.serverUrl || args.url)) || "");
         if (!serverUrl) return null;
+        // Same allow-list as getEpisodeServers: drive/filemoon passthrough
+        // or direct media only. Anything else -> null (no fake embeds).
+        var dead = ["share4max", "rubyvidhub", "streamruby", "mega", "hgcloud",
+          "yonaplay", "soraplay", "google", "fembed", "uptostream", "jawcloud",
+          "streamvid", "streamhub", "highstream", "vidlox", "tune.pk",
+          "krakenfiles", "pixeldrain"];
+        var ul = serverUrl.toLowerCase();
+        for (var di = 0; di < dead.length; di++) {
+          if (ul.indexOf(dead[di]) !== -1) return null;
+        }
+        var u = serverUrl.toLowerCase();
+        var okHost = u.indexOf("drive.google") !== -1 || u.indexOf("filemoon") !== -1 ||
+          u.indexOf("mp4upload.com") !== -1 || u.indexOf("dood") !== -1 ||
+          u.indexOf("playmogo") !== -1 || u.indexOf("uqload") !== -1 ||
+          u.indexOf("voe.") !== -1 || u.indexOf("videa.hu") !== -1 ||
+          u.indexOf("vkvideo") !== -1 || u.indexOf("vk.com/") !== -1 ||
+          u.indexOf("4shared.com") !== -1 || u.indexOf("k1c6x8p.shop") !== -1 ||
+          u.indexOf("3bnh2lt.shop") !== -1 || u.indexOf("vidbem") !== -1;
+        if (!okHost) return null;
         return {
           url: serverUrl,
           type: "embed",

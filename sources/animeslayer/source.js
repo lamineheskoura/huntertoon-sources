@@ -321,7 +321,8 @@ function createSource(api, config) {
 
   // ---- direct resolvers (native playback only, fail-closed) ----
 
-  // mediafire: kDownloadUrl/download host first, then page anchors.
+  // mediafire: kDownloadUrl/download host first, then page anchors,
+  // then get_info API + premium page (verified live pattern).
   // Anchors must exclude the file page itself (mediafire file URLs often
   // end with /filename.mp4 and would self-match as "direct").
   // Final URL is HEAD-probed (pages can masquerade as mp4 in URL).
@@ -341,6 +342,27 @@ function createSource(api, config) {
           var ah = am[1];
           if (ah.indexOf(".mp4") !== -1 && ah.indexOf("http") === 0 &&
             ah.indexOf("/file/") === -1 && ah !== pageUrl) direct = ah;
+        }
+      }
+      if (!direct) {
+        var km = String(pageUrl).match(/\/file\/([A-Za-z0-9]+)/);
+        if (km && budDec(bud)) {
+          try {
+            var apiBody = await fetchText("https://www.mediafire.com/api/file/get_info.php?quick_key=" +
+              encodeURIComponent(km[1]) + "&response_format=json", pageUrl, FIREFOX_MOBILE);
+            var jo = null;
+            try {
+              jo = JSON.parse(apiBody);
+            } catch (e) {}
+            var nd = jo && jo.response && jo.response.file_info && jo.response.file_info.links &&
+              jo.response.file_info.links.normal_download;
+            if (nd) {
+              var prem = await fetchText(nd, pageUrl, FIREFOX_MOBILE);
+              var pm = prem.match(/kDownloadUrl\s*=\s*"([^"]+)"/) ||
+                prem.match(/https?:\/\/download\d*\.mediafire\.com[^"'\s<>]+/);
+              if (pm) direct = pm[1] || pm[0];
+            }
+          } catch (e) {}
         }
       }
       if (!direct || direct.indexOf("http") !== 0) return "";
@@ -452,6 +474,8 @@ function createSource(api, config) {
   function streamtapeMirrors(embedUrl) {
     var out = [embedUrl];
     var u = String(embedUrl || "");
+    // Player variant /v/ is the proven pattern; try it alongside /e/.
+    if (u.indexOf("/e/") !== -1) out.push(u.replace("/e/", "/v/"));
     if (u.indexOf("streamtape.to/") !== -1) {
       out.push(u.replace("streamtape.to/", "streamtape.com/"));
     } else if (u.indexOf("streamtape.com/") !== -1) {
@@ -592,6 +616,41 @@ function createSource(api, config) {
               order.push({ url: muu, q: "" });
             }
           }
+        }
+      }
+      if (!order.length) {
+        // m.ok.ru fallback: data-video JSON -> videoSrc -> redirect mp4.
+        var idm = String(page).match(/\/(\d+)(?:[?#]|$)/);
+        if (idm && budDec(bud)) {
+          try {
+            var mob = await fetchText("https://m.ok.ru/video/" + idm[1], page, FIREFOX_MOBILE);
+            var dm = mob.match(/data-video\s*=\s*"([^"]+)"/) || mob.match(/data-video\s*=\s*'([^']+)'/);
+            if (dm) {
+              var dobj = null;
+              try {
+                dobj = JSON.parse(unescapeHtml(dm[1]));
+              } catch (e) {}
+              var vsrc = dobj && (dobj.videoSrc || dobj.video_src);
+              if (vsrc) {
+                var vhead = null;
+                try {
+                  vhead = await api.http(vsrc, {
+                    method: "HEAD",
+                    headers: { "User-Agent": FIREFOX_MOBILE, "Referer": page, "Accept": "*/*" }
+                  });
+                } catch (e) {}
+                var vfin = (vhead && vhead.headers) || {};
+                var vloc = "";
+                for (var vk in vfin) {
+                  if (String(vk).toLowerCase() === "location") vloc = vfin[vk];
+                }
+                if (vloc) order.push({ url: vloc, q: "" });
+                else if (vsrc.toLowerCase().indexOf(".mp4") !== -1) {
+                  order.push({ url: vsrc, q: "" });
+                }
+              }
+            }
+          } catch (e) {}
         }
       }
       if (!order.length) return null;
