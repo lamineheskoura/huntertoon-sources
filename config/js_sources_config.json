@@ -1,8 +1,8 @@
 {
-    "version": "1.39.0",
+    "version": "1.40.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.09.23.2",
+    "manifest_version": "2026.09.23.3",
     "generated_at": "2026-09-04T14:30:00Z",
     "last_updated": "2026-09-21T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -1784,6 +1784,51 @@
                 "author": "HunterToon Team",
                 "description": "AnimePhoenix - Arabic anime source (WordPress streamit). Signed JSON API lists/search/filters, full episode pills, first-party workers.dev direct servers.",
                 "changelog": "v1.0.0: initial JS source - API-first lists/search/filters with HTML fallbacks, details with FJ-EpPill episodes, inline data-server direct mirrors with #.mp4 suffix."
+            }
+        },
+        "animerco": {
+            "id": "animerco",
+            "sid": 139,
+            "name": "أنمي ركو (Animerco)",
+            "version": "1.0.0",
+            "enabled": true,
+            "status": "beta",
+            "base_url": "https://det.animerco.org",
+            "website_url": "https://det.animerco.org",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=det.animerco.org",
+            "requires_cf": false,
+            "image_referer": "https://det.animerco.org/",
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+                "Referer": "https://det.animerco.org/"
+            },
+            "script": {
+                "url": "sources/animerco/source.js",
+                "sha256": "6DD0260D1982023F78851DF9A930B11DA57C2C22555A4F87AEF368C3D7B600FD",
+                "entry": "createSource"
+            },
+            "capabilities": {
+                "content_types": [
+                    "anime"
+                ],
+                "supports_search": true,
+                "supports_filters": true,
+                "supports_lazy_chapters": false,
+                "supports_download": false,
+                "requires_cloudflare": false
+            },
+            "compatibility": {
+                "min_app_version": "1.4.0",
+                "runtime_api_version": "1.0"
+            },
+            "metadata": {
+                "language": "ar",
+                "adult": false,
+                "author": "HunterToon Team",
+                "description": "Animerco - Arabic anime source (WordPress Animerco/MiraiThemes). Server-rendered lists/search/genre filters, two-level details (hub-season-episodes), player_ajax+jwplayer chain with videas/mp4upload/yourupload/vidmoly direct extractors plus honest embed passthrough.",
+                "changelog": "v1.0.0: initial JS source - lists/search/filters, hub-season-episode details, player_ajax chain with 4 direct extractors and embed passthrough."
             }
         }
     }
