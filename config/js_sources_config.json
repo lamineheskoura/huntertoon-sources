@@ -1,8 +1,8 @@
 {
-    "version": "1.37.0",
+    "version": "1.38.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.09.21.6",
+    "manifest_version": "2026.09.23.1",
     "generated_at": "2026-09-04T14:30:00Z",
     "last_updated": "2026-09-21T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -1694,6 +1694,51 @@
                 "author": "HunterToon Team",
                 "description": "AnimeSlayer - Arabic anime source on anslayer.com public JSON API. Lists, search, details, episodes, native direct-mp4 servers plus drive passthrough.",
                 "changelog": "v1.3.0: Kotatsu-faithful extractors (ok data-options, streamtape assembly, mediafire API), true pagination, mp4 HEAD-probe gate."
+            }
+        },
+        "anime3rb": {
+            "id": "anime3rb",
+            "sid": 137,
+            "name": "أنمي 3rb (Anime3rb)",
+            "version": "1.0.0",
+            "enabled": true,
+            "status": "beta",
+            "base_url": "https://anime3rb.com",
+            "website_url": "https://anime3rb.com",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=anime3rb.com",
+            "requires_cf": false,
+            "image_referer": "https://anime3rb.com/",
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+                "Referer": "https://anime3rb.com/"
+            },
+            "script": {
+                "url": "sources/anime3rb/source.js",
+                "sha256": "C958474C4CAD431534CA3A891A08BCD20EAD5A76FF8145B926D5098AA83719D2",
+                "entry": "createSource"
+            },
+            "capabilities": {
+                "content_types": [
+                    "anime"
+                ],
+                "supports_search": true,
+                "supports_filters": true,
+                "supports_lazy_chapters": false,
+                "supports_download": false,
+                "requires_cloudflare": false
+            },
+            "compatibility": {
+                "min_app_version": "1.4.0",
+                "runtime_api_version": "1.0"
+            },
+            "metadata": {
+                "language": "ar",
+                "adult": false,
+                "author": "HunterToon Team",
+                "description": "Anime3rb - Arabic anime source (Laravel). Title lists with pages, genre/type filters, anime details with full episodes, first-party vid3rb servers with qualities.",
+                "changelog": "v1.0.0: initial JS source - lists, filters, details, vid3rb direct servers with qualities."
             }
         }
     }
