@@ -1671,7 +1671,7 @@
             },
             "script": {
                 "url": "sources/animeslayer/source.js",
-                "sha256": "E2C0C3B5DB549E96CC4DFD60E63DE22BDB036E7BB7FAE138A9DE80BE68AE4349",
+                "sha256": "FCCE36C2F9C265ECA6A0831C1A4B70830682B65CE02055BF2B407C2D5CDBCD97",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1693,7 +1693,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "AnimeSlayer - Arabic anime source on anslayer.com public JSON API. Lists, search, details, episodes, native direct-mp4 servers plus drive passthrough.",
-                "changelog": "v1.3.0: Kotatsu-faithful extractors (ok data-options, streamtape assembly, mediafire API), true pagination, mp4 HEAD-probe gate."
+                "changelog": "v1.3.0: Kotatsu-faithful extractors (ok data-options, streamtape assembly, mediafire API), true pagination, mp4 HEAD-probe gate, real type/status/season filters."
             }
         },
         "anime3rb": {

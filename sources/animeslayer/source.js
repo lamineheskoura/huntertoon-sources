@@ -21,16 +21,54 @@ function createSource(api, config) {
     "Client-Secret": CLIENT_SECRET
   };
 
-  var defaultGenres = [
-    "أكشن", "مغامرات", "كوميدي", "دراما", "خيال", "خيال علمي",
-    "رومانسي", "رعب", "غموض", "نفسي", "رياضي", "مدرسي",
-    "شونين", "شوجو", "سينين", "ايسيكاي", "قوة خارقة", "شريحة من الحياة",
-    "تاريخي", "عسكري", "فضاء", "ميكان", "موسيقى",
-    "لعبة", "ساخر", "مصاصي دماء", "شياطين", "سحر", "ساموراي",
-    "تحقيق", "بوليسي", "ايتشي", "حريم", "جوسي", "شوجو آي",
-    "إثارة", "تشويق", "خارق للطبيعة", "فنون قتالية", "أطفال"
-  ];
-  var defaultTypes = ["TV", "Movie", "ONA", "OVA", "Special"];
+  // Site taxonomy for display only (getGenresAndTypes). NOTE: the list
+  // endpoint honors anime_type/anime_status/anime_season but IGNORES any
+  // genre key (verified live: identical sets), so genre falls back below.
+  var GENRE_IDS = {
+    "اثارة": "36", "اطفال": "14", "اكشن": "1", "العاب": "11", "ايتشي": "9",
+    "ايسيكاي": "39", "بوليسي": "34", "تاريخي": "12", "جنون": "5", "جوسي": "38",
+    "حريم": "30", "خارق للطبيعة": "32", "خيال": "10", "خيال علمي": "23",
+    "دراما": "8", "رعب": "13", "رومانسي": "21", "رياضي": "27", "ساموراي": "20",
+    "سحر": "15", "سيارات": "3", "سينين": "37", "شريحة من الحياة": "31",
+    "شوجو": "24", "شونين": "25", "شياطين": "6", "عسكري": "33", "غموض": "7",
+    "فضاء": "26", "فنون قتالية": "16", "قوى خارقة": "28", "كوميدي": "4",
+    "محاكاة ساخرة": "19", "مدرسي": "22", "مصاص دماء": "29", "مغامرات": "2",
+    "موسيقى": "18", "ميكا": "17", "نفسي": "35"
+  };
+  var genreMap = null;
+
+  var TYPE_OK = ["TV", "ONA", "OVA", "Movie", "Music", "Special"];
+  var STATUS_OK = ["Currently Airing", "Finished Airing", "Not Yet Aired"];
+  var SEASON_OK = ["Winter", "Spring", "Summer", "Fall"];
+  var STATUS_AR = { "مستمر": "Currently Airing", "مكتمل": "Finished Airing", "قادم": "Not Yet Aired" };
+  var SEASON_AR = { "شتاء": "Winter", "ربيع": "Spring", "صيف": "Summer", "خريف": "Fall" };
+  var TYPE_AR = { "فيلم": "Movie" };
+
+  async function loadGenreMap() {
+    if (genreMap) return genreMap;
+    try {
+      var data = await apiGet("/animes/get-anime-dropdowns");
+      var gd = (data && data.response && data.response.anime_genres && data.response.anime_genres.data) || [];
+      if (gd.length) {
+        var m = {};
+        for (var i = 0; i < gd.length; i++) {
+          var on = cleanTitle(gd[i].option || "");
+          var ov = cleanTitle(String(gd[i].value != null ? gd[i].value : ""));
+          if (on && ov) m[on] = ov;
+        }
+        if (Object.keys(m).length) genreMap = m;
+      }
+    } catch (e) {}
+    if (!genreMap) genreMap = GENRE_IDS;
+    return genreMap;
+  }
+
+  function siteGenres() {
+    var out = [];
+    var src = genreMap || GENRE_IDS;
+    for (var k in src) out.push(k);
+    return out;
+  }
 
   // Per-file headers: the app NEVER reads server.headers (zero consumers)
   // and getVideoHeaders(url) is the only channel reaching the player.
@@ -1086,21 +1124,68 @@ function createSource(api, config) {
 
     async getFilteredManga(args) {
       try {
-        // No GET filter routes on this API (dropdowns are Livewire-side):
-        // downgrade to the browse list instead of returning nothing.
+        // Real filters (verified live): exact-case type, status, season.
+        // Genre has NO working key (verified identical sets) -> browse.
+        // Year is ignored server-side. Each filter is one 25-item page;
+        // page 2+ returns [] so scroll stops honestly.
         var page = (args && args.page) || 1;
+        if (page > 1) return [];
         if (page <= 1) seenFilter = {};
-        var type = page > 1 ? "latest_updated_episode_new" : "anime_list";
-        var extra = type === "latest_updated_episode_new" ? { order: "latest_first" } : null;
-        if (page > 2) return [];
-        return await parseList(listUrl(type, 1, extra), page, seenFilter);
+        var q = { list_type: "filter", limit: LIST_LIMIT, offset: 0 };
+        var type = cleanTitle((args && args.type) || "");
+        var status = cleanTitle((args && args.status) || "");
+        var season = cleanTitle((args && args.season) || "");
+        if (type) {
+          var tv = "";
+          for (var ti = 0; ti < TYPE_OK.length; ti++) {
+            if (type === TYPE_OK[ti]) {
+              tv = type;
+              break;
+            }
+          }
+          if (!tv && TYPE_AR[type]) tv = TYPE_AR[type];
+          if (tv) q.anime_type = tv;
+        }
+        if (status) {
+          var sv = STATUS_AR[status] || "";
+          if (!sv) {
+            for (var si = 0; si < STATUS_OK.length; si++) {
+              if (status === STATUS_OK[si]) {
+                sv = status;
+                break;
+              }
+            }
+          }
+          if (sv) q.anime_status = sv;
+        }
+        if (season) {
+          var sn = SEASON_AR[season] || "";
+          if (!sn) {
+            for (var ni = 0; ni < SEASON_OK.length; ni++) {
+              if (season === SEASON_OK[ni]) {
+                sn = season;
+                break;
+              }
+            }
+          }
+          if (sn) q.anime_season = sn;
+        }
+        var hasFilter = q.anime_type || q.anime_status || q.anime_season;
+        if (!hasFilter) return await browsePage(page);
+        return await parseList(listUrl("filter", 1, q), page, seenFilter);
       } catch (e) {
         return [];
       }
     },
 
     async getGenresAndTypes() {
-      return { genres: defaultGenres, types: defaultTypes };
+      try {
+        await loadGenreMap();
+        var t = ["TV", "Movie", "ONA", "OVA", "Special", "Music"];
+        return { genres: siteGenres(), types: t };
+      } catch (e) {
+        return { genres: siteGenres(), types: ["TV", "Movie", "ONA", "OVA", "Special", "Music"] };
+      }
     },
 
     async fetchMoreChapters() {
