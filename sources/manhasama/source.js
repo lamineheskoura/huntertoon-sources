@@ -1,7 +1,15 @@
 function createSource(api, config) {
   var baseUrl = (config && config.base_url) || "https://realmnovel.com";
   var apiUrl = baseUrl + "/api";
-  var userAgent = (config && config.user_agent) || "Dart/3.6 (dart:io)";
+  // User-Agent must satisfy TWO gates at once (verified live):
+  // 1. origin nginx 403s full-Chrome / okhttp / Dalvik / empty UAs on
+  //    /api/manga* — "Dart/3.6 (dart:io) Chrome/124" returns 200;
+  // 2. the app's fetch orchestrator overwrites any caller UA that does NOT
+  //    contain "Chrome/" with its own full-Chrome UA (which gate 1 blocks).
+  // So the UA keeps the Dart prefix AND a Chrome/ token suffix.
+  // NOTE: manifest config headers User-Agent must carry the same value —
+  // the app injects it as config.user_agent, which takes precedence here.
+  var userAgent = (config && config.user_agent) || "Dart/3.6 (dart:io) Chrome/124";
 
   // Device ID: the server nginx-filters the "manha-huntertoon-*" prefix
   // (static AND per-session "js-" IDs both 403 on /api/manga*), while a
