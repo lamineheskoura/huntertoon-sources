@@ -1,8 +1,8 @@
 {
-    "version": "1.42.0",
+    "version": "1.43.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.09.26.2",
+    "manifest_version": "2026.09.27.1",
     "generated_at": "2026-09-04T14:30:00Z",
     "last_updated": "2026-09-21T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -878,7 +878,7 @@
             "id": "manhasama",
             "sid": 119,
             "name": "مانها السماء (Manha Alsamaa)",
-            "version": "1.3.5",
+            "version": "1.3.6",
             "enabled": true,
             "status": "beta",
             "base_url": "https://realmnovel.com",
@@ -895,7 +895,7 @@
             },
             "script": {
                 "url": "sources/manhasama/source.js",
-                "sha256": "9BB5790AEAB09A82F373EBBBA65B3CA71A9AAC047357CF1AF86A8F104AD4973C",
+                "sha256": "7DEDA30C64B403CA141BAA2991BE0B3633649E00BCBE5AFB7F40ABAB40B9F343",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -918,7 +918,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Manha Alsamaa - Arabic manga/novel source using realmnovel.com API with guest auth",
-                "changelog": "v1.3.5: Dual-gate UA Dart/3.6 (dart:io) Chrome/124 (survives app orchestrator Chrome-rewrite + origin Chrome-block); v1.3.4: bare-UUID X-Device-ID + client-side genre filter"
+                "changelog": "v1.3.6: Explicit empty Referer (origin 403s ANY Referer on /api; app orchestrator injects site Referer when omitted); v1.3.5: dual-gate UA; v1.3.4: bare-UUID device ID"
             }
         },
         "kawaii": {

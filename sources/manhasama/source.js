@@ -31,7 +31,12 @@ function createSource(api, config) {
       "User-Agent": userAgent,
       "Accept": "application/json",
       "Authorization": "Bearer guest",
-      "X-Device-ID": deviceId
+      "X-Device-ID": deviceId,
+      // Empty (not absent!): origin nginx 403s /api/* requests carrying ANY
+      // Referer (verified live), while the app's fetch orchestrator injects
+      // "Referer: <site>/" whenever the caller omits it — so an explicit
+      // empty value is required to reach the wire referer-less (200).
+      "Referer": ""
     };
   }
 
