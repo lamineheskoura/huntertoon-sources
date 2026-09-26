@@ -1,8 +1,8 @@
 {
-    "version": "1.40.0",
+    "version": "1.41.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.09.23.3",
+    "manifest_version": "2026.09.26.1",
     "generated_at": "2026-09-04T14:30:00Z",
     "last_updated": "2026-09-21T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -878,7 +878,7 @@
             "id": "manhasama",
             "sid": 119,
             "name": "مانها السماء (Manha Alsamaa)",
-            "version": "1.3.3",
+            "version": "2.0.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://realmnovel.com",
@@ -895,13 +895,12 @@
             },
             "script": {
                 "url": "sources/manhasama/source.js",
-                "sha256": "34B4C91393DACFB5055B61BF0114A384BAE916ECD1674900B89CC86E5E1896D7",
+                "sha256": "3DDCE37D4C28A50A1FA853E048F13534376F2F90F67C25D7A8A094C5A38C9665",
                 "entry": "createSource"
             },
             "capabilities": {
                 "content_types": [
-                    "manga",
-                    "overlay"
+                    "novel"
                 ],
                 "supports_search": true,
                 "supports_filters": true,
@@ -917,8 +916,8 @@
                 "language": "ar",
                 "adult": false,
                 "author": "HunterToon Team",
-                "description": "Manha Alsamaa - Arabic manga/novel source using realmnovel.com API with guest auth",
-                "changelog": "v1.3.3: Fix chapter 429 by replacing colliding static X-Device-ID with unique per-session ID + one-shot retry on /api/chapters; accept flat {url,nextPage} in fetchMoreChapters"
+                "description": "Manha Alsamaa - Arabic novel source using realmnovel.com live novel site (JSON _more lists, novel pages, text chapters)",
+                "changelog": "v2.0.0: Full rewrite - realmnovel.com repurposed to text novels and /api/manga is origin-denied; lists/search/filters via /_more JSON, details via /novel pages with full-range chapters and paywall lock flags, text-reader chapters."
             }
         },
         "kawaii": {
@@ -1790,7 +1789,7 @@
             "id": "animerco",
             "sid": 139,
             "name": "أنمي ركو (Animerco)",
-            "version": "1.0.0",
+            "version": "1.0.1",
             "enabled": true,
             "status": "beta",
             "base_url": "https://det.animerco.org",
@@ -1806,7 +1805,7 @@
             },
             "script": {
                 "url": "sources/animerco/source.js",
-                "sha256": "6DD0260D1982023F78851DF9A930B11DA57C2C22555A4F87AEF368C3D7B600FD",
+                "sha256": "520C92B5C1E687937A162060FEEF7EA0BAB030099C9DE5342A47ADF90ECE6E8C",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1828,7 +1827,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Animerco - Arabic anime source (WordPress Animerco/MiraiThemes). Server-rendered lists/search/genre filters, two-level details (hub-season-episodes), player_ajax+jwplayer chain with videas/mp4upload/yourupload/vidmoly direct extractors plus honest embed passthrough.",
-                "changelog": "v1.0.0: initial JS source - lists/search/filters, hub-season-episode details, player_ajax chain with 4 direct extractors and embed passthrough."
+                "changelog": "v1.0.1: emit live REAL-EMBED in embedUrl (was watch page) plus honest per-host passthrough reasons for vidcache/sibnet/4meplayer/vmpx/megamax/vk/ok/videa/uqload; budgets/drop-lists untouched."
             }
         }
     }
