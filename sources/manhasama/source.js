@@ -3,20 +3,18 @@ function createSource(api, config) {
   var apiUrl = baseUrl + "/api";
   var userAgent = (config && config.user_agent) || "Dart/3.6 (dart:io)";
 
-  // Device ID: must be unique per install. The old static fallback "manha-huntertoon-app"
-  // (config.deviceId is never injected by Dart) collided for ALL users and the
-  // server now answers 429 abnormal-activity on /api/chapters/* for it.
-  // A random per-session ID returns 200 and stays reusable (verified live).
-  function hex8() {
-    var n = Math.floor(Math.random() * 4294967295);
-    var s = n.toString(16);
-    while (s.length < 8) s = "0" + s;
+  // Device ID: the server nginx-filters the "manha-huntertoon-*" prefix
+  // (static AND per-session "js-" IDs both 403 on /api/manga*), while a
+  // bare random UUID returns 200 and stays reusable (verified live).
+  // (config.deviceId is never injected by Dart, so always generated here.)
+  function hexN(n) {
+    var s = "";
+    for (var i = 0; i < n; i++) s += "0123456789abcdef"[Math.floor(Math.random() * 16)];
     return s;
   }
   function newDeviceId() {
-    var t = "";
-    try { t = new Date().getTime().toString(16); } catch (e) {}
-    return "js-" + hex8() + hex8() + (t ? ("-" + t) : "");
+    // UUIDv4-shaped, no prefix.
+    return hexN(8) + "-" + hexN(4) + "-4" + hexN(3) + "-a" + hexN(3) + "-" + hexN(12);
   }
   var deviceId = (config && config.deviceId) ? String(config.deviceId) : newDeviceId();
 
@@ -25,7 +23,7 @@ function createSource(api, config) {
       "User-Agent": userAgent,
       "Accept": "application/json",
       "Authorization": "Bearer guest",
-      "X-Device-ID": "manha-huntertoon-" + deviceId
+      "X-Device-ID": deviceId
     };
   }
 
@@ -78,8 +76,7 @@ function createSource(api, config) {
       method: "GET",
       headers: buildHeaders()
     });
-    // One-shot recovery: the legacy static ID ("...-app") is now 429-blocked on
-    // /api/chapters/* only. Rotate to a fresh random ID once and retry.
+    // One-shot recovery: rotate to a fresh random ID once and retry.
     if (res && res.status === 429 && !retried && path.indexOf("/chapters/") === 0) {
       deviceId = newDeviceId();
       defaultHeaders = buildHeaders();
@@ -137,6 +134,21 @@ function createSource(api, config) {
         }
         var data = await apiGet("/manga?" + params.join("&"));
         var items = data.items || [];
+        // Server honors ?status= but ignores ?cat=: apply the genre filter
+        // client-side on categories[].name/slug (verified live).
+        if (args && args.genre) {
+          var g = String(args.genre).toLowerCase();
+          items = items.filter(function (it) {
+            var cats = (it && it.categories) || [];
+            for (var i = 0; i < cats.length; i++) {
+              var nm = String((cats[i] && cats[i].name) || "").toLowerCase();
+              var sl = String((cats[i] && cats[i].slug) || "").toLowerCase();
+              if (nm && (nm === g || nm.indexOf(g) !== -1 || g.indexOf(nm) !== -1)) return true;
+              if (sl && sl === g) return true;
+            }
+            return false;
+          });
+        }
         return items.map(toManga);
       } catch (e) {
         return [];
