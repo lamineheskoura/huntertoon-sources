@@ -1,8 +1,8 @@
 {
-    "version": "1.44.0",
+    "version": "1.45.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.09.27.2",
+    "manifest_version": "2026.09.27.3",
     "generated_at": "2026-09-04T14:30:00Z",
     "last_updated": "2026-09-21T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -480,7 +480,7 @@
             "id": "mangastarz",
             "sid": 116,
             "name": "MangaStarz",
-            "version": "1.3.1",
+            "version": "1.4.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://starzmanga.com",
@@ -496,7 +496,7 @@
             },
             "script": {
                 "url": "sources/mangastarz/source.js",
-                "sha256": "0338BB4F36DE23A2B0772CAD15BB0233C31DA9B3D1E2120D94A6BE9D0F80B42C",
+                "sha256": "090DDCC228A2EDC139D33A8C1A197C87FAC779E1FFF9B29D12E98875CF3B6143",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -518,7 +518,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "MangaStarz Madara source migrated to JavaScript",
-                "changelog": "v1.3.1: Fixed infinite scroll with 20 cards/page root pagination, instant zero-bridge detail parsing, and fixed undefined cloudflareUserAgent."
+                "changelog": "v1.4.0: Fix search (parse c-tabs-item result blocks) and genre filter (use /manga-genre/{arabic-slug}/ URLs with homepage-redirect guard; site ignores ?genre[]= params)."
             }
         },
         "lava_scans": {

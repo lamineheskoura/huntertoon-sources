@@ -21,6 +21,74 @@ function createSource(api, config) {
   ];
   var defaultTypes = ["مانجا", "مانهوا", "مانهوا صيني"];
 
+  // Genre filter: the site ignores ?genre[]= form params — genre archives
+  // live at /manga-genre/{arabic-slug}/ (verified live). Slugs are the
+  // Arabic names themselves, except known aliases below.
+  var GENRE_SLUG = {
+    "رومانسي": "رومانسى",
+    "كوميدي": "كوميديا"
+  };
+
+  function genreSlug(genre) {
+    var g = cleanTitle(genre || "");
+    if (!g) return "";
+    if (GENRE_SLUG[g]) return GENRE_SLUG[g];
+    return g;
+  }
+
+  // Search results use Madara .c-tabs-item blocks (tab-thumb + summary),
+  // NOT the .page-item-detail cards used by archives (verified live).
+  function parseSearchTabsFast(html) {
+    if (!html) return [];
+    var results = [];
+    var seen = {};
+    var itemRe = /<div[^>]*class="[^"]*c-tabs-item[^"]*"[^>]*>([\s\S]*?)(?=<div[^>]*class="[^"]*c-tabs-item[^"]*"|$)/gi;
+    var m;
+    while ((m = itemRe.exec(html)) !== null) {
+      var block = m[1];
+      var hrefM = block.match(/<a[^>]+href="([^"]*\/manga\/[^"]+)"[^>]*>/i);
+      if (!hrefM) continue;
+      var detailUrl = makeAbsolute(hrefM[1].trim());
+      if (!detailUrl || seen[detailUrl] || detailUrl.indexOf("/feed/") !== -1) continue;
+      seen[detailUrl] = true;
+      var title = "";
+      var titleAttrM = block.match(/<a[^>]+title="([^"]+)"/i);
+      if (titleAttrM && titleAttrM[1].trim()) {
+        title = cleanTitle(titleAttrM[1]);
+      }
+      if (!title) {
+        var hM = block.match(/<h[34][^>]*>([\s\S]*?)<\/h[34]>/i);
+        if (hM) title = cleanTitle(hM[1]);
+      }
+      if (!title) {
+        var altM = block.match(/<img[^>]+alt="([^"]*)"/i);
+        if (altM) title = cleanTitle(altM[1]);
+      }
+      if (!title) continue;
+      var cover = "";
+      var imgM = block.match(/<img[^>]+(?:data-src|data-lazy-src|src)="([^"]+)"/i);
+      if (imgM) cover = imgM[1].trim();
+      if (cover.indexOf("data:image") === 0) cover = "";
+      results.push({
+        title: title,
+        detailUrl: detailUrl,
+        coverUrl: cover ? makeAbsolute(cover) : "",
+        contentType: "manga"
+      });
+      if (results.length > 300) break;
+    }
+    return results;
+  }
+
+  // Guard: unknown genre slugs 307-redirect to the homepage (200 with
+  // homepage cards). A valid genre archive titles itself "{genre} - ...".
+  function isGenrePage(html, genre) {
+    var tm = String(html || "").match(/<title>([\s\S]*?)<\/title>/i);
+    if (!tm) return false;
+    var title = cleanTitle(tm[1]);
+    return title.indexOf(genre) === 0;
+  }
+
   function sel(key, fallback) {
     return selectors[key] || fallback;
   }
@@ -309,7 +377,18 @@ function createSource(api, config) {
           ? baseUrl + "/?s=" + encodeURIComponent(query) + "&post_type=wp-manga"
           : baseUrl + "/page/" + page + "/?s=" + encodeURIComponent(query) + "&post_type=wp-manga";
         var html = await fetchHtml(url);
-        return parseMangaListFast(html);
+        var list = parseMangaListFast(html);
+        // Search results render as .c-tabs-item blocks, not archive cards.
+        var tabs = parseSearchTabsFast(html);
+        var seen = {};
+        for (var i = 0; i < list.length; i++) seen[list[i].detailUrl] = true;
+        for (var j = 0; j < tabs.length; j++) {
+          if (!seen[tabs[j].detailUrl]) {
+            seen[tabs[j].detailUrl] = true;
+            list.push(tabs[j]);
+          }
+        }
+        return list;
       } catch (e) {
         return [];
       }
@@ -365,12 +444,22 @@ function createSource(api, config) {
     async getFilteredManga(args) {
       try {
         var page = (args && args.page) || 1;
-        var params = ["post_type=wp-manga"];
-        if (args && args.genre) params.push("genre[]=" + encodeURIComponent(args.genre));
-        if (args && args.type) params.push("manga-type=" + encodeURIComponent(args.type));
+        var genre = cleanTitle((args && args.genre) || "");
+        // Genre archives: /manga-genre/{arabic-slug}/ (the ?genre[]= form
+        // is ignored by the site). Guard against homepage redirect.
+        if (genre) {
+          var slug = genreSlug(genre);
+          var gurl = page === 1
+            ? baseUrl + "/manga-genre/" + encodeURIComponent(slug) + "/"
+            : baseUrl + "/manga-genre/" + encodeURIComponent(slug) + "/page/" + page + "/";
+          var ghtml = await fetchHtml(gurl);
+          if (!ghtml || !isGenrePage(ghtml, genre)) return [];
+          return parseMangaListFast(ghtml);
+        }
+        // No genre: type has no archive route — fall back to main archive.
         var url = page === 1
-          ? baseUrl + "/?s=&" + params.join("&")
-          : baseUrl + "/page/" + page + "/?s=&" + params.join("&");
+          ? baseUrl + "/"
+          : baseUrl + "/page/" + page + "/";
         var html = await fetchHtml(url);
         return parseMangaListFast(html);
       } catch (e) {
