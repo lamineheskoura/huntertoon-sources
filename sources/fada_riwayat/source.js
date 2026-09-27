@@ -4,6 +4,12 @@ function createSource(api, config) {
     (config && config.user_agent) ||
     "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
   var lastChapterUrl = baseUrl + "/";
+
+  // Verified-live genre slugs (/cont-genre/{slug}/). Other slugs seen on
+  // detail pages (e.g. اكشن, فنون-قتاليه) 302 to homepage — the title guard
+  // in getFilteredManga rejects those instead of returning homepage cards.
+  var defaultGenres = ["مغامرة", "خيال", "xianxia", "مكتملة"];
+  var defaultTypes = ["novel", "manga"];
   var headers = {
     "User-Agent": userAgent,
     Accept:
@@ -43,6 +49,86 @@ function createSource(api, config) {
       return res.body || "";
     }
     return (await api.fetchText(url, headers)) || "";
+  }
+
+  // ────────────────── Full chapter list via nhv AJAX (verified live) ──
+  // Detail pages embed only the latest 8 chapters; the full list loads in
+  // two POST steps to admin-ajax.php:
+  //  1. {action:nhv_novel_v2_section, nonce, post_id, section:chapters}
+  //     (tools shell; not strictly needed)
+  //  2. {action:nhv_manga_single_chapters_page, nonce:chaptersNonce,
+  //     manga_id:postId, volume:-1, page:1, per_page:50, meta_only:1}
+  //     → {volumes:[{num,count}]}; then per volume {same-volume, page,
+  //     per_page:50} → {html, has_more}. Config comes from the inline
+  //  `var nhvNovelV2 = {...}` JSON on the detail page.
+  function nhvConfig(pageHtml) {
+    var m = String(pageHtml || "").match(/var\s+nhvNovelV2\s*=\s*(\{[\s\S]*?\});/);
+    var cfg = {};
+    if (m) {
+      try { cfg = JSON.parse(m[1]); } catch (e) { cfg = {}; }
+    }
+    if (!cfg.postId) {
+      var pm = String(pageHtml || "").match(/data-(?:manga-id|post)="(\d+)"/);
+      if (pm) cfg.postId = pm[1];
+    }
+    return cfg;
+  }
+
+  async function postAjax(params, referer) {
+    var body = [];
+    for (var k in params) body.push(encodeURIComponent(k) + "=" + encodeURIComponent(params[k]));
+    var h = {
+      "User-Agent": userAgent,
+      "Accept": "application/json, text/plain, */*",
+      "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      "X-Requested-With": "XMLHttpRequest",
+      "Referer": referer || baseUrl + "/",
+      "Origin": baseUrl
+    };
+    if (api.http) {
+      var res = await api.http(baseUrl + "/wp-admin/admin-ajax.php", { method: "POST", headers: h, body: body.join("&") });
+      if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : 0) + " for chapters ajax");
+      try { return JSON.parse(res.body || "{}"); } catch (e) { throw new Error("Bad chapters JSON"); }
+    }
+    throw new Error("POST unsupported by runtime");
+  }
+
+  async function fetchChaptersFull(detailUrl, pageHtml) {
+    var cfg = nhvConfig(pageHtml);
+    var postId = cfg.postId || "";
+    var nonce = cfg.chaptersNonce || cfg.nonce || "";
+    if (!postId || !nonce) return [];
+    var meta = await postAjax({ action: "nhv_manga_single_chapters_page", nonce: nonce, manga_id: postId, volume: "-1", page: "1", per_page: "50", meta_only: "1", order: "desc" }, detailUrl);
+    var volumes = (meta && meta.volumes) || [];
+    if (!volumes.length) volumes = [{ num: 0 }];
+    var out = [];
+    var seen = {};
+    for (var v = 0; v < volumes.length; v++) {
+      var vol = (volumes[v] && volumes[v].num !== undefined) ? volumes[v].num : 0;
+      var page = 1;
+      for (var guard = 0; guard < 60; guard++) {
+        var data = await postAjax({ action: "nhv_manga_single_chapters_page", nonce: nonce, manga_id: postId, volume: String(vol), page: String(page), per_page: "50", order: "desc" }, detailUrl);
+        if (!data || !data.success) break;
+        var rows = await parseChapters(data.html || "");
+        var added = 0;
+        for (var i = 0; i < rows.length; i++) {
+          if (seen[rows[i].url]) continue;
+          seen[rows[i].url] = true;
+          out.push(rows[i]);
+          added++;
+          if (out.length > 3000) break;
+        }
+        if (out.length > 3000) break;
+        if (!data.has_more || !added) break;
+        page++;
+      }
+      if (out.length > 3000) break;
+    }
+    out.sort(function (a, b) {
+      return (parseFloat(b.number) || 0) - (parseFloat(a.number) || 0);
+    });
+    return out;
   }
 
   function validImage(src) {
@@ -515,6 +601,12 @@ function createSource(api, config) {
   }
 
   async function fetchChapters(detailUrl) {
+    // Strategy 0 (primary): nhv full-list AJAX (detail page holds latest 8).
+    try {
+      var detailHtml = await html(detailUrl);
+      var full = await fetchChaptersFull(detailUrl, detailHtml);
+      if (full.length) return full;
+    } catch (e0) {}
     // Strategy 1: AJAX endpoint (Madara standard)
     var ajaxUrl = detailUrl;
     if (ajaxUrl.charAt(ajaxUrl.length - 1) !== "/") ajaxUrl += "/";
@@ -628,6 +720,19 @@ function createSource(api, config) {
     })();
   }
 
+  function cleanTitleFallback(s) {
+    return decodeEntities(String(s || "").replace(/<[^>]*>/g, " ")).replace(/\s+/g, " ").trim();
+  }
+
+  // Guard: unknown genre slugs 302 to the homepage (200 with homepage
+  // cards). A valid genre archive titles itself "{genre} - ...".
+  function isGenrePage(pageHtml, genre) {
+    var m = String(pageHtml || "").match(/<title>([\s\S]*?)<\/title>/i);
+    if (!m) return false;
+    var title = cleanTitleFallback(m[1]);
+    return title.indexOf(genre) === 0;
+  }
+
   // ────────────────── Public API ──────────────────
 
   return {
@@ -674,7 +779,24 @@ function createSource(api, config) {
     },
 
     async getFilteredManga(args) {
-      return await this.getHomepageManga(args);
+      // Genre archives live at /cont-genre/{slug}/ (verified live slugs in
+      // defaultGenres). Unknown slugs 302 to the homepage — the title guard
+      // rejects those instead of returning homepage cards as filtered data.
+      try {
+        var page = (args && args.page) || 1;
+        var genre = cleanTitleFallback((args && args.genre) || "");
+        if (genre) {
+          var gurl = page === 1
+            ? baseUrl + "/cont-genre/" + encodeURIComponent(genre) + "/"
+            : baseUrl + "/cont-genre/" + encodeURIComponent(genre) + "/page/" + page + "/";
+          var ghtml = await html(gurl);
+          if (!ghtml || !isGenrePage(ghtml, genre)) return [];
+          return await listCards(ghtml);
+        }
+        return await this.getHomepageManga(args);
+      } catch (e) {
+        return [];
+      }
     },
 
     async getMangaDetails(args) {
@@ -701,9 +823,21 @@ function createSource(api, config) {
         (await api.cssText(pageHtml, ".nhv-novel-synopsis")) ||
         (await api.cssText(pageHtml, ".summary__content p, .description-summary p, .manga-excerpt p, .summary__content")) || "";
 
-      // Genres
-      var genres = (await api.cssList(pageHtml, ".nhv-novel-genres a")) || (await api.cssList(pageHtml, ".genres-content a"));
-      var genresClean = (genres || []).map(function (g) { return decodeEntities(g).trim(); }).filter(Boolean);
+      // Genres (union across markup variants; empty arrays are truthy
+      // so fallbacks must merge, not ||-chain)
+      var genresRaw = [];
+      var genreSels = [".nhv-novel-genres a", "a[href*=cont-genre]", ".genres-content a"];
+      for (var gi = 0; gi < genreSels.length; gi++) {
+        try {
+          var gl = await api.cssList(pageHtml, genreSels[gi]);
+          if (gl) for (var gj = 0; gj < gl.length; gj++) genresRaw.push(gl[gj]);
+        } catch (eG) {}
+      }
+      var genresClean = [];
+      for (var gk = 0; gk < genresRaw.length; gk++) {
+        var gv = decodeEntities(genresRaw[gk]).trim();
+        if (gv && genresClean.indexOf(gv) === -1) genresClean.push(gv);
+      }
 
       // Content type detection
       var kicker = (await api.cssText(pageHtml, ".nhv-novel-kicker")) || "";
@@ -783,7 +917,7 @@ function createSource(api, config) {
 
     async fetchMoreChapters() { return null; },
 
-    async getGenresAndTypes() { return { genres: [], types: ["novel", "manga"] }; },
+    async getGenresAndTypes() { return { genres: defaultGenres, types: defaultTypes }; },
 
     getImageHeaders(args) {
       return {

@@ -1,8 +1,8 @@
 {
-    "version": "1.45.0",
+    "version": "1.46.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.09.27.3",
+    "manifest_version": "2026.09.27.4",
     "generated_at": "2026-09-04T14:30:00Z",
     "last_updated": "2026-09-21T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -971,7 +971,7 @@
             "id": "fada_riwayat",
             "sid": 107,
             "name": "فضاء الروايات (Fada Riwayat)",
-            "version": "1.1.0",
+            "version": "1.2.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://cenele.com",
@@ -987,7 +987,7 @@
             },
             "script": {
                 "url": "sources/fada_riwayat/source.js",
-                "sha256": "27F3A221554CA4FDDB27ADA4144D238F4EAFF69400C0AAEF4E50E8349F533264",
+                "sha256": "A4A3D07D79B25DF2E3DF03911A2F89CFBC54AD699479C5BB5447F8F4CA07D28B",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1010,14 +1010,14 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Fada Riwayat novel-first source migrated to JavaScript",
-                "changelog": "Initial JS implementation with text cleaner and image fallback"
+                "changelog": "v1.2.0: Full chapter lists via nhv 2-step AJAX (section+volumes); genre filter via /cont-genre slugs with homepage-redirect guard; verified genre list; fixed genres union in details."
             }
         },
         "nadi_al_riwayt": {
             "id": "nadi_al_riwayt",
             "sid": 124,
             "name": "نادي الروايات (Nadi Al Riwayat)",
-            "version": "1.0.0",
+            "version": "1.1.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://rewayat.club",
@@ -1033,7 +1033,7 @@
             },
             "script": {
                 "url": "sources/nadi_al_riwayt/source.js",
-                "sha256": "82d34b93b7636a1d1ba3861caa271c48d7c4041feda67bc012f3b8adf923e892",
+                "sha256": "F6ABAAD76B2B511924FB7D3A9134B380A340D3A0596EF336659EFD43F8A08602",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1055,7 +1055,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Nadi Al Riwayat novel-only source migrated to JavaScript",
-                "changelog": "Initial JS implementation with novel-only content and lazy chapter pages"
+                "changelog": "v1.1.0: Fix search/list via JSON Accept (API 406s text/html); genres union from API + id-mapped filter; details enriched from novel API; all chapters unlocked"
             }
         },
         "despair_manga": {

@@ -13,6 +13,15 @@ function createSource(api, config) {
     "Sec-Fetch-Site": "same-origin",
     "Upgrade-Insecure-Requests": "1"
   };
+  // The JSON API (api.rewayat.club) answers 406 to text/html Accept —
+  // API calls MUST use the JSON Accept below (verified live).
+  var jsonHeaders = {
+    "User-Agent": userAgent,
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+    "Referer": baseUrl + "/",
+    "Origin": baseUrl
+  };
 
   function abs(url) {
     if (!url) return "";
@@ -41,6 +50,65 @@ function createSource(api, config) {
       return res.body || "";
     }
     return await api.fetchText(url, headers) || "";
+  }
+
+  async function apiJson(url) {
+    if (api.http) {
+      var res = await api.http(url, { method: "GET", headers: jsonHeaders });
+      if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : 0) + " for " + url);
+      try { return JSON.parse(res.body || "{}"); } catch (e) { throw new Error("Bad JSON: " + url); }
+    }
+    return JSON.parse(await api.fetchText(url, jsonHeaders) || "{}");
+  }
+
+  function mapApiNovel(n) {
+    n = n || {};
+    var slug = String(n.slug || "");
+    if (!slug) return null;
+    var title = strip(String(n.arabic || n.english || ""));
+    if (!title) return null;
+    return {
+      title: title,
+      coverUrl: coverAbs(String(n.poster_url || "")),
+      detailUrl: baseUrl + "/novel/" + slug,
+      contentType: "novel"
+    };
+  }
+
+  function mapApiNovels(results) {
+    var out = [];
+    var seen = {};
+    results = results || [];
+    for (var i = 0; i < results.length; i++) {
+      var c = mapApiNovel(results[i]);
+      if (!c || seen[c.detailUrl]) continue;
+      seen[c.detailUrl] = true;
+      out.push(c);
+    }
+    return out;
+  }
+
+  var genreIdCache = null;
+
+  async function genreIdMap() {
+    if (genreIdCache) return genreIdCache;
+    var map = {};
+    for (var p = 1; p <= 3; p++) {
+      try {
+        var data = await apiJson(apiCoverBase + "/api/novels/?page=" + p);
+        var results = data.results || [];
+        if (!results.length) break;
+        for (var i = 0; i < results.length; i++) {
+          var gs = (results[i] && results[i].genre) || [];
+          for (var g = 0; g < gs.length; g++) {
+            if (gs[g] && gs[g].arabic) map[String(gs[g].arabic)] = gs[g].id;
+          }
+        }
+        if (!data.next) break;
+      } catch (e) { break; }
+    }
+    genreIdCache = map;
+    return map;
   }
 
   function strip(value) {
@@ -183,27 +251,67 @@ function createSource(api, config) {
 
     async getHomepageManga(args) {
       var page = (args && args.page) || 1;
+      // Primary: JSON API (paginated, honest shapes). HTML fallback below.
+      try {
+        var data = await apiJson(apiCoverBase + "/api/novels/?page=" + page);
+        var mapped = mapApiNovels(data.results || []);
+        if (mapped.length) return mapped;
+      } catch (eApi) {}
       try { return await listCards(await html(baseUrl + "/library" + (page > 1 ? "?page=" + page : ""))); } catch (e) { return []; }
     },
 
     async search(args) {
       var q = (args && args.query) || "";
       if (!q.trim()) return [];
-      try { return await listCards(await html("https://api.rewayat.club/api/novels/?search=" + encodeURIComponent(q))); } catch (e) { return []; }
+      try {
+        var data = await apiJson(apiCoverBase + "/api/novels/?search=" + encodeURIComponent(q.trim()));
+        return mapApiNovels(data.results || []);
+      } catch (e) { return []; }
     },
 
-    async getFilteredManga(args) { return await this.getHomepageManga(args); },
+    async getFilteredManga(args) {
+      try {
+        var page = (args && args.page) || 1;
+        var genre = strip((args && args.genre) || "");
+        if (genre) {
+          var map = await genreIdMap();
+          var gid = map[genre];
+          if (gid !== undefined && gid !== null && String(gid) !== "") {
+            var fdata = await apiJson(apiCoverBase + "/api/novels/?genre=" + encodeURIComponent(String(gid)) + "&page=" + page);
+            return mapApiNovels(fdata.results || []);
+          }
+          return [];
+        }
+        return await this.getHomepageManga(args);
+      } catch (e) {
+        try { return await this.getHomepageManga(args); } catch (e2) { return []; }
+      }
+    },
 
     async getMangaDetails(args) {
       var url = abs((args && args.url) || "");
       var slug = slugFromUrl(url);
+      // Authoritative metadata from the JSON API (genres included).
+      var apiMeta = null;
+      if (slug) {
+        try { apiMeta = await apiJson(apiCoverBase + "/api/novels/" + slug + "/"); } catch (eApi) {}
+      }
       var pageHtml = await html(url);
       var covers = extractCoverMap(pageHtml);
       var title = await api.cssText(pageHtml, "h1.font-cairo, h1, .v-card-title, .novel-title") || await api.cssAttr(pageHtml, "meta[property='og:title']", "content") || slug;
       var cover = await api.cssAttr(pageHtml, "meta[property='og:image']", "content") || await api.cssAttr(pageHtml, "img", "src") || covers[slug] || "";
       var description = await api.cssText(pageHtml, ".description, .summary, .v-card-text, .novel-description") || "";
+      var genres = [];
+      if (apiMeta && apiMeta.genre) {
+        for (var gi = 0; gi < apiMeta.genre.length; gi++) {
+          if (apiMeta.genre[gi] && apiMeta.genre[gi].arabic) genres.push(String(apiMeta.genre[gi].arabic));
+        }
+      }
+      if (apiMeta && apiMeta.arabic) title = String(apiMeta.arabic);
+      if (apiMeta && apiMeta.poster_url) cover = String(apiMeta.poster_url);
+      if (apiMeta && apiMeta.about) description = String(apiMeta.about);
       var chapters = await fetchChapterBatch(url, 1, 2);
-      return { title: strip(title), coverUrl: coverAbs(cover), description: strip(description), genres: [], chapters: chapters, originalUrl: url, hasMoreChapters: await hasMoreChapters(url, 3), lastFetchedPage: 2, contentType: "novel" };
+      return { title: strip(title), coverUrl: coverAbs(cover), description: strip(description), genres: genres, chapters: chapters, originalUrl: url, hasMoreChapters: await hasMoreChapters(url, 3), lastFetchedPage: 2, contentType: "novel" };
     },
 
     async fetchMoreChapters(args) {
@@ -222,7 +330,14 @@ function createSource(api, config) {
       return { kind: "text", chapterTitle: strip(await api.cssText(pageHtml, "h1.font-cairo, h1, .chapter-title") || ""), textContent: await extractChapterText(pageHtml) };
     },
 
-    async getGenresAndTypes() { return { genres: [], types: ["novel"] }; },
+    async getGenresAndTypes() {
+      try {
+        var map = await genreIdMap();
+        var gs = Object.keys(map);
+        if (gs.length) return { genres: gs, types: ["novel"] };
+      } catch (e) {}
+      return { genres: [], types: ["novel"] };
+    },
 
     getImageHeaders(args) {
       var url = (args && args.url) || "";
