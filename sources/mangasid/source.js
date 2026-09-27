@@ -5,8 +5,12 @@ function createSource(api, config) {
   var other = (config && config.other) || {};
   var userAgent = (config && config.user_agent) || "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
   var overlayKeyHex = "ff453871399fe268588a0936b45376022d85ed0fd1292001d5102f6a30291dc1";
-  // Proof salt baked into the site viewer (ChapterImageViewer): proof = SHA256(salt|token|chapterId)
-  var unlockProofSalt = "322c4e08571941fa05abf1a6a2b45c9a9bf7bcc94af61b66";
+  // Proof salt baked into the CURRENT site viewer (ChapterImageViewer):
+  // proof = SHA256(salt|token|chapterId). Rotated 2026-09 (old
+  // 322c4e08... stopped unlocking); same operator/backend family as
+  // mangatek, whose live bundle carries this value (mangasid bundle
+  // not yet re-verified — fail-closed if it differs).
+  var unlockProofSalt = "80c55d2d1f1432551b82f5304b60e1aced87f823a6ed309d";
   var lastChapterUrl = baseUrl + "/";
 
   var defaultHeaders = mergeHeaders({
@@ -217,12 +221,20 @@ function createSource(api, config) {
     return decodeURIComponent(escape(s));
   }
 
+  // The runtime exposes aesGcmDecrypt (current) and legacy decryptAesGcm;
+  // both resolve the decrypted overlay object (or null). Prefer current.
+  async function aesDecrypt(blob, keyHex) {
+    try {
+      if (!blob || !keyHex) return null;
+      if (api.aesGcmDecrypt) return await api.aesGcmDecrypt(blob, keyHex);
+      if (api.decryptAesGcm) return await api.decryptAesGcm(blob, keyHex);
+    } catch (e) {}
+    return null;
+  }
+
   async function decryptOverlayBlob(blob) {
     // Use the Dart bridge for AES-GCM decryption (crypto.subtle is not available in flutter_js)
-    if (api.decryptAesGcm) {
-      return await api.decryptAesGcm(blob, overlayKeyHex);
-    }
-    return null;
+    return await aesDecrypt(blob, overlayKeyHex);
   }
 
   // ────────────────── SHA-256 (ASCII) → hex, pure JS (no WebCrypto in QuickJS) ──
@@ -274,41 +286,109 @@ function createSource(api, config) {
     return out;
   }
 
-  // ────────────────── Overlay unlock (new scheme) ──────────────────
-  // New overlay chapters ship an EMPTY overlayBlob in SSR props + overlay_via_unlock.
-  // The site viewer unlocks text via POST {chapterId, token, proof} to /api/reader/unlock
-  // (proof = SHA256(salt|token|chapterId)), then decrypts the returned blob with the
-  // server-provided key. needs_challenge (PoW/Turnstile) is not solvable here → images.
+  // ────────────────── Overlay unlock (challenge scheme) ──────────────────
+  // Overlay chapters ship an EMPTY overlayBlob in SSR props + unlockToken.
+  // The CURRENT site viewer unlocks in two steps:
+  //  1. POST {chapterId, token, proof} (proof = SHA256(salt|token|chapterId))
+  //     → either {overlay, key} directly, or {needs_challenge, nonce,
+  //     pow_bits?, turnstile_required?}.
+  //  2. If challenged: solve hashcash PoW (SHA256(nonce:counter_base36)
+  //     with >= pow_bits leading zero bits) unless turnstile is required
+  //     (unsolvable here → images), then POST {chapterId, nonce, pow,
+  //     turnstileToken, token, proof} → {overlay, key}.
+  // The blob is decrypted with the server-provided key. Everything
+  // fail-closed: any miss → null → plain images.
+  function countLeadingZeroBits(hexStr) {
+    var bits = 0;
+    var h = String(hexStr || "").toLowerCase();
+    for (var i = 0; i + 1 < h.length; i += 2) {
+      var b = parseInt(h.substr(i, 2), 16);
+      if (isNaN(b)) return bits;
+      if (b === 0) { bits += 8; continue; }
+      var m = 128;
+      while (m > 0 && (b & m) === 0) { bits++; m >>= 1; }
+      return bits;
+    }
+    return bits;
+  }
+
+  function solvePow(prefix, bits) {
+    var target = Number(bits) || 0;
+    if (!prefix || target <= 0) return "";
+    var deadline = 0;
+    try { deadline = new Date().getTime() + 9000; } catch (e) {}
+    for (var n = 0; n < 250000; n++) {
+      if (deadline) {
+        try { if (new Date().getTime() > deadline) return ""; } catch (e2) {}
+      }
+      var cand = n.toString(36);
+      var digest = "";
+      try { digest = sha256HexAscii(prefix + ":" + cand); } catch (e3) { return ""; }
+      if (countLeadingZeroBits(digest) >= target) return cand;
+    }
+    return "";
+  }
+
+  async function postUnlock(payload) {
+    var res = await api.http(apiBase + "/api/reader/unlock", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json, text/plain, */*",
+        "Referer": baseUrl + "/",
+        "Origin": baseUrl
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!res || !res.ok) return null;
+    try {
+      var data = JSON.parse(res.body || "{}");
+      if (!data || data.success === false) return null;
+      return data;
+    } catch (eJson) { return null; }
+  }
+
+  async function claimOverlay(data) {
+    if (!data || !data.overlay || !data.key) return null;
+    var overlayData = await aesDecrypt(data.overlay, data.key);
+    if (!overlayData) return null;
+    return { overlayData: overlayData, pageOffset: Number(data.overlay_page_offset || 0) };
+  }
+
   async function unlockOverlayContent(chapterId, unlockToken) {
     try {
       if (!chapterId || !unlockToken || !api.http) return null;
       var cidNum = Number(chapterId);
       var proof = sha256HexAscii(unlockProofSalt + "|" + unlockToken + "|" + chapterId);
-      var payload = JSON.stringify({
+      var step1 = await postUnlock({
         chapterId: cidNum || chapterId,
         token: unlockToken,
         proof: proof
       });
-      var res = await api.http(apiBase + "/api/reader/unlock", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json, text/plain, */*",
-          "Referer": baseUrl + "/",
-          "Origin": baseUrl
-        },
-        body: payload
-      });
-      if (!res || !res.ok) return null;
-      var data;
-      try { data = JSON.parse(res.body || "{}"); } catch (eJson) { return null; }
-      if (!data || data.success !== true) return null;
-      if (data.needs_challenge) return null;
-      if (!data.overlay || !data.key) return null;
-      if (!api.decryptAesGcm) return null;
-      var overlayData = await api.decryptAesGcm(data.overlay, data.key);
-      if (!overlayData) return null;
-      return { overlayData: overlayData, pageOffset: Number(data.overlay_page_offset || 0) };
+      if (!step1) return null;
+      var direct = await claimOverlay(step1);
+      if (direct) return direct;
+      // Challenge round: PoW solvable, Turnstile is not.
+      if (!step1.needs_challenge) return null;
+      if (step1.turnstile_required || step1.turnstileRequired) return null;
+      var powBits = Number(step1.pow_bits || step1.powBits || 0);
+      var nonce = step1.nonce || "";
+      var pow = "";
+      if (powBits > 0) {
+        if (!nonce) return null;
+        pow = solvePow(String(nonce), powBits);
+        if (!pow) return null;
+      }
+      var step2payload = {
+        chapterId: cidNum || chapterId,
+        token: unlockToken,
+        proof: proof
+      };
+      if (nonce) step2payload.nonce = nonce;
+      if (pow) step2payload.pow = pow;
+      var step2 = await postUnlock(step2payload);
+      if (!step2) return null;
+      return await claimOverlay(step2);
     } catch (e) {
       return null;
     }

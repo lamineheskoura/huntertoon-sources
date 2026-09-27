@@ -1,8 +1,8 @@
 {
-    "version": "1.43.0",
+    "version": "1.44.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.09.27.1",
+    "manifest_version": "2026.09.27.2",
     "generated_at": "2026-09-04T14:30:00Z",
     "last_updated": "2026-09-21T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -616,7 +616,7 @@
             "id": "mangatek",
             "sid": 117,
             "name": "مانجاتك (Mangatek)",
-            "version": "1.1.0",
+            "version": "1.2.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://mangatek.com",
@@ -662,7 +662,7 @@
             },
             "script": {
                 "url": "sources/mangatek/source.js",
-                "sha256": "8A0656D680D40B0F739FC6F411E26B66D4D8BA19BEAA62D4B544BE14277088AA",
+                "sha256": "BF7A88ED40EFE643036563EA596C78F22FB075BF274CB59884629B528C9B780E",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -685,14 +685,14 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Mangatek Astro/overlay-capable source migrated to JavaScript",
-                "changelog": "Fix overlay Y coordinate: use width-only scaling for all coords (images preserve aspect ratio) to fix text bubble positioning on pages with different image_width"
+                "changelog": "v1.2.0: Rotated unlock proof salt from live viewer bundle + 2-step challenge unlock (PoW solver, Turnstile fail-closed) + dual bridge names; v1.1.0: width-only Y scaling"
             }
         },
         "mangasid": {
             "id": "mangasid",
             "sid": 115,
             "name": "مانجا سيد (Mangasid)",
-            "version": "1.1.0",
+            "version": "1.2.0",
             "enabled": true,
             "status": "beta",
             "base_url": "https://mangasid.com",
@@ -708,7 +708,7 @@
             },
             "script": {
                 "url": "sources/mangasid/source.js",
-                "sha256": "B3EB30E101C7249C6291844B4F4AF2399D9AC4CC266FDA6681E762FB415E338F",
+                "sha256": "2364EDEF55BD3E5B6F9A7D58C15651B5906174417327C515EBBF542A0E956C25",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -731,7 +731,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Mangasid Astro/overlay-capable source migrated to JavaScript",
-                "changelog": "Fix overlay Y coordinate: use width-only scaling for all coords (images preserve aspect ratio) to fix text bubble positioning on pages with different image_width"
+                "changelog": "v1.2.0: Rotated unlock proof salt (shared backend family) + 2-step challenge unlock (PoW solver, Turnstile fail-closed) + dual bridge names; v1.1.0: width-only Y scaling"
             }
         },
         "hizo_manga": {
