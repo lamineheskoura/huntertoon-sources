@@ -394,6 +394,16 @@ function createSource(api, config) {
     }
     var ld = h.match(/"embedUrl"\s*:\s*"([^"]+)"/);
     if (ld) out.push(ld[1].replace(/\\\//g, "/"));
+    // Iframe fallbacks: src + data-src (lazy embeds carry vid3rb players).
+    var ifr = /<iframe[^>]+(?:src|data-src)\s*=\s*(?:"([^"]+)"|'([^']+)')/gi, im;
+    while ((im = ifr.exec(h)) !== null) {
+      var iu = im[1] || im[2] || "";
+      if (!iu) continue;
+      if (iu.indexOf("//") === 0) iu = "https:" + iu;
+      if (iu.indexOf("http") !== 0) continue;
+      if (iu.indexOf("vid3rb.com") !== -1 || iu.indexOf("anime3rb.com") !== -1) out.push(iu);
+      if (out.length > 8) break;
+    }
     var seen = {};
     var uniq = [];
     for (var i = 0; i < out.length; i++) {
@@ -497,7 +507,21 @@ function createSource(api, config) {
         }
         if (quals.length >= 4) break;
       }
-      if (!quals.length) return [];
+      if (!quals.length) {
+        // No deletion: honest embed fallback with reason (budget/deadline untouched).
+        const vid3rbFailedReason = "vid3rb_resolve_failed";
+        return [{
+          id: "vid3rb-fallback",
+          name: "vid3rb",
+          embedUrl: watchUrl,
+          url: watchUrl,
+          directUrl: "",
+          type: "embed",
+          quality: null,
+          headers: { "Referer": watchUrl, "User-Agent": userAgent },
+          reason: vid3rbFailedReason
+        }];
+      }
       quals.sort(function (a, b) { return b.height - a.height; });
       var qh = [];
       for (var q = 0; q < quals.length; q++) {
@@ -650,12 +674,22 @@ function createSource(api, config) {
         var serverUrl = makeAbsolute((args && (args.serverUrl || args.url)) || "");
         if (!serverUrl) return null;
         // Closed allow-list: first-party player/CDN + site only.
+        // Completed with common embed hosts (no deletion of the wall).
         var u = serverUrl.toLowerCase();
-        var okHost = u.indexOf("vid3rb.com") !== -1 || u.indexOf("anime3rb.com") !== -1;
+        var okHost = u.indexOf("vid3rb.com") !== -1 || u.indexOf("anime3rb.com") !== -1 ||
+          u.indexOf("vkvideo") !== -1 || u.indexOf("vk.com") !== -1 ||
+          u.indexOf("voe.") !== -1 || u.indexOf("videa") !== -1 ||
+          u.indexOf("dood") !== -1 || u.indexOf("mp4upload.com") !== -1 ||
+          u.indexOf("uqload") !== -1;
         if (!okHost) return null;
+        var incomingDirect = (args && (args.directUrl || args.direct_url)) || "";
+        var slow = String(serverUrl).toLowerCase();
+        var isDirectMedia = slow.indexOf(".mp4") !== -1 || slow.indexOf(".m3u8") !== -1;
+        var keptDirect = incomingDirect || (isDirectMedia ? serverUrl : "");
         return {
           url: serverUrl,
-          type: "embed",
+          directUrl: keptDirect || serverUrl,
+          type: isDirectMedia ? "mp4" : "embed",
           headers: {
             "User-Agent": userAgent,
             "Referer": baseUrl + "/",

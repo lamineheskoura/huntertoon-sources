@@ -1565,7 +1565,7 @@
             "id": "witanime",
             "sid": 134,
             "name": "ويت أنمي (WitAnime)",
-            "version": "1.3.1",
+            "version": "1.3.2",
             "enabled": true,
             "status": "beta",
             "base_url": "https://witanime.site",
@@ -1581,7 +1581,7 @@
             },
             "script": {
                 "url": "sources/witanime/source.js",
-                "sha256": "4F0BD48145558160076111301D973439CE547F3B7CA170215858B6FD25B327B2",
+                "sha256": "015A33D9306C7F2EDEDCF7E7D20ADBD5CBCBF9058D26071D557B40C1D7ADD0CC",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1603,14 +1603,14 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "WitAnime - Arabic anime source on witanime.site (Laravel Livewire). Browse/movies cards, suggest search, anime+movie details, native direct-mp4 episode servers (4shared/mp4upload/videa).",
-                "changelog": "v1.3.1: honest embed broadcast — failed resolutions emit live gate + reason instead of dropping; DROP/budget/deadline untouched. v1.3.0: native-only servers — direct mp4 for 4shared/mp4upload/videa (RC4 XML chain)/ok-flashvars; drop unresolvable gates; 12s deadline."
+                "changelog": "v1.3.2: google/drive truthful gate (no blind DROP) + unresolved else as embed+reason + FHD-first ordering; bud(7)/deadline(12s)/drops(mega/buckets) untouched. v1.3.1: honest embed broadcast — failed resolutions emit live gate + reason instead of dropping; DROP/budget/deadline untouched. v1.3.0: native-only servers — direct mp4 for 4shared/mp4upload/videa (RC4 XML chain)/ok-flashvars; drop unresolvable gates; 12s deadline."
             }
         },
         "anime4up": {
             "id": "anime4up",
             "sid": 135,
             "name": "أنمي فور أب (Anime4up)",
-            "version": "1.3.1",
+            "version": "1.3.2",
             "enabled": true,
             "status": "beta",
             "base_url": "https://w1.anime4up.rest",
@@ -1626,7 +1626,7 @@
             },
             "script": {
                 "url": "sources/anime4up/source.js",
-                "sha256": "89BD61B4E3A7F2E69DF7D218B14C41C8EF8191DDEAC2399C99A4585D05DD9B64",
+                "sha256": "B39C45FB60E585330E50696C19163DDE5EB53C97850667A9C3D156B297A5DE4B",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1648,14 +1648,14 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Anime4up - Arabic anime WordPress source (Anime4up v1.0 theme). Homepage cards, WP search, anime details with DOM episode list incl. load-more walk, direct data-watch servers (megamax/voe/videa/uqload/doodstream/mp4upload).",
-                "changelog": "v1.3.1: honest embed broadcast (ok-no-resolver, vk-unresolved, tier-unresolved) + vk redirect fix + ok.ru in okHost; budgets/dead-lists untouched. v1.3.0: embed allow-list (drive/filemoon only), 4shared/drive/vidbem tiers, leak-proof emit filter."
+                "changelog": "v1.3.2: resolveServer google/drive fix (drive passthrough, no blind dead) + tier99/s1tried/deadline/budget untried as embed+reason (no delete); bud(16)/deadline(12s) untouched. v1.3.1: honest embed broadcast (ok-no-resolver, vk-unresolved, tier-unresolved) + vk redirect fix + ok.ru in okHost; budgets/dead-lists untouched. v1.3.0: embed allow-list (drive/filemoon only), 4shared/drive/vidbem tiers, leak-proof emit filter."
             }
         },
         "animeslayer": {
             "id": "animeslayer",
             "sid": 136,
             "name": "أنمي سلاير (AnimeSlayer)",
-            "version": "1.3.2",
+            "version": "1.3.4",
             "enabled": true,
             "status": "beta",
             "base_url": "https://anslayer.com/anime/public",
@@ -1671,7 +1671,7 @@
             },
             "script": {
                 "url": "sources/animeslayer/source.js",
-                "sha256": "1619C8AD03183734C15DAE638C257B2C4E1A4DBB9BB40AFD0B1E5AEF83B4E781",
+                "sha256": "3E41D116A79E5FBA11446E7086EA00A8C1E794D23CA5D0A3B2E3C36BAFEEAAAF",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1693,14 +1693,14 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "AnimeSlayer - Arabic anime source on anslayer.com public JSON API. Lists, search, details, episodes, native direct-mp4 servers plus drive passthrough.",
-                "changelog": "v1.3.2: non-muilt episode_urls fallback (first live http link, fail-closed; muilt gate preserved, early-return replaced) + unresolved-host honest embed passthrough (reason); budget/deadline/drop-list untouched. v1.3.1: vk passthrough + failed-ok honest embed (reason) instead of dropping; drop-list/budget/deadline untouched. v1.3.0: Kotatsu-faithful extractors (ok data-options, streamtape assembly, mediafire API), true pagination, mp4 HEAD-probe gate."
+                "changelog": "v1.3.4: ok last always (links stable partition) + ok single attempt + proactive skip on deadline/low bud (honest embed, no fetch) + ok HEAD-probe like mediafire/mixdrop/streamtape (probe-failed honest embed); bud(14)/deadline(12s)/drop-list untouched. v1.3.3: muilt fetch-failure fallback (live episode_urls honest embed muilt_fetch_failed, no deletion; gate preserved) + okHost completion (vk/voe/videa/dood/mp4upload/uqload) + drive/filemoon honest reasons + resolveServer directUrl preserve; budget/deadline/drop-list untouched. v1.3.2: non-muilt episode_urls fallback (first live http link, fail-closed; muilt gate preserved, early-return replaced) + unresolved-host honest embed passthrough (reason); budget/deadline/drop-list untouched. v1.3.1: vk passthrough + failed-ok honest embed (reason) instead of dropping; drop-list/budget/deadline untouched. v1.3.0: Kotatsu-faithful extractors (ok data-options, streamtape assembly, mediafire API), true pagination, mp4 HEAD-probe gate."
             }
         },
         "anime3rb": {
             "id": "anime3rb",
             "sid": 137,
             "name": "أنمي 3rb (Anime3rb)",
-            "version": "1.0.0",
+            "version": "1.0.1",
             "enabled": true,
             "status": "beta",
             "base_url": "https://anime3rb.com",
@@ -1716,7 +1716,7 @@
             },
             "script": {
                 "url": "sources/anime3rb/source.js",
-                "sha256": "C958474C4CAD431534CA3A891A08BCD20EAD5A76FF8145B926D5098AA83719D2",
+                "sha256": "3791C1179D5D67D913F48FA5EC1DC49C272AD5B10122F1CBF3B086F01332CC69",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1738,14 +1738,14 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Anime3rb - Arabic anime source (Laravel). Title lists with pages, genre/type filters, anime details with full episodes, first-party vid3rb servers with qualities.",
-                "changelog": "v1.0.0: initial JS source - lists, filters, details, vid3rb direct servers with qualities."
+                "changelog": "v1.0.1: iframe multi (src/data-src) for vid3rb players + vid3rb_resolve_failed honest embed fallback (no deletion) + okHost completion (vk/voe/videa/dood/mp4upload/uqload) + resolveServer directUrl preserve. v1.0.0: initial JS source - lists, filters, details, vid3rb direct servers with qualities."
             }
         },
         "animephoenix": {
             "id": "animephoenix",
             "sid": 138,
             "name": "أنمي فينيكس (AnimePhoenix)",
-            "version": "1.0.0",
+            "version": "1.0.1",
             "enabled": true,
             "status": "beta",
             "base_url": "https://anime-phoenix.com",
@@ -1761,7 +1761,7 @@
             },
             "script": {
                 "url": "sources/animephoenix/source.js",
-                "sha256": "1293962FB416E5F683CA493D8BC5273E51B9CF5114674ABA3EC6133EA738848A",
+                "sha256": "5D54E5A78BD05C8FF843409E8E356619A266E3158CE1E432E51ACECFD6614846",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1783,14 +1783,14 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "AnimePhoenix - Arabic anime source (WordPress streamit). Signed JSON API lists/search/filters, full episode pills, first-party workers.dev direct servers.",
-                "changelog": "v1.0.0: initial JS source - API-first lists/search/filters with HTML fallbacks, details with FJ-EpPill episodes, inline data-server direct mirrors with #.mp4 suffix."
+                "changelog": "v1.0.1: security HMAC retry inside bud (n=2 fresh ts/sig) + iframe multi (src/data-src/data-lazy-src) + seasons completion (parse + signed API filter) + phoenix_no_direct honest fallback + resolveServer directUrl preserve + okHost completion. v1.0.0: initial JS source - API-first lists/search/filters with HTML fallbacks, details with FJ-EpPill episodes, inline data-server direct mirrors with #.mp4 suffix."
             }
         },
         "animerco": {
             "id": "animerco",
             "sid": 139,
             "name": "أنمي ركو (Animerco)",
-            "version": "1.0.0",
+            "version": "1.0.2",
             "enabled": true,
             "status": "beta",
             "base_url": "https://det.animerco.org",
@@ -1806,7 +1806,7 @@
             },
             "script": {
                 "url": "sources/animerco/source.js",
-                "sha256": "6DD0260D1982023F78851DF9A930B11DA57C2C22555A4F87AEF368C3D7B600FD",
+                "sha256": "B39075673111A2631B43E2DCAAE9FBB27A0E519048E15AE87AA9BD52C551AB66",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1828,7 +1828,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Animerco - Arabic anime source (WordPress Animerco/MiraiThemes). Server-rendered lists/search/genre filters, two-level details (hub-season-episodes), player_ajax+jwplayer chain with videas/mp4upload/yourupload/vidmoly direct extractors plus honest embed passthrough.",
-                "changelog": "v1.0.0: initial JS source - lists/search/filters, hub-season-episode details, player_ajax chain with 4 direct extractors and embed passthrough."
+                "changelog": "v1.0.2: ok last always (options+out stable partition) + ok single attempt (no security retry) + proactive skip on deadline/low bud + ok honest embed+reason (no deep resolve); bud(60)/deadline(20s) untouched. v1.0.1: security retry inside bud (fresh nonce single retry, 60/20s untouched) + iframe multi (src/data-src/data-lazy-src/data-url) + nine direct resolvers (videa/uqload/vk/voe/dood) where possible else host-passthrough reason + okHost voe/dood completion + seasons completion (all 12, no early break) + resolveServer directUrl preserve + embedUrl fix. v1.0.0: initial JS source - lists/search/filters, hub-season-episode details, player_ajax chain with 4 direct extractors and embed passthrough."
             }
         }
     }

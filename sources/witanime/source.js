@@ -717,10 +717,11 @@ function createSource(api, config) {
       // Owner rule: only natively playable (direct mp4) servers are listed.
       // Dropped with zero direct proof (verified live 2026-09-21): mega
       // (key never leaves browser), hgcloud (dynamic crypto), yonaplay /
-      // soraplay / google (gate targets unknown), workupload / wtsrv /
+      // soraplay (gate targets unknown), workupload / wtsrv /
       // wahmi / mediafire / gofile (download buckets, stream-only app).
-      // ok is attempted (flashvars) and dropped on failure.
-      var DROP_LABELS = ["mega", "hgcloud", "yonaplay", "soraplay", "google",
+      // google/drive is NOT dropped: truthful gate passthrough (app extractor).
+      // ok is attempted (flashvars) and emitted as embed+reason on failure.
+      var DROP_LABELS = ["mega", "hgcloud", "yonaplay", "soraplay",
         "workupload", "wtsrv", "wahmi", "mediafire", "gofile"];
       function dropLabel(label) {
         var n = String(label || "").toLowerCase();
@@ -736,6 +737,18 @@ function createSource(api, config) {
         var n = String(label || "").toLowerCase();
         return n.indexOf("4shared") !== -1 || n.indexOf("mp4upload") !== -1;
       }
+      function isGoogleLabel(label) {
+        var n = String(label || "").toLowerCase();
+        return n.indexOf("google") !== -1 || n.indexOf("drive") !== -1;
+      }
+      // FHD first before resolution (quality-first, budget/deadline unchanged).
+      base.sort(function (a, b) {
+        var qa = qualityOf(a.bucket) || qualityOf(a.name);
+        var qb = qualityOf(b.bucket) || qualityOf(b.name);
+        var ra = (qa === "FHD") ? 0 : 1;
+        var rb = (qb === "FHD") ? 0 : 1;
+        return ra - rb;
+      });
       // Resolution budget: watch+POST above, max 7 extra fetches here.
       // Soft 12s deadline keeps slow networks responsive:
       // resolved-so-far is returned, the rest is dropped (owner rule).
@@ -775,7 +788,25 @@ function createSource(api, config) {
               bud.n--;
               durl = extractOkMp4(og);
             }
+          } else if (isGoogleLabel(it.label)) {
+            // Truthful gate: no blind DROP, no extra fetch (budget untouched).
+            durl = "";
           } else {
+            // No silent continue: honest embed with named reason.
+            const unresolvedReason = "unresolved_passthrough";
+            const unresolvedQuality = qualityOf(it.bucket) || qualityOf(it.name);
+            const unresolvedRef = it.gate;
+            out.push({
+              id: it.token,
+              name: it.name,
+              embedUrl: it.gate,
+              url: it.gate,
+              directUrl: "",
+              type: "embed",
+              quality: unresolvedQuality,
+              headers: { "Referer": unresolvedRef, "User-Agent": userAgent },
+              reason: unresolvedReason
+            });
             continue;
           }
         } catch (e) {}
@@ -787,8 +818,10 @@ function createSource(api, config) {
         else if (nl2.indexOf("4shared") !== -1) ref = "https://www.4shared.com/";
         else if (nl2.indexOf("mp4upload") !== -1) ref = "https://www.mp4upload.com/";
         else if (isOkLabel(it.label)) ref = "https://ok.ru/";
+        else if (nl2.indexOf("google") !== -1 || nl2.indexOf("drive") !== -1) ref = "https://drive.google.com/";
         if (!durl) {
-          const embedReason = nl2.indexOf("videa") !== -1 ? "videa_resolve_failed" : isMp4Capable(it.label) ? "mp4_extract_failed" : "ok_extract_failed";
+          const embedReasonGoogle = "google_passthrough";
+          const embedReason = nl2.indexOf("videa") !== -1 ? "videa_resolve_failed" : isMp4Capable(it.label) ? "mp4_extract_failed" : isGoogleLabel(it.label) ? embedReasonGoogle : "ok_extract_failed";
           const embedQuality = qualityOf(it.bucket) || qualityOf(it.name);
           out.push({
             id: it.token,

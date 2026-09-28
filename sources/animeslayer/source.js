@@ -88,6 +88,12 @@ function createSource(api, config) {
     if (u.indexOf("streamtape") !== -1) return "https://streamtape.com/";
     if (u.indexOf("ok.ru") !== -1) return "https://ok.ru/";
     if (u.indexOf("drive.google") !== -1) return "https://drive.google.com/";
+    if (u.indexOf("vkvideo") !== -1 || u.indexOf("vk.com") !== -1) return "https://vkvideo.ru/";
+    if (u.indexOf("voe.") !== -1) return "https://voe.sx/";
+    if (u.indexOf("videa") !== -1) return "https://videa.hu/";
+    if (u.indexOf("dood") !== -1) return "https://doodstream.com/";
+    if (u.indexOf("mp4upload") !== -1) return "https://www.mp4upload.com/";
+    if (u.indexOf("uqload") !== -1) return "https://uqload.vc/";
     return "";
   }
 
@@ -735,8 +741,13 @@ function createSource(api, config) {
     }
   }
 
+  // mystream (embed.mystream.to): verified dead 2026-09-28 (DNS/fetch
+  // failed; page sweep impossible) and absent from resolveServer
+  // allow-list, so emitting it as honest embed only builds a dead
+  // button. Drop at emission like the other static-dead hosts.
   var DROP_HOSTS = ["vidlox", "fembed", "uptostream", "jawcloud", "streamvid",
-    "streamhub", "highstream", "tune.pk", "krakenfiles", "pixeldrain"];
+    "streamhub", "highstream", "tune.pk", "krakenfiles", "pixeldrain",
+    "mystream"];
 
   function dropHost(url) {
     var u = String(url || "").toLowerCase();
@@ -867,6 +878,8 @@ function createSource(api, config) {
       try {
         t0 = new Date().getTime();
       } catch (e0) {}
+      const OK_HOST_KEY = "ok";
+      const OK_MIN_BUD = 1;
       function deadlineHit() {
         try {
           if (!t0) return false;
@@ -876,8 +889,23 @@ function createSource(api, config) {
         }
       }
       var links = [];
+      const muiltFetchFailedReason = "muilt_fetch_failed";
+      var muiltFetchFailed = false;
       if (muiltN) {
         links = await fetchMuiltLinks(muiltN, bud, muiltEntry);
+        if (!links.length) {
+          // Fetch failed: no deletion — fallback to live episode_urls as
+          // honest embeds (muilt gate preserved, budget/deadline untouched).
+          muiltFetchFailed = true;
+          var muiltFallback = [];
+          for (var fu = 0; fu < urls.length; fu++) {
+            var muiltFallbackRaw = urls[fu] && urls[fu].episode_url ? String(urls[fu].episode_url) : "";
+            if (muiltFallbackRaw && muiltFallbackRaw.indexOf("http") === 0) muiltFallback.push(muiltFallbackRaw);
+          }
+          if (!muiltFallback.length && muiltEntry) muiltFallback.push(muiltEntry);
+          if (!muiltFallback.length) return [];
+          links = muiltFallback;
+        }
       } else {
         // No muilt?n= gate: accept any non-empty episode_urls live link
         // (first valid http entry) instead of instant []; fail-closed
@@ -910,6 +938,20 @@ function createSource(api, config) {
       links = first.concat(mid);
       var idx = 0;
       for (var l = 0; l < links.length; l++) {
+        if (l === 0 && links.length > 1) {
+          var okLinksBuf = [];
+          var okHeadBuf = [];
+          for (var slOk = 0; slOk < links.length; slOk++) {
+            var slLabel = "";
+            try { slLabel = serverNameFor(links[slOk]); } catch (eSl) { slLabel = ""; }
+            if (slLabel === OK_HOST_KEY) okLinksBuf.push(links[slOk]);
+            else okHeadBuf.push(links[slOk]);
+          }
+          if (okLinksBuf.length && okHeadBuf.length) {
+            for (var shOk = 0; shOk < okHeadBuf.length; shOk++) links[shOk] = okHeadBuf[shOk];
+            for (var soOk = 0; soOk < okLinksBuf.length; soOk++) links[okHeadBuf.length + soOk] = okLinksBuf[soOk];
+          }
+        }
         if (deadlineHit()) break;
         var link = links[l];
         if (dropHost(link)) continue;
@@ -921,6 +963,7 @@ function createSource(api, config) {
             // Drive is resolved natively by the app extractor: passthrough
             // only when alive (many shares are deleted).
             if (await driveAlive(link, bud)) {
+              const driveAliveReason = "drive-alive";
               out.push({
                 id: "drive-" + idx,
                 name: "drive",
@@ -928,7 +971,8 @@ function createSource(api, config) {
                 url: link,
                 type: "embed",
                 quality: null,
-                headers: { "Referer": "https://drive.google.com/", "User-Agent": userAgent }
+                headers: { "Referer": "https://drive.google.com/", "User-Agent": userAgent },
+                reason: driveAliveReason
               });
               idx++;
             }
@@ -936,6 +980,7 @@ function createSource(api, config) {
           } else if (isFilemoon(link)) {
             // Filemoon is resolved natively by the app extractor
             // (packer + jwplayer): passthrough like drive.
+            const filemoonPassthroughReason = "filemoon-passthrough";
             out.push({
               id: "filemoon-" + idx,
               name: "filemoon",
@@ -943,7 +988,8 @@ function createSource(api, config) {
               url: link,
               type: "embed",
               quality: null,
-              headers: { "Referer": link, "User-Agent": FIREFOX_MOBILE }
+              headers: { "Referer": link, "User-Agent": FIREFOX_MOBILE },
+              reason: filemoonPassthroughReason
             });
             idx++;
             continue;
@@ -970,6 +1016,21 @@ function createSource(api, config) {
           } else if (label === "streamtape") {
             durl = await resolveStreamtape(link, bud);
           } else if (label === "ok") {
+            if (deadlineHit() || bud.n <= OK_MIN_BUD) {
+              const okSkippedReason = "ok_skipped_low_budget";
+              out.push({
+                id: "ok-" + idx,
+                name: label,
+                embedUrl: link,
+                url: link,
+                type: "embed",
+                quality: null,
+                headers: { "Referer": link, "User-Agent": FIREFOX_MOBILE },
+                reason: okSkippedReason
+              });
+              idx++;
+              continue;
+            }
             var okr = await resolveOk(link, bud);
             if (okr && okr.qualities && okr.qualities.length) {
               var qh = [];
@@ -982,6 +1043,30 @@ function createSource(api, config) {
                   headers: okr.qualities[qi].headers || { "Referer": link, "User-Agent": FIREFOX_MOBILE }
                 });
                 rememberMedia(okr.qualities[qi].url, link);
+              }
+              var okBestUrl = (qh[0] && qh[0].url) || "";
+              var okProbeOk = true;
+              if (okBestUrl && budDec(bud)) {
+                try {
+                  okProbeOk = await probeMedia(okBestUrl, link);
+                } catch (eOkProbe) {
+                  okProbeOk = false;
+                }
+              }
+              if (!okProbeOk) {
+                const okProbeFailedReason = "ok_probe_failed";
+                out.push({
+                  id: "ok-" + idx,
+                  name: label,
+                  embedUrl: link,
+                  url: link,
+                  type: "embed",
+                  quality: null,
+                  headers: { "Referer": link, "User-Agent": FIREFOX_MOBILE },
+                  reason: okProbeFailedReason
+                });
+                idx++;
+                continue;
               }
               out.push({
                 id: "sl-" + idx,
@@ -1015,7 +1100,7 @@ function createSource(api, config) {
             // Honest passthrough: muilt host without dedicated resolver
             // (voe/videa/dood/mp4upload/uqload/...) stays playable via
             // native embed instead of being dropped.
-            var unresolvedReason = "unresolved_passthrough";
+            const unresolvedReason = muiltFetchFailed ? muiltFetchFailedReason : "unresolved_passthrough";
             out.push({
               id: label + "-" + idx,
               name: label,
@@ -1163,11 +1248,20 @@ function createSource(api, config) {
         var u = serverUrl.toLowerCase();
         var okHost = u.indexOf("drive.google") !== -1 || u.indexOf("filemoon") !== -1 ||
           u.indexOf("mediafire.com") !== -1 || u.indexOf("mixdrop") !== -1 ||
-          u.indexOf("streamtape") !== -1 || u.indexOf("ok.ru") !== -1;
+          u.indexOf("streamtape") !== -1 || u.indexOf("ok.ru") !== -1 ||
+          u.indexOf("vkvideo") !== -1 || u.indexOf("vk.com") !== -1 ||
+          u.indexOf("voe.") !== -1 || u.indexOf("videa") !== -1 ||
+          u.indexOf("dood") !== -1 || u.indexOf("mp4upload.com") !== -1 ||
+          u.indexOf("uqload") !== -1;
         if (!okHost) return null;
+        var incomingDirect = (args && (args.directUrl || args.direct_url)) || "";
+        var slow = String(serverUrl).toLowerCase();
+        var isDirectMedia = slow.indexOf(".mp4") !== -1 || slow.indexOf(".m3u8") !== -1;
+        var keptDirect = incomingDirect || (isDirectMedia ? serverUrl : "");
         return {
           url: serverUrl,
-          type: "embed",
+          directUrl: keptDirect || serverUrl,
+          type: isDirectMedia ? "mp4" : "embed",
           headers: {
             "User-Agent": userAgent,
             "Referer": siteUrl + "/",

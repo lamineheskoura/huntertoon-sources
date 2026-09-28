@@ -1060,6 +1060,10 @@ function createSource(api, config) {
       const embedReasonOk = "ok-no-resolver";
       const embedReasonVkFallback = "vk-unresolved";
       const embedReasonTierFallback = "tier-unresolved";
+      const embedReasonTier99 = "tier99-passthrough";
+      const embedReasonS1Untried = "s1-untried";
+      const embedReasonDeadline = "deadline-untried";
+      const embedReasonBudget = "budget-untried";
       const okHostToken = "ok.ru";
       var costOrder = [1, 7, 0, 2, 8, 3, 4, 5, 6, 9, 10];
       var s1tried = 0;
@@ -1179,6 +1183,7 @@ function createSource(api, config) {
         }
       }
       // W-S1: honest embed fallback (ok has no resolver; vk/tier failures keep live embed).
+      // PKG5: every tier99/s1tried/deadline/budget untried keeps live embed+reason (no delete).
       for (var fs = 0; fs < out.length; fs++) {
         if (out[fs].directUrl || (out[fs].qualities && out[fs].qualities.length)) continue;
         if (!out[fs].embedUrl) continue;
@@ -1197,6 +1202,21 @@ function createSource(api, config) {
           out[fs].dropped = false;
           out[fs].type = "embed";
           out[fs].embedReason = (ft === 6 ? embedReasonVkFallback : embedReasonTierFallback);
+          continue;
+        }
+        if (!out[fs].dropped && !out[fs].embedReason) {
+          out[fs].type = "embed";
+          if (ft === 99) {
+            out[fs].embedReason = embedReasonTier99;
+          } else if (ft === 0) {
+            out[fs].embedReason = embedReasonS1Untried;
+          } else if (deadlineHit()) {
+            out[fs].embedReason = embedReasonDeadline;
+          } else if (bud.n <= 0) {
+            out[fs].embedReason = embedReasonBudget;
+          } else {
+            out[fs].embedReason = embedReasonTierFallback;
+          }
         }
       }
       var ordered = [];
@@ -1204,13 +1224,16 @@ function createSource(api, config) {
         // Embeds pass ONLY for app-extracted hosts (drive/filemoon tiers);
         // everything else must carry direct media (owner rule).
         // W-S1: plus honest embed fallback (ok no-resolver, vk/tier unresolved) with named reason.
+        // PKG5: plus tier99/s1tried/deadline/budget untried embeds (no delete).
         var t = tierOf(out[q].name, out[q].embedUrl);
         const hasDirectMedia = out[q].directUrl || (out[q].qualities && out[q].qualities.length);
         const isDriveFilemoonEmbed = (out[q].type === "embed" && (t === 8 || t === 10) && !out[q].dropped);
         const isHonestEmbed = (out[q].type === "embed" && out[q].embedUrl && !out[q].dropped && out[q].embedReason &&
           (out[q].embedReason === embedReasonDrive || out[q].embedReason === embedReasonFilemoon ||
            out[q].embedReason === embedReasonOk || out[q].embedReason === embedReasonVkFallback ||
-           out[q].embedReason === embedReasonTierFallback));
+           out[q].embedReason === embedReasonTierFallback || out[q].embedReason === embedReasonTier99 ||
+           out[q].embedReason === embedReasonS1Untried || out[q].embedReason === embedReasonDeadline ||
+           out[q].embedReason === embedReasonBudget));
         var hasMedia = hasDirectMedia || isDriveFilemoonEmbed || isHonestEmbed;
         if (!out[q].dropped && hasMedia) ordered.push(out[q]);
       }
@@ -1389,8 +1412,9 @@ function createSource(api, config) {
         if (!serverUrl) return null;
         // Same allow-list as getEpisodeServers: drive/filemoon passthrough
         // or direct media only. Anything else -> null (no fake embeds).
+        // google is NOT dead: drive.google shares are app-extracted passthrough.
         var dead = ["share4max", "rubyvidhub", "streamruby", "mega", "hgcloud",
-          "yonaplay", "soraplay", "google", "fembed", "uptostream", "jawcloud",
+          "yonaplay", "soraplay", "fembed", "uptostream", "jawcloud",
           "streamvid", "streamhub", "highstream", "vidlox", "tune.pk",
           "krakenfiles", "pixeldrain"];
         var ul = serverUrl.toLowerCase();
@@ -1398,7 +1422,7 @@ function createSource(api, config) {
           if (ul.indexOf(dead[di]) !== -1) return null;
         }
         var u = serverUrl.toLowerCase();
-        var okHost = u.indexOf("drive.google") !== -1 || u.indexOf("filemoon") !== -1 ||
+        var okHost = u.indexOf("drive.google") !== -1 || u.indexOf("google") !== -1 || u.indexOf("filemoon") !== -1 ||
           u.indexOf("mp4upload.com") !== -1 || u.indexOf("dood") !== -1 ||
           u.indexOf("playmogo") !== -1 || u.indexOf("uqload") !== -1 ||
           u.indexOf("voe.") !== -1 || u.indexOf("videa.hu") !== -1 ||
