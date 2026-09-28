@@ -1660,7 +1660,7 @@
             "id": "animeslayer",
             "sid": 136,
             "name": "أنمي سلاير (AnimeSlayer)",
-            "version": "1.3.4",
+            "version": "1.3.5",
             "enabled": true,
             "status": "beta",
             "base_url": "https://anslayer.com/anime/public",
@@ -1676,7 +1676,7 @@
             },
             "script": {
                 "url": "sources/animeslayer/source.js",
-                "sha256": "3E41D116A79E5FBA11446E7086EA00A8C1E794D23CA5D0A3B2E3C36BAFEEAAAF",
+                "sha256": "09F83D7908439D40352DC675F2B852543E10892397448B23D6203B8667346377",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1698,7 +1698,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "AnimeSlayer - Arabic anime source on anslayer.com public JSON API. Lists, search, details, episodes, native direct-mp4 servers plus drive passthrough.",
-                "changelog": "v1.3.4: ok last always (links stable partition) + ok single attempt + proactive skip on deadline/low bud (honest embed, no fetch) + ok HEAD-probe like mediafire/mixdrop/streamtape (probe-failed honest embed); bud(14)/deadline(12s)/drop-list untouched. v1.3.3: muilt fetch-failure fallback (live episode_urls honest embed muilt_fetch_failed, no deletion; gate preserved) + okHost completion (vk/voe/videa/dood/mp4upload/uqload) + drive/filemoon honest reasons + resolveServer directUrl preserve; budget/deadline/drop-list untouched. v1.3.2: non-muilt episode_urls fallback (first live http link, fail-closed; muilt gate preserved, early-return replaced) + unresolved-host honest embed passthrough (reason); budget/deadline/drop-list untouched. v1.3.1: vk passthrough + failed-ok honest embed (reason) instead of dropping; drop-list/budget/deadline untouched. v1.3.0: Kotatsu-faithful extractors (ok data-options, streamtape assembly, mediafire API), true pagination, mp4 HEAD-probe gate."
+                "changelog": "v1.3.5: homepage = latest updates first with REAL _offset pagination (30/page, infinite; plain limit/offset proven ignored live) + ok.ru zero-fetch honest embed (embed page hangs 20s+, blew the app 10s server budget -> empty sheet; app owns native ok.ru extractor) + filters/search paginate via _offset; mystream dropped (verified dead DNS). v1.3.4: ok last always (links stable partition) + ok single attempt + proactive skip on deadline/low bud (honest embed, no fetch) + ok HEAD-probe like mediafire/mixdrop/streamtape (probe-failed honest embed); bud(14)/deadline(12s)/drop-list untouched. v1.3.3: muilt fetch-failure fallback (live episode_urls honest embed muilt_fetch_failed, no deletion; gate preserved) + okHost completion (vk/voe/videa/dood/mp4upload/uqload) + drive/filemoon honest reasons + resolveServer directUrl preserve; budget/deadline/drop-list untouched. v1.3.2: non-muilt episode_urls fallback (first live http link, fail-closed; muilt gate preserved, early-return replaced) + unresolved-host honest embed passthrough (reason); budget/deadline/drop-list untouched. v1.3.1: vk passthrough + failed-ok honest embed (reason) instead of dropping; drop-list/budget/deadline untouched. v1.3.0: Kotatsu-faithful extractors (ok data-options, streamtape assembly, mediafire API), true pagination, mp4 HEAD-probe gate."
             }
         },
         "anime3rb": {

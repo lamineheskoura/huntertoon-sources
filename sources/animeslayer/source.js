@@ -8,7 +8,7 @@ function createSource(api, config) {
   var lastPageUrl = baseUrl + "/";
   var CLIENT_ID = "android-app2";
   var CLIENT_SECRET = "7befba6263cc14c90d2f1d6da2c5cf9b251bfbbd";
-  var LIST_LIMIT = 20;
+  var LIST_LIMIT = 30;
   var ALT_API = "https://a-reslayer.com/la/public/api/f";
 
   var defaultHeaders = {
@@ -220,11 +220,17 @@ function createSource(api, config) {
     return null;
   }
 
+  // List params use the underscore contract (_limit/_offset/_order_by +
+  // just_info=Yes), verified live 2026-09-28: plain limit/offset are
+  // ignored (same 25 always) while _offset paginates for real
+  // (page1∩page2=0, _limit:30 returns 30). Matches the Kotatsu
+  // reference (AnimeSlayer.kt) and the app's 10s server budget.
   function listUrl(listType, page, extra) {
     var q = {
       list_type: listType,
-      limit: LIST_LIMIT,
-      offset: ((page || 1) - 1) * LIST_LIMIT
+      _limit: LIST_LIMIT,
+      _offset: ((page || 1) - 1) * LIST_LIMIT,
+      just_info: "Yes"
     };
     if (extra) {
       for (var k in extra) q[k] = extra[k];
@@ -244,10 +250,9 @@ function createSource(api, config) {
     };
   }
 
-  // Browse pagination: the API ignores limit/offset/page (always the same
-  // 25). Page 1 = alphabetical list, page 2 = latest updates (25 distinct
-  // items, 0 overlap verified live), page 3+ = [] so infinite scroll stops
-  // instead of repeating. Per-list seen-guards (browse/search/filter are
+  // Homepage = latest updates first (the app's main list), with REAL
+  // pagination via _offset (verified live: distinct pages). Per-list
+  // seen-guards stay as a fail-closed net (browse/search/filter are
   // independent; a shared map would corrupt one list with another).
   var seenBrowse = {};
   var seenSearch = {};
@@ -298,11 +303,10 @@ function createSource(api, config) {
 
   async function browsePage(page) {
     page = page || 1;
-    if (page > 2) return [];
     if (page <= 1) seenBrowse = {};
-    var type = page > 1 ? "latest_updated_episode_new" : "anime_list";
-    var extra = type === "latest_updated_episode_new" ? { order: "latest_first" } : null;
-    return await parseList(listUrl(type, 1, extra), page, seenBrowse);
+    return await parseList(
+      listUrl("latest_updated_episode_new", page, { _order_by: "latest_first" }),
+      page, seenBrowse);
   }
 
   async function parseList(url, page, seen) {
@@ -1016,74 +1020,17 @@ function createSource(api, config) {
           } else if (label === "streamtape") {
             durl = await resolveStreamtape(link, bud);
           } else if (label === "ok") {
-            if (deadlineHit() || bud.n <= OK_MIN_BUD) {
-              const okSkippedReason = "ok_skipped_low_budget";
-              out.push({
-                id: "ok-" + idx,
-                name: label,
-                embedUrl: link,
-                url: link,
-                type: "embed",
-                quality: null,
-                headers: { "Referer": link, "User-Agent": FIREFOX_MOBILE },
-                reason: okSkippedReason
-              });
-              idx++;
-              continue;
-            }
-            var okr = await resolveOk(link, bud);
-            if (okr && okr.qualities && okr.qualities.length) {
-              var qh = [];
-              for (var qi = 0; qi < okr.qualities.length; qi++) {
-                qh.push({
-                  label: okr.qualities[qi].label,
-                  url: okr.qualities[qi].url,
-                  height: okr.qualities[qi].height,
-                  isDefault: qi === 0,
-                  headers: okr.qualities[qi].headers || { "Referer": link, "User-Agent": FIREFOX_MOBILE }
-                });
-                rememberMedia(okr.qualities[qi].url, link);
-              }
-              var okBestUrl = (qh[0] && qh[0].url) || "";
-              var okProbeOk = true;
-              if (okBestUrl && budDec(bud)) {
-                try {
-                  okProbeOk = await probeMedia(okBestUrl, link);
-                } catch (eOkProbe) {
-                  okProbeOk = false;
-                }
-              }
-              if (!okProbeOk) {
-                const okProbeFailedReason = "ok_probe_failed";
-                out.push({
-                  id: "ok-" + idx,
-                  name: label,
-                  embedUrl: link,
-                  url: link,
-                  type: "embed",
-                  quality: null,
-                  headers: { "Referer": link, "User-Agent": FIREFOX_MOBILE },
-                  reason: okProbeFailedReason
-                });
-                idx++;
-                continue;
-              }
-              out.push({
-                id: "sl-" + idx,
-                name: label,
-                embedUrl: link,
-                url: link,
-                type: okr.type,
-                quality: qh[0].label,
-                qualities: qh,
-                selectedQualityIndex: 0,
-                headers: { "Referer": link, "User-Agent": FIREFOX_MOBILE }
-              });
-              idx++;
-              continue;
-            }
-            // Honest fallback: resolve failed -> keep live embed, no fake direct.
-            const okReason = "ok_resolve_failed";
+            // ok.ru: ZERO fetches in JS, always honest embed. Rationale
+            // (verified live 2026-09-28): the embed page hangs 20s+ from
+            // many networks (incl. Algeria), which alone blows the app's
+            // 10s getEpisodeServers budget (server_picker_sheet kServerFetchTimeout)
+            // and yields an empty sheet. The app owns a full native ok.ru
+            // extractor (_extractOkRu: data-options/flashvars + m.ok.ru +
+            // HLS expansion, lazy per-tap with its own 20s budget) plus a
+            // WebView embed fallback (ok.ru is allow-listed), so handing
+            // the live embed over untouched is strictly better than a
+            // doomed deep-resolve. No budget consumed, no deadline burned.
+            const okPassthroughReason = "ok_app_extractor";
             out.push({
               id: "ok-" + idx,
               name: label,
@@ -1092,7 +1039,7 @@ function createSource(api, config) {
               type: "embed",
               quality: null,
               headers: { "Referer": link, "User-Agent": FIREFOX_MOBILE },
-              reason: okReason
+              reason: okPassthroughReason
             });
             idx++;
             continue;
@@ -1278,12 +1225,12 @@ function createSource(api, config) {
       try {
         // Real filters (verified live): exact-case type, status, season.
         // Genre has NO working key (verified identical sets) -> browse.
-        // Year is ignored server-side. Each filter is one 25-item page;
-        // page 2+ returns [] so scroll stops honestly.
+        // Year is ignored server-side. Filters paginate for real via
+        // _offset (verified live 2026-09-28); the seen-guard dedups any
+        // server-side repeats so the scroll stops honestly.
         var page = (args && args.page) || 1;
-        if (page > 1) return [];
         if (page <= 1) seenFilter = {};
-        var q = { list_type: "filter", limit: LIST_LIMIT, offset: 0 };
+        var q = { list_type: "filter", _limit: LIST_LIMIT, _offset: (page - 1) * LIST_LIMIT, just_info: "Yes" };
         var type = cleanTitle((args && args.type) || "");
         var status = cleanTitle((args && args.status) || "");
         var season = cleanTitle((args && args.season) || "");
@@ -1324,7 +1271,7 @@ function createSource(api, config) {
         }
         var hasFilter = q.anime_type || q.anime_status || q.anime_season;
         if (!hasFilter) return await browsePage(page);
-        return await parseList(listUrl("filter", 1, q), page, seenFilter);
+        return await parseList(listUrl("filter", page, q), page, seenFilter);
       } catch (e) {
         return [];
       }
