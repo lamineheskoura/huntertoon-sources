@@ -10,22 +10,24 @@ function createSource(api, config) {
   // in getFilteredManga rejects those instead of returning homepage cards.
   var defaultGenres = ["مغامرة", "خيال", "xianxia", "مكتملة"];
   var defaultTypes = ["novel", "manga"];
+  // Referer header causes 403 on cenele.com detail pages (verified live).
+  // The app's fetch orchestrator injects Referer when omitted, so an
+  // explicit empty value is required to prevent injection.
   var headers = {
     "User-Agent": userAgent,
     Accept:
       "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
     "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-    Referer: baseUrl + "/",
-    Origin: baseUrl,
-    "Sec-Fetch-Dest": "document",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": "same-origin",
-    "Upgrade-Insecure-Requests": "1"
+    Referer: "",
+    "Sec-Fetch-Dest": "",
+    "Sec-Fetch-Mode": "",
+    "Sec-Fetch-Site": "",
+    "Upgrade-Insecure-Requests": "0"
   };
 
   function abs(url) {
     if (!url) return "";
-    url = String(url).replace(/&/g, "&").trim();
+    url = String(url).replace(/&amp;/g, "&").trim();
     if (url.indexOf("//") === 0) return "https:" + url;
     if (url.indexOf("http://") === 0) return "https://" + url.substring(7);
     if (url.indexOf("https://") === 0) return url;
@@ -62,7 +64,7 @@ function createSource(api, config) {
   //     per_page:50} → {html, has_more}. Config comes from the inline
   //  `var nhvNovelV2 = {...}` JSON on the detail page.
   function nhvConfig(pageHtml) {
-    var m = String(pageHtml || "").match(/var\s+nhvNovelV2\s*=\s*(\{[\s\S]*?\});/);
+    var m = String(pageHtml || "").match(/var\s+nhvNovelV2\s*=\s*(\{[\s\S]*\});/);
     var cfg = {};
     if (m) {
       try { cfg = JSON.parse(m[1]); } catch (e) { cfg = {}; }
@@ -83,8 +85,7 @@ function createSource(api, config) {
       "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
       "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
       "X-Requested-With": "XMLHttpRequest",
-      "Referer": referer || baseUrl + "/",
-      "Origin": baseUrl
+      "Referer": ""
     };
     if (api.http) {
       var res = await api.http(baseUrl + "/wp-admin/admin-ajax.php", { method: "POST", headers: h, body: body.join("&") });
@@ -145,14 +146,16 @@ function createSource(api, config) {
   }
 
   function isNovelMarker(text) {
-    text = String(text || "");
-    return text.indexOf("رواية") !== -1 || text.indexOf("Novel") !== -1;
+    text = String(text || "").toLowerCase();
+    return text.indexOf("رواية") !== -1 || text.indexOf("novel") !== -1;
   }
 
   function decodeEntities(s) {
     return String(s || "")
-      .replace(/&/g, "&")
-      .replace(/"/g, '"')
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
       .replace(/&#39;/g, "'")
       .replace(/&nbsp;/g, " ");
   }
@@ -393,9 +396,10 @@ function createSource(api, config) {
       .replace(/<style[\s\S]*?<\/style>/gi, "")
       .replace(/<[^>]*>/g, "")
       .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
       .replace(/&quot;/g, '"')
-      .replace(/&/g, "&")
-      .replace(/"/g, '"')
       .replace(/&#39;/g, "'");
 
     // Split into paragraphs
