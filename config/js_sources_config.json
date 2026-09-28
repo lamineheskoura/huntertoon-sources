@@ -1,8 +1,8 @@
 {
-    "version": "1.48.0",
+    "version": "1.49.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.09.28.1",
+    "manifest_version": "2026.09.28.2",
     "generated_at": "2026-09-04T14:30:00Z",
     "last_updated": "2026-09-21T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -1428,7 +1428,7 @@
             "id": "realmnovel",
             "sid": 125,
             "name": "عالم الروايات (RealmNovel)",
-            "version": "4.0.1",
+            "version": "4.0.2",
             "enabled": true,
             "status": "stable",
             "base_url": "http://62.171.141.197:5007",
@@ -1438,13 +1438,18 @@
             "image_referer": "https://www.realmnovel.com/",
             "headers": {
                 "x-app-version": "10",
-                "User-Agent": "Dart/3.9 (dart:io)",
+                "User-Agent": "Dart/3.9 (dart:io) Chrome/124",
                 "Accept": "application/json, text/plain, */*",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Referer": "",
+                "Sec-Fetch-Dest": "",
+                "Sec-Fetch-Mode": "",
+                "Sec-Fetch-Site": "",
+                "Upgrade-Insecure-Requests": "0"
             },
             "script": {
                 "url": "sources/realmnovel/source.js",
-                "sha256": "0D73A3D2E75C659DB3DF0D8D2DADE90053D48183C2E81D9670059DF15B7B92A6",
+                "sha256": "81305FA1B213EB5CF225AA976A04119FEFEB8A4FACA4FBEF266C58BDB825A4CB",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1466,7 +1471,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "RealmNovel (عالم الروايات) Arabic novel source using the Novels Sky API with x-app-version bypass (no login).",
-                "changelog": "v4.0.1: Fix fetchMoreChapters reading flat app args {url, nextPage} (was previousResult-only, returned null after 100). v4.0.0: x-app-version: 10 unlocks API without login; full chapters incl. 51+."
+                "changelog": "v4.0.2: Survive app orchestrator rewrites (dual-gate UA keeps Dart prefix + Chrome token; empty Referer/Sec-Fetch/UIR override injected defaults that the origin denies); v4.0.1: fetchMoreChapters flat args"
             }
         },
         "mknov": {

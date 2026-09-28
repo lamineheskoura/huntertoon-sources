@@ -1,6 +1,18 @@
 function createSource(api, config) {
   var baseUrl = ((config && config.base_url) || "http://62.171.141.197:5007").replace(/\/+$/, "");
-  var userAgent = (config && config.user_agent) || "Dart/3.9 (dart:io)";
+  // Headers must satisfy THREE gates at once (all verified live from a
+  // residential phone; datacenter egress is IP-denied entirely):
+  //  1. UA: full-Chrome UAs get {"message":"غير مصرح"} — the app's fetch
+  //     orchestrator rewrites any caller UA lacking "Chrome/" to full
+  //     Chrome, so the UA keeps the Dart prefix AND a Chrome/ suffix
+  //     (orchestrator preserves it verbatim, origin accepts it).
+  //  2. Referer: ANY Referer value gets {"message":"غير مسموح"} — the
+  //     orchestrator injects "Referer: <site>/" when omitted, so an
+  //     explicit empty value is required (empty/absent both pass).
+  //  3. Sec-Fetch-*: the orchestrator's document/navigate/cross-site trio
+  //     is also denied — overridden with empty values (empty/absent pass).
+  // x-app-version is mandatory: dropping it returns 426 forceUpdate.
+  var userAgent = (config && config.user_agent) || "Dart/3.9 (dart:io) Chrome/124";
   var lastChapterUrl = baseUrl + "/";
 
   // Auth: NONE required. The server gates on exact header x-app-version: 10
@@ -9,7 +21,12 @@ function createSource(api, config) {
     "x-app-version": "10",
     "User-Agent": userAgent,
     "Accept": "application/json, text/plain, */*",
-    "Content-Type": "application/json"
+    "Content-Type": "application/json",
+    "Referer": "",
+    "Sec-Fetch-Dest": "",
+    "Sec-Fetch-Mode": "",
+    "Sec-Fetch-Site": "",
+    "Upgrade-Insecure-Requests": "0"
   };
 
   function makeAbsolute(url) {
