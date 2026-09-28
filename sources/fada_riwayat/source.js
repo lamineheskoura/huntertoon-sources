@@ -747,7 +747,7 @@ function createSource(api, config) {
       var urls =
         page === 1
           ? [baseUrl + "/cont/", baseUrl + "/"]
-          : [baseUrl + "/cont/page/" + page + "/", baseUrl + "/page/" + page + "/?m_orderby=latest"];
+          : [baseUrl + "/cont/page/" + page + "/", baseUrl + "/cont/page/" + page + "/?m_orderby=latest"];
 
       for (var i = 0; i < urls.length; i++) {
         try {

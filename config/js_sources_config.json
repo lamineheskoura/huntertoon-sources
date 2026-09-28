@@ -1,8 +1,8 @@
 {
-    "version": "1.50.0",
+    "version": "1.51.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.09.28.3",
+    "manifest_version": "2026.09.28.4",
     "generated_at": "2026-09-04T14:30:00Z",
     "last_updated": "2026-09-21T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -971,7 +971,7 @@
             "id": "fada_riwayat",
             "sid": 107,
             "name": "فضاء الروايات (Fada Riwayat)",
-            "version": "1.3.0",
+            "version": "1.3.1",
             "enabled": true,
             "status": "beta",
             "base_url": "https://cenele.com",
@@ -991,7 +991,7 @@
             },
             "script": {
                 "url": "sources/fada_riwayat/source.js",
-                "sha256": "9A8EC157DBE9E50192D66C58BCC7738B7D989F3ED630AF13FB17DE2471F5E9AC",
+                "sha256": "7C6115BFF885634015DEDFCE509ECEBC2BBBBB045AD3CBA12D7085E01CB8CDC6",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1014,7 +1014,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Fada Riwayat novel-first source migrated to JavaScript",
-                "changelog": "v1.3.0: Fix Referer/Sec-Fetch 403 on detail pages; fix entity decoding no-op; fix isNovelMarker case; harden nhvConfig regex"
+                "changelog": "v1.3.1: Fix pagination URL for pages 2+ (was /page/N/ which returns homepage, now /cont/page/N/); v1.3.0: Fix Referer/Sec-Fetch 403 on detail pages; fix entity decoding no-op; fix isNovelMarker case; harden nhvConfig regex"
             }
         },
         "nadi_al_riwayt": {
