@@ -15,10 +15,16 @@ function createSource(api, config) {
   };
   // The JSON API (api.rewayat.club) answers 406 to text/html Accept —
   // API calls MUST use the JSON Accept below (verified live).
+  // X-App-Version mirrors the operator's official app (com.myapp.novels_sky
+  // v1.2.0 sends its own version via api_client on every call): today the
+  // backend ignores it (200 with or without), but the operator does gate
+  // behind forceUpdate on this family (realmnovel precedent), so we stay
+  // version-identified rather than anonymous.
   var jsonHeaders = {
     "User-Agent": userAgent,
     "Accept": "application/json, text/plain, */*",
     "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+    "X-App-Version": "1.2.0",
     "Referer": baseUrl + "/",
     "Origin": baseUrl
   };
