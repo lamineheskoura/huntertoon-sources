@@ -151,6 +151,13 @@ function createSource(api, config) {
   // reference implementation; some hosts reject other identities).
   var FIREFOX_MOBILE = "Mozilla/5.0 (Android 14; Mobile; rv:124.0) Gecko/124.0 Firefox/124.0";
 
+  // Liveness of the last provider-page fetch (set by fetchText).
+  // Used to tell "page alive but unparseable" (honest embed, may still
+  // play via WebView/app extractor) from "host unreachable" (drop —
+  // the embed would be a dead button). Deleted-share pages throw
+  // (!ok) so they count as unreachable and stay dropped.
+  var lastPageAlive = false;
+
   async function fetchText(url, referer, ua) {
     lastPageUrl = url || lastPageUrl;
     var headers = {
@@ -160,7 +167,11 @@ function createSource(api, config) {
       "Referer": referer || siteUrl + "/"
     };
     var res = await api.http(url, { method: "GET", headers: headers });
-    if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : 0) + " for " + url);
+    if (!res || !res.ok) {
+      lastPageAlive = false;
+      throw new Error("HTTP " + (res ? res.status : 0) + " for " + url);
+    }
+    lastPageAlive = true;
     return res.body || "";
   }
 
@@ -876,7 +887,12 @@ function createSource(api, config) {
           if (mm && !muiltN) muiltN = decodeURIComponent(mm[1]);
         }
       }
-      // Resolution budget max 14 fetches + soft 12s deadline.
+      // Resolution budget max 14 fetches + soft 7s deadline. The 7s is
+      // deliberate: the app's server sheet times out getEpisodeServers
+      // at 10s (server_picker_sheet kServerFetchTimeout), so answering
+      // fast-and-partial beats perfect-and-late (late = empty sheet).
+      // Skipped links are emitted as honest deadline_untried embeds
+      // below, never silently vanished.
       var bud = { n: 14 };
       var t0 = 0;
       try {
@@ -887,7 +903,7 @@ function createSource(api, config) {
       function deadlineHit() {
         try {
           if (!t0) return false;
-          return (new Date().getTime() - t0) > 12000;
+          return (new Date().getTime() - t0) > 7000;
         } catch (e) {
           return false;
         }
@@ -956,12 +972,40 @@ function createSource(api, config) {
             for (var soOk = 0; soOk < okLinksBuf.length; soOk++) links[okHeadBuf.length + soOk] = okLinksBuf[soOk];
           }
         }
-        if (deadlineHit()) break;
+        if (deadlineHit()) {
+          // Deadline: no silent vanish. Every link not yet attempted
+          // becomes an honest embed (drop-list still honored) so the
+          // sheet always has something to show instead of timing out
+          // empty. The app verifies/extracts lazily per tap.
+          for (var li = l; li < links.length; li++) {
+            var llink = links[li];
+            if (!llink || dropHost(llink)) continue;
+            var llabel = "سيرفر";
+            try {
+              llabel = serverNameFor(llink) || "سيرفر";
+            } catch (eLL) {}
+            out.push({
+              id: llabel + "-dl-" + idx,
+              name: llabel,
+              embedUrl: llink,
+              url: llink,
+              type: "embed",
+              quality: null,
+              headers: { "Referer": llink, "User-Agent": FIREFOX_MOBILE },
+              reason: "deadline_untried"
+            });
+            idx++;
+          }
+          break;
+        }
         var link = links[l];
         if (dropHost(link)) continue;
         var durl = "";
         var stype = "mp4";
         var label = serverNameFor(link);
+        // Fresh liveness per link: resolvers that bail early (no budget)
+        // must not inherit the previous link's fetch flag.
+        lastPageAlive = false;
         try {
           if (isDrive(link)) {
             // Drive is resolved natively by the app extractor: passthrough
@@ -1062,7 +1106,26 @@ function createSource(api, config) {
             continue;
           }
         } catch (e) {}
-        if (!durl) continue;
+        if (!durl) {
+          // Resolve failed: page alive but unparseable -> honest embed
+          // (the page may still play via WebView/app extractor); host
+          // unreachable -> drop (embed would be a dead button).
+          if ((label === "mediafire" || label === "mixdrop" || label === "streamtape") && lastPageAlive) {
+            const unresReason = label + "_unresolved";
+            out.push({
+              id: label + "-un-" + idx,
+              name: label,
+              embedUrl: link,
+              url: link,
+              type: "embed",
+              quality: null,
+              headers: { "Referer": link, "User-Agent": FIREFOX_MOBILE },
+              reason: unresReason
+            });
+            idx++;
+          }
+          continue;
+        }
         // Final gate: HEAD-probe kills file-pages masquerading as mp4.
         // No budget left -> trust the pattern (previous behavior).
         if (budDec(bud)) {
