@@ -1,8 +1,8 @@
 {
-    "version": "1.46.0",
+    "version": "1.47.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.09.27.4",
+    "manifest_version": "2026.09.27.5",
     "generated_at": "2026-09-04T14:30:00Z",
     "last_updated": "2026-09-21T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -1017,7 +1017,7 @@
             "id": "nadi_al_riwayt",
             "sid": 124,
             "name": "نادي الروايات (Nadi Al Riwayat)",
-            "version": "1.1.0",
+            "version": "1.1.1",
             "enabled": true,
             "status": "beta",
             "base_url": "https://rewayat.club",
@@ -1033,7 +1033,7 @@
             },
             "script": {
                 "url": "sources/nadi_al_riwayt/source.js",
-                "sha256": "F6ABAAD76B2B511924FB7D3A9134B380A340D3A0596EF336659EFD43F8A08602",
+                "sha256": "E80F4547BAA864742FE7FCD06A9FF4FA906D5EC8AC8E1C5A7BE41ACA43D06C70",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1055,7 +1055,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Nadi Al Riwayat novel-only source migrated to JavaScript",
-                "changelog": "v1.1.0: Fix search/list via JSON Accept (API 406s text/html); genres union from API + id-mapped filter; details enriched from novel API; all chapters unlocked"
+                "changelog": "v1.1.1: Harden details (API metadata survives HTML failure), per-host cover routing, non-poisoning genre cache, lighter pagination; v1.1.0: JSON Accept fix, genres union, id-mapped filter, all chapters unlocked"
             }
         },
         "despair_manga": {

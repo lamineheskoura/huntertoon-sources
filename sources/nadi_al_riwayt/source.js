@@ -39,8 +39,14 @@ function createSource(api, config) {
     if (url.indexOf("//") === 0) return "https:" + url;
     if (url.indexOf("http://") === 0) return "https://" + url.substring(7);
     if (url.indexOf("https://") === 0) return url;
-    if (url.charAt(0) === "/") return apiCoverBase + url;
-    return apiCoverBase + "/" + url;
+    // Site assets: API media lives under /media/ on the API host,
+    // everything else relative resolves against the website host.
+    if (url.charAt(0) === "/") {
+      if (url.indexOf("/media/") === 0) return apiCoverBase + url;
+      return baseUrl + url;
+    }
+    if (url.indexOf("media/") === 0) return apiCoverBase + "/" + url;
+    return baseUrl + "/" + url;
   }
 
   async function html(url) {
@@ -91,7 +97,7 @@ function createSource(api, config) {
   var genreIdCache = null;
 
   async function genreIdMap() {
-    if (genreIdCache) return genreIdCache;
+    if (genreIdCache && Object.keys(genreIdCache).length) return genreIdCache;
     var map = {};
     for (var p = 1; p <= 3; p++) {
       try {
@@ -107,7 +113,9 @@ function createSource(api, config) {
         if (!data.next) break;
       } catch (e) { break; }
     }
-    genreIdCache = map;
+    // Cache only non-empty maps: a flaky first run must not poison later
+    // filters into permanent [].
+    if (Object.keys(map).length) genreIdCache = map;
     return map;
   }
 
@@ -296,11 +304,27 @@ function createSource(api, config) {
       if (slug) {
         try { apiMeta = await apiJson(apiCoverBase + "/api/novels/" + slug + "/"); } catch (eApi) {}
       }
-      var pageHtml = await html(url);
+      // HTML chapters below are best-effort: a failed page fetch must not
+      // discard the API metadata already collected (fail-soft, not empty).
+      var pageHtml = "";
+      try { pageHtml = await html(url); } catch (eHtml) {}
       var covers = extractCoverMap(pageHtml);
-      var title = await api.cssText(pageHtml, "h1.font-cairo, h1, .v-card-title, .novel-title") || await api.cssAttr(pageHtml, "meta[property='og:title']", "content") || slug;
-      var cover = await api.cssAttr(pageHtml, "meta[property='og:image']", "content") || await api.cssAttr(pageHtml, "img", "src") || covers[slug] || "";
-      var description = await api.cssText(pageHtml, ".description, .summary, .v-card-text, .novel-description") || "";
+      var title = "";
+      var cover = "";
+      var description = "";
+      if (pageHtml) {
+        try { title = await api.cssText(pageHtml, "h1.font-cairo, h1, .v-card-title, .novel-title"); } catch (eT) {}
+        if (!title) {
+          try { title = await api.cssAttr(pageHtml, "meta[property='og:title']", "content"); } catch (eT2) {}
+        }
+        if (!title) title = slug;
+        try { cover = await api.cssAttr(pageHtml, "meta[property='og:image']", "content"); } catch (eC) {}
+        if (!cover) {
+          try { cover = await api.cssAttr(pageHtml, "img", "src"); } catch (eC2) {}
+        }
+        if (!cover && covers[slug]) cover = covers[slug];
+        try { description = await api.cssText(pageHtml, ".description, .summary, .v-card-text, .novel-description"); } catch (eD) {}
+      }
       var genres = [];
       if (apiMeta && apiMeta.genre) {
         for (var gi = 0; gi < apiMeta.genre.length; gi++) {
@@ -310,16 +334,27 @@ function createSource(api, config) {
       if (apiMeta && apiMeta.arabic) title = String(apiMeta.arabic);
       if (apiMeta && apiMeta.poster_url) cover = String(apiMeta.poster_url);
       if (apiMeta && apiMeta.about) description = String(apiMeta.about);
-      var chapters = await fetchChapterBatch(url, 1, 2);
-      return { title: strip(title), coverUrl: coverAbs(cover), description: strip(description), genres: genres, chapters: chapters, originalUrl: url, hasMoreChapters: await hasMoreChapters(url, 3), lastFetchedPage: 2, contentType: "novel" };
+      var chapters = [];
+      var more = false;
+      if (pageHtml) {
+        try {
+          chapters = await fetchChapterBatch(url, 1, 1);
+          more = await hasMoreChapters(url, 2);
+        } catch (eCh) {}
+      }
+      return { title: strip(title) || strip(slug), coverUrl: coverAbs(cover), description: strip(description), genres: genres, chapters: chapters, originalUrl: url, hasMoreChapters: more, lastFetchedPage: 1, contentType: "novel" };
     },
 
     async fetchMoreChapters(args) {
       var url = abs((args && args.url) || "");
-      var nextPage = (args && args.nextPage) || 3;
-      var chapters = await fetchChapterBatch(url, nextPage, 2);
-      if (!chapters.length) return null;
-      return { title: "", coverUrl: "", description: "", genres: [], chapters: chapters, originalUrl: url, hasMoreChapters: await hasMoreChapters(url, nextPage + 2), lastFetchedPage: nextPage + 1, contentType: "novel" };
+      var nextPage = (args && args.nextPage) || 2;
+      try {
+        var chapters = await fetchChapterBatch(url, nextPage, 1);
+        if (!chapters.length) return null;
+        return { title: "", coverUrl: "", description: "", genres: [], chapters: chapters, originalUrl: url, hasMoreChapters: await hasMoreChapters(url, nextPage + 1), lastFetchedPage: nextPage, contentType: "novel" };
+      } catch (e) {
+        return null;
+      }
     },
 
     async getChapterPages() { return []; },
@@ -340,9 +375,7 @@ function createSource(api, config) {
     },
 
     getImageHeaders(args) {
-      var url = (args && args.url) || "";
-      var referer = url.indexOf("api.rewayat.club") !== -1 ? baseUrl + "/" : baseUrl + "/";
-      return { "User-Agent": userAgent, "Referer": referer, "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8", "Cache-Control": "max-age=86400" };
+      return { "User-Agent": userAgent, "Referer": baseUrl + "/", "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8", "Cache-Control": "max-age=86400" };
     },
 
     sanitizeCoverUrl(args) { return coverAbs((args && args.url) || ""); }
