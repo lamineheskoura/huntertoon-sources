@@ -5,6 +5,7 @@ function createSource(api, config) {
     configHeaders["User-Agent"] ||
     "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
   var lastPageUrl = baseUrl + "/";
+  const vkReferer = "https://vkvideo.ru/";
 
   var defaultHeaders = {
     "User-Agent": userAgent,
@@ -232,14 +233,27 @@ function createSource(api, config) {
     return String(s || "").replace(/\s+/g, " ").trim();
   }
 
-  function makeAbsolute(url) {
+  function makeAbsolute(url, base) {
+    var root = base || baseUrl;
     if (!url) return "";
     url = String(url).trim();
     if (url.indexOf("http://") === 0) return "https:" + url.substring(5);
     if (url.indexOf("https://") === 0) return url;
     if (url.indexOf("//") === 0) return "https:" + url;
-    if (url.indexOf("/") === 0) return baseUrl + url;
-    return baseUrl + "/" + url;
+    if (url.indexOf("/") === 0) return root + url;
+    return root + "/" + url;
+  }
+
+  function originOf(requestUrl) {
+    var s = String(requestUrl || "");
+    var i = s.indexOf("://");
+    if (i === -1) return baseUrl;
+    var j = s.indexOf("/", i + 3);
+    return j === -1 ? s : s.substring(0, j);
+  }
+
+  function resolveAgainst(requestUrl, loc) {
+    return makeAbsolute(loc, originOf(requestUrl));
   }
 
   function isDefaultThumb(url) {
@@ -874,7 +888,7 @@ function createSource(api, config) {
   async function resolveVk(embedUrl, bud) {
     try {
       if (!budDec(bud)) return null;
-      const vkLiveReferer = baseUrl + "/";
+      const vkLiveReferer = vkReferer;
       var vkFinalUrl = embedUrl;
       var vkPrefetched = "";
       try {
@@ -887,7 +901,7 @@ function createSource(api, config) {
               if (String(vkHk).toLowerCase() === "location") vkLoc = vkInitHeaders[vkHk];
             }
             if (vkLoc) {
-              vkFinalUrl = makeAbsolute(String(vkLoc));
+              vkFinalUrl = resolveAgainst(embedUrl, String(vkLoc));
             } else if (vkInitRes.body) {
               vkPrefetched = vkInitRes.body;
             }
