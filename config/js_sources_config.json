@@ -1620,7 +1620,7 @@
             "id": "anime4up",
             "sid": 135,
             "name": "أنمي فور أب (Anime4up)",
-            "version": "1.3.5",
+            "version": "1.3.6",
             "enabled": true,
             "status": "beta",
             "base_url": "https://w1.anime4up.rest",
@@ -1636,7 +1636,7 @@
             },
             "script": {
                 "url": "sources/anime4up/source.js",
-                "sha256": "44B1114D21BA887AA62211896A1A948AB16DEE00A79BE90BE12DAC4BD084713C",
+                "sha256": "72E92A75AAEA143FA8FBF5B157EF38ECDA4AABE88FEE1C0DE1D8C05988C62BBB",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1658,7 +1658,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Anime4up - Arabic anime WordPress source (Anime4up v1.0 theme). Homepage cards, WP search, anime details with DOM episode list incl. load-more walk, direct data-watch servers (megamax/voe/videa/uqload/doodstream/mp4upload).",
-                "changelog": "v1.3.5: token/query survival (resolveUrl inherits base ?query for relative HLS variants; absolute keeps own) + S1 first-party in resolveServer allow-list (anime4up-s1/s2/s path match, rotation-proof). v1.3.4: vk tier zero-fetch honest embed (type=embed+reason vk-passthrough, no fetch/budget; resolveVk dormant-deprecated; ft 6 joins 8/10 honest path; costOrder/tierOf/sort untouched). v1.3.3: vk redirect-loop kill (resolveVk Referer now https://vkvideo.ru/ instead of baseUrl; Location resolves against request origin via resolveAgainst, no more baseUrl-joined 404 hop; makeAbsolute gains optional base, all 15 single-arg callers byte-identical). v1.3.2: resolveServer google/drive fix (drive passthrough, no blind dead) + tier99/s1tried/deadline/budget untried as embed+reason (no delete); bud(16)/deadline(12s) untouched. v1.3.1: honest embed broadcast (ok-no-resolver, vk-unresolved, tier-unresolved) + vk redirect fix + ok.ru in okHost; budgets/dead-lists untouched. v1.3.0: embed allow-list (drive/filemoon only), 4shared/drive/vidbem tiers, leak-proof emit filter."
+                "changelog": "v1.3.6: streamUrl quote-tolerant (double+single quotes; minified themes missed the master and nulled S1). v1.3.5: token/query survival (resolveUrl inherits base ?query for relative HLS variants; absolute keeps own) + S1 first-party in resolveServer allow-list (anime4up-s1/s2/s path match, rotation-proof). v1.3.4: vk tier zero-fetch honest embed (type=embed+reason vk-passthrough, no fetch/budget; resolveVk dormant-deprecated; ft 6 joins 8/10 honest path; costOrder/tierOf/sort untouched). v1.3.3: vk redirect-loop kill (resolveVk Referer now https://vkvideo.ru/ instead of baseUrl; Location resolves against request origin via resolveAgainst, no more baseUrl-joined 404 hop; makeAbsolute gains optional base, all 15 single-arg callers byte-identical). v1.3.2: resolveServer google/drive fix (drive passthrough, no blind dead) + tier99/s1tried/deadline/budget untried as embed+reason (no delete); bud(16)/deadline(12s) untouched. v1.3.1: honest embed broadcast (ok-no-resolver, vk-unresolved, tier-unresolved) + vk redirect fix + ok.ru in okHost; budgets/dead-lists untouched. v1.3.0: embed allow-list (drive/filemoon only), 4shared/drive/vidbem tiers, leak-proof emit filter."
             }
         },
         "animeslayer": {

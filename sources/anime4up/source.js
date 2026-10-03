@@ -626,7 +626,7 @@ function createSource(api, config) {
     try {
       if (bud && !budDec(bud)) return null;
       var page = await fetchHtml(rawUrl);
-      var m = page.match(/streamUrl\s*=\s*"([^"]+)"/);
+      var m = page.match(/streamUrl\s*=\s*["']([^"']+)["']/);
       var master = m ? m[1] : "";
       if (!master || master.indexOf("http") !== 0) return null;
       if (bud && !budDec(bud)) return null;
