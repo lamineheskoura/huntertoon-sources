@@ -558,11 +558,22 @@ function createSource(api, config) {
   function resolveUrl(base, rel) {
     var r = String(rel || "").trim();
     if (/^https?:\/\//i.test(r)) return r;
-    var b = String(base || "").split("?")[0].split("#")[0];
+    var baseStr = String(base || "");
+    var hashIdx = baseStr.indexOf("#");
+    var baseNoFrag = hashIdx !== -1 ? baseStr.substring(0, hashIdx) : baseStr;
+    var qIdx = baseNoFrag.indexOf("?");
+    var baseQuery = qIdx !== -1 ? baseNoFrag.substring(qIdx + 1) : "";
+    var b = baseNoFrag.split("?")[0];
     var hm = b.match(/^(https?:\/\/[^\/]+)/);
-    if (r.charAt(0) === "/") return hm ? (hm[1] + r) : r;
-    var i = b.lastIndexOf("/");
-    return b.substring(0, i + 1) + r;
+    var joined;
+    if (r.charAt(0) === "/") joined = hm ? (hm[1] + r) : r;
+    else { var i = b.lastIndexOf("/"); joined = b.substring(0, i + 1) + r; }
+    if (baseQuery && joined.indexOf("?") === -1) {
+      var hIdx = joined.indexOf("#");
+      if (hIdx !== -1) joined = joined.substring(0, hIdx) + "?" + baseQuery + joined.substring(hIdx);
+      else joined = joined + "?" + baseQuery;
+    }
+    return joined;
   }
 
   function parseHlsVariants(masterUrl, body) {
@@ -1433,6 +1444,8 @@ function createSource(api, config) {
           u.indexOf("vkvideo") !== -1 || u.indexOf("vk.com/") !== -1 ||
           u.indexOf("4shared.com") !== -1 || u.indexOf("k1c6x8p.shop") !== -1 ||
           u.indexOf("3bnh2lt.shop") !== -1 || u.indexOf("vidbem") !== -1 ||
+          u.indexOf("anime4up-s1") !== -1 || u.indexOf("anime4up-s2") !== -1 ||
+          u.indexOf("anime4up-s") !== -1 ||
           u.indexOf("ok.ru") !== -1;
         if (!okHost) return null;
         return {
