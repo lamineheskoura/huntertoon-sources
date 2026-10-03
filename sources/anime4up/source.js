@@ -884,7 +884,7 @@ function createSource(api, config) {
     }
   }
 
-  // vkvideo: video_ext.php -> files{mp4_N} (1 fetch, extraction verified).
+  // DEPRECATED v1.3.4: dormant — vk tier is zero-fetch honest embed; do not call resolveVk.
   async function resolveVk(embedUrl, bud) {
     try {
       if (!budDec(bud)) return null;
@@ -1071,6 +1071,7 @@ function createSource(api, config) {
       // W-S1 honest embed reasons (live embedUrl, not dropped, truthful).
       const embedReasonDrive = "drive-alive";
       const embedReasonFilemoon = "filemoon-passthrough";
+      const embedReasonVk = "vk-passthrough";
       const embedReasonOk = "ok-no-resolver";
       const embedReasonVkFallback = "vk-unresolved";
       const embedReasonTierFallback = "tier-unresolved";
@@ -1153,19 +1154,8 @@ function createSource(api, config) {
                 out[s].dropped = true;
               }
             } else if (tier === 6) {
-              var vk = await resolveVk(out[s].embedUrl, bud);
-              if (vk && vk.url) {
-                out[s].type = "mp4";
-                out[s].qualities = vk.qualities && vk.qualities.length ? vk.qualities : [{
-                  label: out[s].quality || "HD",
-                  url: vk.url,
-                  height: 0,
-                  isDefault: true
-                }];
-                out[s].quality = out[s].qualities[0].label;
-              } else {
-                out[s].dropped = true;
-              }
+              out[s].type = "embed";
+              out[s].embedReason = embedReasonVk;
             } else if (tier === 7) {
               var f4 = await resolve4sharedPage(out[s].embedUrl, bud);
               if (f4) {
@@ -1203,8 +1193,8 @@ function createSource(api, config) {
         if (!out[fs].embedUrl) continue;
         var ft = tierOf(out[fs].name, out[fs].embedUrl);
         const fsUrl = String(out[fs].embedUrl || "").toLowerCase();
-        if (out[fs].type === "embed" && (ft === 8 || ft === 10) && !out[fs].dropped) {
-          out[fs].embedReason = (ft === 8 ? embedReasonDrive : embedReasonFilemoon);
+        if (out[fs].type === "embed" && (ft === 6 || ft === 8 || ft === 10) && !out[fs].dropped) {
+          out[fs].embedReason = (ft === 8 ? embedReasonDrive : ft === 6 ? embedReasonVk : embedReasonFilemoon);
           continue;
         }
         if (fsUrl.indexOf(okHostToken) !== -1 && !out[fs].dropped) {
@@ -1241,9 +1231,9 @@ function createSource(api, config) {
         // PKG5: plus tier99/s1tried/deadline/budget untried embeds (no delete).
         var t = tierOf(out[q].name, out[q].embedUrl);
         const hasDirectMedia = out[q].directUrl || (out[q].qualities && out[q].qualities.length);
-        const isDriveFilemoonEmbed = (out[q].type === "embed" && (t === 8 || t === 10) && !out[q].dropped);
+        const isDriveFilemoonEmbed = (out[q].type === "embed" && (t === 6 || t === 8 || t === 10) && !out[q].dropped);
         const isHonestEmbed = (out[q].type === "embed" && out[q].embedUrl && !out[q].dropped && out[q].embedReason &&
-          (out[q].embedReason === embedReasonDrive || out[q].embedReason === embedReasonFilemoon ||
+          (out[q].embedReason === embedReasonDrive || out[q].embedReason === embedReasonFilemoon || out[q].embedReason === embedReasonVk ||
            out[q].embedReason === embedReasonOk || out[q].embedReason === embedReasonVkFallback ||
            out[q].embedReason === embedReasonTierFallback || out[q].embedReason === embedReasonTier99 ||
            out[q].embedReason === embedReasonS1Untried || out[q].embedReason === embedReasonDeadline ||
