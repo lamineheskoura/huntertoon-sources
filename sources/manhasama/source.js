@@ -62,8 +62,17 @@ function createSource(api, config) {
 
   function makeCdnUrl(url) {
     if (!url) return "";
-    if (url.indexOf("http") === 0) return url;
-    return "https://cdn.realmnovel.com" + url;
+    var u = String(url).trim();
+    if (!u) return "";
+    if (u.indexOf("http") === 0) {
+      // ترقية http إلى https (مثل بقية المصادر).
+      if (u.indexOf("http://") === 0) return "https://" + u.substring(7);
+      return u;
+    }
+    // P0-4: معالجة // (كانت تُضاعف الهوست) والمسار بلا / بادئة.
+    if (u.indexOf("//") === 0) return "https:" + u;
+    if (u.charAt(0) !== "/") u = "/" + u;
+    return "https://cdn.realmnovel.com" + u;
   }
 
   function extractNumber(str) {

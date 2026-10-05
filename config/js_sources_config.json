@@ -878,7 +878,7 @@
             "id": "manhasama",
             "sid": 119,
             "name": "مانها السماء (Manha Alsamaa)",
-            "version": "1.3.7",
+            "version": "1.3.8",
             "enabled": true,
             "status": "beta",
             "base_url": "https://realmnovel.com",
@@ -896,7 +896,7 @@
             },
             "script": {
                 "url": "sources/manhasama/source.js",
-                "sha256": "9C0D0DFFD4F93D416612BB7E97F2B03963BB475BB3F6EB71F7533C0C02BF6089",
+                "sha256": "7C9E85231BEDB8481BEF1863BEA3BB4D4161EDA54BFC09993CEAB5518CBB5FD6",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -919,7 +919,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Manha Alsamaa - Arabic manga source using realmnovel.com manga API with guest auth and app version",
-                "changelog": "v1.3.7: Capitalized /api/Manga + /api/Chapters routes (origin nginx 403s lowercase paths only) plus x-app-version 1.0.5 like the official app"
+                "changelog": "v1.3.8: Harden makeCdnUrl (trim, //-prefix, missing leading slash, http-to-https) so restored library covers reheal instead of 404; v1.3.7: Capitalized /api/Manga + /api/Chapters routes (origin nginx 403s lowercase paths only) plus x-app-version 1.0.5 like the official app"
             }
         },
         "kawaii": {
