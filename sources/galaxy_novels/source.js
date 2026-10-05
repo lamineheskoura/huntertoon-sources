@@ -287,6 +287,61 @@ function createSource(api, config) {
     return out;
   }
 
+  function resolvePackUrl(manifest, manifestUrl) {
+    try {
+      manifest = manifest || {};
+      if (manifest.pack_url) return String(manifest.pack_url);
+      if (!manifest.pack) return "";
+      var base = String(manifestUrl || "").split("?")[0].replace(/\/manifest\/[^\/]*$/, "/packs/");
+      return base + String(manifest.pack).replace(/^\/+/, "");
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function packToChapters(packChapters) {
+    var out = [];
+    var seen = {};
+    var list = packChapters || [];
+    for (var i = 0; i < list.length; i++) {
+      var item = list[i] || {};
+      var num = parseInt(item.number, 10);
+      if (isNaN(num) || num <= 0) continue;
+      var url = abs(item.url || "");
+      if (!url || seen[url]) continue;
+      seen[url] = true;
+      var label = String(item.label || "").trim();
+      var name = String(item.title || "").trim();
+      out.push({
+        number: num,
+        title: label && name ? label + ": " + name : (label || name || ""),
+        views: typeof item.views === "number" ? item.views : 0,
+        url: url,
+        isLocked: false,
+        date: String(item.date_iso || item.date || "")
+      });
+    }
+    out.sort(function (a, b) { return b.number - a.number; });
+    return out;
+  }
+
+  async function loadFullPack(pageHtml) {
+    var manifestUrl = findManifestUrl(pageHtml);
+    if (!manifestUrl) return null;
+    var manifest = await fetchJson(manifestUrl);
+    if (!manifest) return null;
+    var packUrl = resolvePackUrl(manifest, manifestUrl);
+    if (!packUrl) return null;
+    var pack = await fetchJson(packUrl);
+    if (!pack || !pack.chapters || !pack.chapters.length) return null;
+    var chapters = packToChapters(pack.chapters);
+    if (!chapters.length) return null;
+    var total = parseInt(pack.total, 10);
+    if (isNaN(total) || total <= 0) total = parseInt(manifest.total, 10);
+    if (isNaN(total) || total <= 0) total = chapters.length;
+    return { chapters: chapters, total: total };
+  }
+
   function mergeChaptersDesc(primary, extra) {
     var seen = {};
     var out = [];
@@ -374,19 +429,30 @@ function createSource(api, config) {
       if (!description) description = stripHtml(await api.cssAttr(pageHtml, "meta[name='description']", "content") || "");
       var genres = parseBookGenres(pageHtml);
 
-      var ssr = await parseSsrChapters(pageHtml);
-      var extra = [];
+      var chapters = [];
+      var total = 0;
       try {
-        var manifestUrl = findManifestUrl(pageHtml);
-        if (manifestUrl) {
-          var manifest = await fetchJson(manifestUrl);
-          if (manifest && manifest.live_tail && manifest.live_tail.length) {
-            extra = manifestTailToChapters(manifest.live_tail);
-          }
+        var pack = await loadFullPack(pageHtml);
+        if (pack) {
+          chapters = pack.chapters;
+          total = pack.total;
         }
       } catch (e) {}
-      var chapters = mergeChaptersDesc(ssr, extra);
-      var total = parseRenderedTotal(pageHtml, chapters);
+      if (!chapters.length) {
+        var ssr = await parseSsrChapters(pageHtml);
+        var extra = [];
+        try {
+          var manifestUrl = findManifestUrl(pageHtml);
+          if (manifestUrl) {
+            var manifest = await fetchJson(manifestUrl);
+            if (manifest && manifest.live_tail && manifest.live_tail.length) {
+              extra = manifestTailToChapters(manifest.live_tail);
+            }
+          }
+        } catch (e2) {}
+        chapters = mergeChaptersDesc(ssr, extra);
+        total = parseRenderedTotal(pageHtml, chapters);
+      }
       var hasMore = total > chapters.length;
 
       return {
@@ -426,6 +492,27 @@ function createSource(api, config) {
       if (!known.length) return null;
       var total = parseRenderedTotal(pageHtml, known);
       if (total <= known.length) return null;
+      try {
+        var fullPack = await loadFullPack(pageHtml);
+        if (fullPack && fullPack.chapters.length > known.length) {
+          var have = (args && args.nextPage) ? args.nextPage - 1 : known.length;
+          if (have < known.length) have = known.length;
+          if (have < fullPack.chapters.length) {
+            var slice = fullPack.chapters.slice(have, have + FETCH_MORE_BATCH);
+            if (slice.length) {
+              var newHave = have + slice.length;
+              return {
+                title: "", coverUrl: "", description: "", genres: [],
+                chapters: slice, originalUrl: url,
+                hasMoreChapters: newHave < fullPack.chapters.length,
+                lastFetchedPage: newHave,
+                contentType: "novel"
+              };
+            }
+          }
+          return null;
+        }
+      } catch (e3) {}
       var loaded = (args && args.nextPage) ? args.nextPage - 1 : known.length;
       if (loaded < known.length) loaded = known.length;
       var needTop = total - loaded;
