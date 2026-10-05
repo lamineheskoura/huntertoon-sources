@@ -20,8 +20,8 @@ function createSource(api, config) {
   var MANIFEST_BY_ID_TPL = "/wp-content/uploads/wor-reader-cache/chapters/manifest/novel-";
   var READ_MORE_AR = "اقرأ الآن";
   var BADGE_WORDS_RE = /مستمرة|مكتملة|مستمر|مكتمل|اقرأ الآن|اقرا الان/g;
-  var FETCH_MORE_BATCH = 10;
-  var FETCH_MORE_MAX_STEPS = 40;
+  var FETCH_MORE_BATCH = 5;
+  var FETCH_MORE_MAX_STEPS = 25;
   var PREV_URL_RE = /data-previous-url="([^"]+)"/;
   var CHAIN_NUM_RE = /data-chapter-number="(\d+)"/;
   var CHAIN_TITLE_RE = /data-chapter-title="([^"]*)"/;
