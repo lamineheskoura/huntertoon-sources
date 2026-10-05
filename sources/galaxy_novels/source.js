@@ -20,6 +20,11 @@ function createSource(api, config) {
   var MANIFEST_BY_ID_TPL = "/wp-content/uploads/wor-reader-cache/chapters/manifest/novel-";
   var READ_MORE_AR = "اقرأ الآن";
   var BADGE_WORDS_RE = /مستمرة|مكتملة|مستمر|مكتمل|اقرأ الآن|اقرا الان/g;
+  var FETCH_MORE_BATCH = 10;
+  var FETCH_MORE_MAX_STEPS = 40;
+  var PREV_URL_RE = /data-previous-url="([^"]+)"/;
+  var CHAIN_NUM_RE = /data-chapter-number="(\d+)"/;
+  var CHAIN_TITLE_RE = /data-chapter-title="([^"]*)"/;
 
   function escapeRegExp(s) {
     return String(s || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -398,7 +403,90 @@ function createSource(api, config) {
     },
 
     async fetchMoreChapters(args) {
-      return null;
+      var url = abs((args && args.url) || "");
+      if (!url) return null;
+      var pageHtml = "";
+      try {
+        pageHtml = await fetchHtml(url);
+      } catch (e) {
+        return null;
+      }
+      var ssr = await parseSsrChapters(pageHtml);
+      var extra = [];
+      try {
+        var manifestUrl = findManifestUrl(pageHtml);
+        if (manifestUrl) {
+          var manifest = await fetchJson(manifestUrl);
+          if (manifest && manifest.live_tail && manifest.live_tail.length) {
+            extra = manifestTailToChapters(manifest.live_tail);
+          }
+        }
+      } catch (e) {}
+      var known = mergeChaptersDesc(ssr, extra);
+      if (!known.length) return null;
+      var total = parseRenderedTotal(pageHtml, known);
+      if (total <= known.length) return null;
+      var loaded = (args && args.nextPage) ? args.nextPage - 1 : known.length;
+      if (loaded < known.length) loaded = known.length;
+      var needTop = total - loaded;
+      var needBottom = needTop - FETCH_MORE_BATCH + 1;
+      if (needBottom < 1) needBottom = 1;
+      if (needTop < 1) return null;
+      var oldest = known[known.length - 1];
+      var curUrl = oldest.url;
+      var visited = {};
+      visited[curUrl] = true;
+      var batch = [];
+      var seenBatch = {};
+      var steps = 0;
+      while (steps < FETCH_MORE_MAX_STEPS) {
+        steps++;
+        var chHtml = "";
+        try {
+          chHtml = await fetchHtml(curUrl);
+        } catch (e) {
+          break;
+        }
+        if (!chHtml || isBlockedPage(chHtml)) break;
+        if (curUrl !== oldest.url) {
+          var curNum = 0;
+          try {
+            var nm = String(chHtml).match(CHAIN_NUM_RE);
+            if (nm && nm[1]) curNum = parseInt(nm[1], 10);
+          } catch (e3) {}
+          if (!curNum || isNaN(curNum)) curNum = chapterNumFromUrl(curUrl);
+          if (curNum && curNum <= oldest.number) {
+            if (curNum < needBottom) break;
+            if (!seenBatch[curUrl]) {
+              seenBatch[curUrl] = true;
+              var curTitle = "";
+              try {
+                var tm = String(chHtml).match(CHAIN_TITLE_RE);
+                if (tm && tm[1]) curTitle = stripHtml(tm[1]);
+              } catch (e2) {}
+              batch.push({ number: curNum, title: curTitle, views: 0, url: curUrl, isLocked: false, date: "" });
+              if (batch.length >= FETCH_MORE_BATCH) break;
+            }
+          }
+        }
+        var prevm = String(chHtml).match(PREV_URL_RE);
+        if (!prevm || !prevm[1]) break;
+        var prevUrl = abs(prevm[1].replace(/&amp;/g, "&"));
+        if (!prevUrl || visited[prevUrl]) break;
+        visited[prevUrl] = true;
+        curUrl = prevUrl;
+      }
+      if (!batch.length) return null;
+      batch.sort(function (a, b) { return b.number - a.number; });
+      var newOldest = batch[batch.length - 1].number;
+      var newLoaded = loaded + batch.length;
+      return {
+        title: "", coverUrl: "", description: "", genres: [],
+        chapters: batch, originalUrl: url,
+        hasMoreChapters: newOldest > 1 && newLoaded < total,
+        lastFetchedPage: newLoaded,
+        contentType: "novel"
+      };
     },
 
     async getChapterPages(args) {

@@ -2,7 +2,7 @@
     "version": "1.54.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.10.05.1",
+    "manifest_version": "2026.10.05.2",
     "generated_at": "2026-09-04T14:30:00Z",
     "last_updated": "2026-10-05T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -1845,7 +1845,7 @@
             "id": "galaxy_novels",
             "sid": 140,
             "name": "Galaxy Novels",
-            "version": "1.0.0",
+            "version": "1.0.1",
             "enabled": true,
             "status": "beta",
             "base_url": "https://galaxynovels.com",
@@ -1861,7 +1861,7 @@
             },
             "script": {
                 "url": "sources/galaxy_novels/source.js",
-                "sha256": "684f064de70569d5de0c0c8626f88451c96af6e8581e75f57a2d6c6c9a50cae8",
+                "sha256": "28a74ca3601b07a9d7d014ff7643c2ea5800cc7124c313ca40be0f7071199e7b",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1870,7 +1870,7 @@
                 ],
                 "supports_search": true,
                 "supports_filters": true,
-                "supports_lazy_chapters": false,
+                "supports_lazy_chapters": true,
                 "supports_download": true,
                 "requires_cloudflare": true
             },
@@ -1883,7 +1883,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Galaxy Novels - Arabic novels source (WordPress WOR-Reader). Server-rendered homepage/search (?s= server-side), details with SSR chapters (30) merged with manifest live_tail (50), text chapters via wor-reader-text-surface. Chapter path is Cloudflare-gated: requires browser stack.",
-                "changelog": "v1.0.0: initial JS source - homepage/search/details/chapters/text reader, SSR+live_tail merge desc, CF chapter gate flagged."
+                "changelog": "v1.0.1: fetchMoreChapters via prev-url chain walk (10 per tap, honest titles). v1.0.0: initial JS source - homepage/search/details/chapters/text reader, SSR+live_tail merge desc, CF chapter gate flagged."
             }
         }
     }
