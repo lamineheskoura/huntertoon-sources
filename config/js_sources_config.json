@@ -1,10 +1,10 @@
 {
-    "version": "1.53.0",
+    "version": "1.54.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.09.28.6",
+    "manifest_version": "2026.10.05.1",
     "generated_at": "2026-09-04T14:30:00Z",
-    "last_updated": "2026-09-21T12:00:00Z",
+    "last_updated": "2026-10-05T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
     "min_app_version": "1.4.0",
     "repository": {
@@ -1839,6 +1839,51 @@
                 "author": "HunterToon Team",
                 "description": "Animerco - Arabic anime source (WordPress Animerco/MiraiThemes). Server-rendered lists/search/genre filters, two-level details (hub-season-episodes), player_ajax+jwplayer chain with videas/mp4upload/yourupload/vidmoly direct extractors plus honest embed passthrough.",
                 "changelog": "v1.0.2: ok last always (options+out stable partition) + ok single attempt (no security retry) + proactive skip on deadline/low bud + ok honest embed+reason (no deep resolve); bud(60)/deadline(20s) untouched. v1.0.1: security retry inside bud (fresh nonce single retry, 60/20s untouched) + iframe multi (src/data-src/data-lazy-src/data-url) + nine direct resolvers (videa/uqload/vk/voe/dood) where possible else host-passthrough reason + okHost voe/dood completion + seasons completion (all 12, no early break) + resolveServer directUrl preserve + embedUrl fix. v1.0.0: initial JS source - lists/search/filters, hub-season-episode details, player_ajax chain with 4 direct extractors and embed passthrough."
+            }
+        },
+        "galaxy_novels": {
+            "id": "galaxy_novels",
+            "sid": 140,
+            "name": "Galaxy Novels",
+            "version": "1.0.0",
+            "enabled": true,
+            "status": "beta",
+            "base_url": "https://galaxynovels.com",
+            "website_url": "https://galaxynovels.com",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=galaxynovels.com",
+            "requires_cf": true,
+            "image_referer": "https://galaxynovels.com/",
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+                "Referer": "https://galaxynovels.com/"
+            },
+            "script": {
+                "url": "sources/galaxy_novels/source.js",
+                "sha256": "684f064de70569d5de0c0c8626f88451c96af6e8581e75f57a2d6c6c9a50cae8",
+                "entry": "createSource"
+            },
+            "capabilities": {
+                "content_types": [
+                    "novel"
+                ],
+                "supports_search": true,
+                "supports_filters": true,
+                "supports_lazy_chapters": false,
+                "supports_download": true,
+                "requires_cloudflare": true
+            },
+            "compatibility": {
+                "min_app_version": "1.4.0",
+                "runtime_api_version": "1.0"
+            },
+            "metadata": {
+                "language": "ar",
+                "adult": false,
+                "author": "HunterToon Team",
+                "description": "Galaxy Novels - Arabic novels source (WordPress WOR-Reader). Server-rendered homepage/search (?s= server-side), details with SSR chapters (30) merged with manifest live_tail (50), text chapters via wor-reader-text-surface. Chapter path is Cloudflare-gated: requires browser stack.",
+                "changelog": "v1.0.0: initial JS source - homepage/search/details/chapters/text reader, SSR+live_tail merge desc, CF chapter gate flagged."
             }
         }
     }
