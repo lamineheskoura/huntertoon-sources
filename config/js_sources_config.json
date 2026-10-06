@@ -2,7 +2,7 @@
     "version": "1.54.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.10.05.4",
+    "manifest_version": "2026.10.05.5",
     "generated_at": "2026-09-04T14:30:00Z",
     "last_updated": "2026-10-05T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -1845,7 +1845,7 @@
             "id": "galaxy_novels",
             "sid": 140,
             "name": "Galaxy Novels",
-            "version": "1.0.3",
+            "version": "1.0.4",
             "enabled": true,
             "status": "beta",
             "base_url": "https://galaxynovels.com",
@@ -1861,7 +1861,7 @@
             },
             "script": {
                 "url": "sources/galaxy_novels/source.js",
-                "sha256": "70b1c069ff66dc6fcfbde2f4c7f48b26e7d1e8d1f6da4a0607f59805194a76b1",
+                "sha256": "c99efead6d907be9055f6035848fb35f40eab524154c2b2aced8116644dbfc7f",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -1883,7 +1883,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Galaxy Novels - Arabic novels source (WordPress WOR-Reader). Server-rendered homepage/search (?s= server-side), details with SSR chapters (30) merged with manifest live_tail (50), text chapters via wor-reader-text-surface. Chapter path is Cloudflare-gated: requires browser stack.",
-                "changelog": "v1.0.3: full chapter pack via manifest pack_url (all chapters at once, site own mechanism). v1.0.2: fetchMore batch 10->5. v1.0.1: prev-url chain walk fallback."
+                "changelog": "v1.0.4: library pagination (?library_page) + real genre/status filters (42 genres). v1.0.3: full chapter pack."
             }
         }
     }

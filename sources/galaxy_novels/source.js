@@ -22,12 +22,28 @@ function createSource(api, config) {
   var BADGE_WORDS_RE = /مستمرة|مكتملة|مستمر|مكتمل|اقرأ الآن|اقرا الان/g;
   var FETCH_MORE_BATCH = 5;
   var FETCH_MORE_MAX_STEPS = 25;
+  var LIBRARY_PATH = "/library/";
+  var GENRES_SITEMAP_PATH = "/wor-sitemap-genres.xml";
+  var GENRE_URL_RE = /\/novel-genre\/([^\/\s"']+)\/?/g;
   var PREV_URL_RE = /data-previous-url="([^"]+)"/;
   var CHAIN_NUM_RE = /data-chapter-number="(\d+)"/;
   var CHAIN_TITLE_RE = /data-chapter-title="([^"]*)"/;
 
   function escapeRegExp(s) {
     return String(s || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  function statusValueFor(type) {
+    var t = String(type || "").trim();
+    if (!t || t === "novel" || t === "رواية") return "";
+    if (t === "مستمرة" || t === "ongoing") return "ongoing";
+    if (t === "مكتملة" || t === "completed") return "completed";
+    if (t === "متوقفة" || t === "hiatus") return "hiatus";
+    return "";
+  }
+
+  function genreSlugFor(name) {
+    return String(name || "").trim().replace(/\s+/g, "-");
   }
 
   function cleanBadgeText(s) {
@@ -154,8 +170,7 @@ function createSource(api, config) {
       var href = attrs.href || "";
       if (!isNovelCardUrl(href)) continue;
       var detail = abs(href);
-      if (!detail || seen[detail]) continue;
-      seen[detail] = true;
+      if (!detail) continue;
       var inner = a.html || "";
       var title = stripHtml(await api.cssText(inner, "h3") || "");
       if (!title) title = stripHtml(await api.cssText(inner, "h2") || "");
@@ -167,7 +182,14 @@ function createSource(api, config) {
       }
       if (!title) continue;
       var cover = abs(firstImageSrc(inner));
-      out.push({ title: title, coverUrl: cover, detailUrl: detail, contentType: "novel" });
+      if (seen[detail] === undefined) {
+        seen[detail] = out.length;
+        out.push({ title: title, coverUrl: cover, detailUrl: detail, contentType: "novel" });
+      } else {
+        var prev = out[seen[detail]];
+        if (!prev.coverUrl && cover) prev.coverUrl = cover;
+        if ((!prev.title || prev.title.length < title.length) && title.length > 3) prev.title = title;
+      }
     }
     return out;
   }
@@ -389,10 +411,10 @@ function createSource(api, config) {
 
     async getHomepageManga(args) {
       var page = (args && args.page) || 1;
-      if (page > 1) return [];
+      if (page < 1) page = 1;
       try {
-        var pageHtml = await fetchHtml(baseUrl + "/");
-        return await parseNovelCards(pageHtml);
+        var libUrl = baseUrl + LIBRARY_PATH + (page > 1 ? "?library_page=" + page : "");
+        return await parseNovelCards(await fetchHtml(libUrl));
       } catch (e) {
         return [];
       }
@@ -410,7 +432,21 @@ function createSource(api, config) {
     },
 
     async getFilteredManga(args) {
-      return await this.getHomepageManga(args);
+      var genre = ((args && args.genre) || "").trim();
+      var type = ((args && args.type) || "").trim();
+      var page = (args && args.page) || 1;
+      if (page < 1) page = 1;
+      try {
+        var qs = [];
+        if (genre) qs.push("genre=" + encodeURIComponent(genreSlugFor(genre)));
+        var status = statusValueFor(type);
+        if (status) qs.push("status=" + status);
+        if (page > 1) qs.push("library_page=" + page);
+        var url = baseUrl + LIBRARY_PATH + (qs.length ? "?" + qs.join("&") : "");
+        return await parseNovelCards(await fetchHtml(url));
+      } catch (e) {
+        return [];
+      }
     },
 
     async getMangaDetails(args) {
@@ -602,7 +638,24 @@ function createSource(api, config) {
     },
 
     async getGenresAndTypes() {
-      return { genres: [], types: ["novel"] };
+      var genres = [];
+      try {
+        var txt = await fetchHtml(baseUrl + GENRES_SITEMAP_PATH);
+        GENRE_URL_RE.lastIndex = 0;
+        var seen = {};
+        var m;
+        while ((m = GENRE_URL_RE.exec(txt)) !== null) {
+          var name = "";
+          try {
+            name = decodeURIComponent(m[1]).replace(/-/g, " ").replace(/\s+/g, " ").trim();
+          } catch (e) {}
+          if (name && !seen[name]) {
+            seen[name] = true;
+            genres.push(name);
+          }
+        }
+      } catch (e) {}
+      return { genres: genres, types: ["رواية", "مستمرة", "مكتملة", "متوقفة"] };
     },
 
     getImageHeaders(args) {
