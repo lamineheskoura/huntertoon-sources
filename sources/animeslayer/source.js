@@ -22,8 +22,8 @@ function createSource(api, config) {
   };
 
   // Site taxonomy for display only (getGenresAndTypes). NOTE: the list
-  // endpoint honors anime_type/anime_status/anime_season but IGNORES any
-  // genre key (verified live: identical sets), so genre falls back below.
+  // endpoint honors anime_type/anime_status/anime_season plus
+  // anime_genre_ids as STRING (array form is ignored server-side).
   var GENRE_IDS = {
     "اثارة": "36", "اطفال": "14", "اكشن": "1", "العاب": "11", "ايتشي": "9",
     "ايسيكاي": "39", "بوليسي": "34", "تاريخي": "12", "جنون": "5", "جوسي": "38",
@@ -31,7 +31,7 @@ function createSource(api, config) {
     "دراما": "8", "رعب": "13", "رومانسي": "21", "رياضي": "27", "ساموراي": "20",
     "سحر": "15", "سيارات": "3", "سينين": "37", "شريحة من الحياة": "31",
     "شوجو": "24", "شونين": "25", "شياطين": "6", "عسكري": "33", "غموض": "7",
-    "فضاء": "26", "فنون قتالية": "16", "قوى خارقة": "28", "كوميدي": "4",
+    "فضاء": "26", "فنون قتالية": "16",     "قوى خارقة": "28", "كوميديا": "4",
     "محاكاة ساخرة": "19", "مدرسي": "22", "مصاص دماء": "29", "مغامرات": "2",
     "موسيقى": "18", "ميكا": "17", "نفسي": "35"
   };
@@ -94,6 +94,7 @@ function createSource(api, config) {
     if (u.indexOf("dood") !== -1) return "https://doodstream.com/";
     if (u.indexOf("mp4upload") !== -1) return "https://www.mp4upload.com/";
     if (u.indexOf("uqload") !== -1) return "https://uqload.vc/";
+    if (u.indexOf("filemoon") !== -1) return "https://filemoon.sx/";
     return "";
   }
 
@@ -762,7 +763,7 @@ function createSource(api, config) {
   // button. Drop at emission like the other static-dead hosts.
   var DROP_HOSTS = ["vidlox", "fembed", "uptostream", "jawcloud", "streamvid",
     "streamhub", "highstream", "tune.pk", "krakenfiles", "pixeldrain",
-    "mystream"];
+    "mystream", "roberteachfinal"];
 
   function dropHost(url) {
     var u = String(url || "").toLowerCase();
@@ -780,9 +781,10 @@ function createSource(api, config) {
     return String(url || "").toLowerCase().indexOf("filemoon") !== -1;
   }
 
-  // muilt: entry URL in 3 encodings first (raw, %5C, slash) like the
-  // reference client, then mirror (superset) + official fallback.
-  // Saves fetches on slow networks (12s bridge timeouts).
+  // muilt: entry URL in 2 encodings first (raw, %5C) like the
+  // reference client, then the official mirror (fullest set, verified
+  // live 6 vs 3) with ALT_API as fallback. The slash-joined encoding
+  // returns empty live and is skipped. Saves fetches on slow networks.
   async function fetchMuiltLinks(n, bud, entryUrl) {
     var seen = {};
     var out = [];
@@ -793,11 +795,10 @@ function createSource(api, config) {
       cands.push(entryUrl);
       if (entryUrl.indexOf("\\") !== -1) {
         cands.push(entryUrl.split("\\").join("%5C"));
-        cands.push(entryUrl.split("\\").join("/"));
       }
     }
-    cands.push(ALT_API + "?n=" + encodeURIComponent(n));
     cands.push(siteUrl + "/la/public/api/f2?n=" + encodeURIComponent(n));
+    cands.push(ALT_API + "?n=" + encodeURIComponent(n));
     var urls = [];
     for (var c = 0; c < cands.length; c++) {
       if (!seen[cands[c]]) {
@@ -851,6 +852,10 @@ function createSource(api, config) {
     if (u.indexOf("mp4upload") !== -1) return "mp4upload";
     if (u.indexOf("uqload") !== -1) return "uqload";
     if (u.indexOf("vkvideo") !== -1 || u.indexOf("vk.com") !== -1) return "vk";
+    if (u.indexOf("vinovo") !== -1) return "vinovo";
+    if (u.indexOf("playmate") !== -1) return "playmate";
+    if (u.indexOf("firestream") !== -1) return "firestream";
+    if (u.indexOf("qiwi") !== -1) return "qiwi";
     return "سيرفر";
   }
 
@@ -1198,6 +1203,8 @@ function createSource(api, config) {
         return (parseFloat(b.number) || 0) - (parseFloat(a.number) || 0);
       });
       var cover = d.anime_cover_image_full_url || d.anime_cover_image_url || "";
+      var mi = (d && d.more_info_result) || {};
+      var durNum = parseInt(mi.duration, 10);
       return {
         title: cleanTitle(d.anime_name || "") || "غير معروف",
         coverUrl: makeAbsolute(cover),
@@ -1212,9 +1219,9 @@ function createSource(api, config) {
         animeType: cleanTitle(d.anime_type || "") || null,
         season: cleanTitle(d.anime_season || "") || null,
         year: cleanTitle(d.anime_release_year ? String(d.anime_release_year) : "") || null,
-        episodeDurationMin: null,
-        sourceMaterial: null,
-        trailerUrl: makeAbsolute(d.anime_trailer_url || "") || null,
+        episodeDurationMin: isNaN(durNum) ? null : durNum,
+        sourceMaterial: cleanTitle(mi.source || "") || null,
+        trailerUrl: makeAbsolute(mi.trailer_url || "") || null,
         malUrl: null
       };
     },
@@ -1233,7 +1240,7 @@ function createSource(api, config) {
         }
         return { kind: "image", imageUrls: [] };
       } catch (e) {
-        return { kind: "image", imageUrls: [] };
+        return { kind: "video", servers: [] };
       }
     },
 
@@ -1252,8 +1259,9 @@ function createSource(api, config) {
       try {
         var serverUrl = makeAbsolute((args && (args.serverUrl || args.url)) || "");
         if (!serverUrl) return null;
-        // Same allow-list as getEpisodeServers: drive/filemoon passthrough
-        // or direct media only. Anything else -> null (no fake embeds).
+        // Same allow-list as getEpisodeServers: drive/filemoon/vinovo/
+        // playmate/firestream/qiwi passthrough or direct media only.
+        // Anything else -> null (no fake embeds).
         if (dropHost(serverUrl)) return null;
         var u = serverUrl.toLowerCase();
         var okHost = u.indexOf("drive.google") !== -1 || u.indexOf("filemoon") !== -1 ||
@@ -1262,7 +1270,9 @@ function createSource(api, config) {
           u.indexOf("vkvideo") !== -1 || u.indexOf("vk.com") !== -1 ||
           u.indexOf("voe.") !== -1 || u.indexOf("videa") !== -1 ||
           u.indexOf("dood") !== -1 || u.indexOf("mp4upload.com") !== -1 ||
-          u.indexOf("uqload") !== -1;
+          u.indexOf("uqload") !== -1 || u.indexOf("vinovo") !== -1 ||
+          u.indexOf("playmate") !== -1 || u.indexOf("firestream") !== -1 ||
+          u.indexOf("qiwi") !== -1;
         if (!okHost) return null;
         var incomingDirect = (args && (args.directUrl || args.direct_url)) || "";
         var slow = String(serverUrl).toLowerCase();
@@ -1286,9 +1296,11 @@ function createSource(api, config) {
 
     async getFilteredManga(args) {
       try {
-        // Real filters (verified live): exact-case type, status, season.
-        // Genre has NO working key (verified identical sets) -> browse.
-        // Year is ignored server-side. Filters paginate for real via
+        // Real filters (verified live): exact-case type, status, season,
+        // plus anime_genre_ids as STRING (array form is ignored server-side).
+        // Year has no app-contract slot (getFilteredManga passes only
+        // genre/type/page) so it stays unwired by design.
+        // Filters paginate for real via
         // _offset (verified live 2026-09-28); the seen-guard dedups any
         // server-side repeats so the scroll stops honestly.
         var page = (args && args.page) || 1;
@@ -1297,6 +1309,7 @@ function createSource(api, config) {
         var type = cleanTitle((args && args.type) || "");
         var status = cleanTitle((args && args.status) || "");
         var season = cleanTitle((args && args.season) || "");
+        var genre = cleanTitle((args && args.genre) || "");
         if (type) {
           var tv = "";
           for (var ti = 0; ti < TYPE_OK.length; ti++) {
@@ -1332,7 +1345,12 @@ function createSource(api, config) {
           }
           if (sn) q.anime_season = sn;
         }
-        var hasFilter = q.anime_type || q.anime_status || q.anime_season;
+        if (genre) {
+          var gm = await loadGenreMap();
+          var gid = cleanTitle(String(gm[genre] || ""));
+          if (gid) q.anime_genre_ids = gid;
+        }
+        var hasFilter = q.anime_type || q.anime_status || q.anime_season || q.anime_genre_ids;
         if (!hasFilter) return await browsePage(page);
         return await parseList(listUrl("filter", page, q), page, seenFilter);
       } catch (e) {
