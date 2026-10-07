@@ -2,7 +2,7 @@
     "version": "1.55.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.10.07.2",
+    "manifest_version": "2026.10.07.3",
     "generated_at": "2026-09-04T14:30:00Z",
     "last_updated": "2026-10-06T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -926,7 +926,7 @@
             "id": "kawaii",
             "sid": 110,
             "name": "كواي مانجا (Kawaii Manga)",
-            "version": "1.0.0",
+            "version": "1.0.1",
             "enabled": true,
             "status": "stable",
             "base_url": "https://kawaiimanga.org",
@@ -943,7 +943,7 @@
             },
             "script": {
                 "url": "sources/kawaii/source.js",
-                "sha256": "0fc5822cdddb0ed7a87cfacff6ae31868d3a49aa9d0598f721537d9ff45c3de5",
+                "sha256": "fddd244ea14a56110839e7596d500b3eddc3240bb2f0517dec32a5b12d930459",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -965,7 +965,7 @@
                 "adult": false,
                 "author": "HunterToon Team",
                 "description": "Kawaii Manga source using the manga-api.kawaii-anime.com API for browse, search, details, and reader pages",
-                "changelog": "Full rewrite: uses the real browse/search/series/pages API with CDN fallback for reader images"
+                "changelog": "v1.0.1: guest-token auth (x-app-token + 401 retry) for token_required API. Full rewrite: uses the real browse/search/series/pages API with CDN fallback for reader images"
             }
         },
         "fada_riwayat": {

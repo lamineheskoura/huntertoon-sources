@@ -16,6 +16,71 @@ function createSource(api, config) {
   var defaultTypes = ["مانجا","مانهوا","مانها"];
   var sortMap = { "popular": "views", "latest": "", "rating": "rating", "alphabetical": "alphabetical" };
   var cache = {};
+  var TOKEN_URL = apiBase.replace(/\/own\/?$/, "") + "/token";
+  var tokenCache = { token: "", expiresAt: 0, pending: null };
+
+  function tokenHeaders() {
+    var h = {};
+    for (var k in headers) if (headers.hasOwnProperty(k)) h[k] = headers[k];
+    if (tokenCache.token) h["x-app-token"] = tokenCache.token;
+    return h;
+  }
+
+  async function fetchToken() {
+    if (tokenCache.pending) {
+      try {
+        return await tokenCache.pending;
+      } catch (e) {
+        return "";
+      }
+    }
+    var self = tokenCache;
+    self.pending = (async function () {
+      var res = await api.http(TOKEN_URL, { method: "GET", headers: headers });
+      if (!res || !res.ok) throw new Error("token HTTP " + (res ? res.status : 0));
+      var data = JSON.parse(res.body || "{}");
+      var tok = String((data && data.token) || "");
+      var exp = parseInt((data && data.expiresIn) || "0", 10);
+      if (!tok || !exp || isNaN(exp) || exp <= 0) throw new Error("bad token");
+      self.token = tok;
+      self.expiresAt = Date.now() + (exp - 120) * 1000;
+      return tok;
+    })();
+    try {
+      return await self.pending;
+    } catch (e) {
+      return "";
+    } finally {
+      self.pending = null;
+    }
+  }
+
+  async function getToken() {
+    if (tokenCache.token && Date.now() < tokenCache.expiresAt) return tokenCache.token;
+    tokenCache.token = "";
+    tokenCache.expiresAt = 0;
+    return await fetchToken();
+  }
+
+  function invalidateToken() {
+    tokenCache.token = "";
+    tokenCache.expiresAt = 0;
+  }
+
+  async function apiGetJson(url, hdrs) {
+    if (api.http) {
+      var res = await api.http(url, { method: "GET", headers: hdrs });
+      if (!res || !res.ok) {
+        var err = new Error("HTTP " + (res ? res.status : 0) + " for " + url);
+        err.status = res ? res.status : 0;
+        throw err;
+      }
+      return JSON.parse(res.body || "{}");
+    }
+    var text = await api.fetchText(url, hdrs);
+    if (!text) throw new Error("Empty response: " + url);
+    return JSON.parse(text);
+  }
 
   async function apiCall(action, params) {
     var cacheKey = action + ":" + JSON.stringify(params || {});
@@ -28,16 +93,23 @@ function createSource(api, config) {
         }
       }
     }
-    if (api.http) {
-      var res = await api.http(url, { method: "GET", headers: headers });
-      if (!res || !res.ok) return null;
-      var data = JSON.parse(res.body);
-      if (data) cache[cacheKey] = data;
-      return data;
+    await getToken();
+    var data = null;
+    try {
+      data = await apiGetJson(url, tokenHeaders());
+    } catch (e) {
+      if (e && e.status === 401) {
+        invalidateToken();
+        await getToken();
+        try {
+          data = await apiGetJson(url, tokenHeaders());
+        } catch (e2) {
+          return null;
+        }
+      } else {
+        return null;
+      }
     }
-    var text = await api.fetchText(url, headers);
-    if (!text) return null;
-    var data = JSON.parse(text);
     if (data) cache[cacheKey] = data;
     return data;
   }
