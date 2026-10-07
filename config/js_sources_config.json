@@ -2,7 +2,7 @@
     "version": "1.55.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.10.07.1",
+    "manifest_version": "2026.10.07.2",
     "generated_at": "2026-09-04T14:30:00Z",
     "last_updated": "2026-10-06T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -404,7 +404,7 @@
             },
             "script": {
                 "url": "sources/dilar/source.js",
-                "sha256": "c27add04a1fcb438edd0c6599525c29ff79ebbd6252df180cd4381b57eb5119",
+                "sha256": "c27add04a1fcb438edd0c6599525c29ff79ebbd6252df180cdd4381b57eb5119",
                 "entry": "createSource"
             },
             "capabilities": {
