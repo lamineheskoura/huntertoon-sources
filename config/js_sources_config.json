@@ -2,7 +2,7 @@
     "version": "1.55.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.10.06.2",
+    "manifest_version": "2026.10.07.1",
     "generated_at": "2026-09-04T14:30:00Z",
     "last_updated": "2026-10-06T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -388,7 +388,7 @@
             "id": "dilar",
             "sid": 106,
             "name": "ديلار (Dilar)",
-            "version": "1.5.1",
+            "version": "1.6.0",
             "enabled": true,
             "status": "stable",
             "base_url": "https://dilar.tube",
@@ -404,7 +404,7 @@
             },
             "script": {
                 "url": "sources/dilar/source.js",
-                "sha256": "481E68A9EE471B048E64FE6ED6DAC58C5FD1F3271E301C18052F2ED48927512B",
+                "sha256": "c27add04a1fcb438edd0c6599525c29ff79ebbd6252df180cd4381b57eb5119",
                 "entry": "createSource"
             },
             "capabilities": {
@@ -426,8 +426,8 @@
                 "language": "ar",
                 "adult": false,
                 "author": "HunterToon Team",
-                "description": "Dilar API source with pure-JS crypto (ECDH P-256 + ECIES envelope decryption) for chapter content",
-                "changelog": "v1.5.1: Removed BigInt syntax errors for full QuickJS compatibility; delegated ECIES chapter crypto to native engine bridge with headless browser fallback."
+                "description": "Dilar API source with pure-JS v15 crypto (ECDH P-256 + AES-SIV, no app changes) for chapter content",
+                "changelog": "v1.6.0: pure-JS v15 chapter crypto (AES-SIV via generic bridge ops, www handshake, BigInt-guarded) - works on current app release."
             }
         },
         "lekmanga": {
