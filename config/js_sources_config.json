@@ -2,7 +2,7 @@
     "version": "1.55.0",
     "schema_version": 3,
     "runtime_api_version": "1.0",
-    "manifest_version": "2026.10.08.1",
+    "manifest_version": "2026.10.08.2",
     "generated_at": "2026-09-04T14:30:00Z",
     "last_updated": "2026-10-06T12:00:00Z",
     "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -1975,6 +1975,51 @@
                 "author": "HunterToon Team",
                 "description": "KolNovel - Arabic novels source (WordPress + app/v2 REST). Cursor-paginated discover lists/search, SSR eplister chapters with gap-fill, text chapters via reader API.",
                 "changelog": "v1.0.0: initial JS source - discover lists/search/filters, eplister chapters desc, text reader."
+            }
+        },
+        "arno": {
+            "id": "arno",
+            "sid": 143,
+            "name": "Ar-No",
+            "version": "1.0.0",
+            "enabled": true,
+            "status": "beta",
+            "base_url": "https://ar-no.com",
+            "website_url": "https://ar-no.com",
+            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=ar-no.com",
+            "requires_cf": false,
+            "image_referer": "https://ar-no.com/",
+            "headers": {
+                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+                "Referer": "https://ar-no.com/"
+            },
+            "script": {
+                "url": "sources/arno/source.js",
+                "sha256": "26ccc0f403f5fd7a534d021ded68f6798069c04b02219b6ab2646afc7a770942",
+                "entry": "createSource"
+            },
+            "capabilities": {
+                "content_types": [
+                    "novel"
+                ],
+                "supports_search": true,
+                "supports_filters": true,
+                "supports_lazy_chapters": false,
+                "supports_download": true,
+                "requires_cloudflare": false
+            },
+            "compatibility": {
+                "min_app_version": "1.4.0",
+                "runtime_api_version": "1.0"
+            },
+            "metadata": {
+                "language": "ar",
+                "adult": false,
+                "author": "HunterToon Team",
+                "description": "Ar-No - Arabic novels source (Madara). Paginated novels lists/search/genre filters, AJAX chapter lists desc, text chapters.",
+                "changelog": "v1.0.0: initial JS source - novels lists/search/filters, ajax chapters desc, text reader."
             }
         }
     }
