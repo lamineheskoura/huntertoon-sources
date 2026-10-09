@@ -1,2026 +1,2036 @@
 {
-    "version": "1.55.0",
-    "schema_version": 3,
-    "runtime_api_version": "1.0",
-    "manifest_version": "2026.10.08.2",
-    "generated_at": "2026-09-04T14:30:00Z",
-    "last_updated": "2026-10-06T12:00:00Z",
-    "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
-    "min_app_version": "1.4.0",
-    "repository": {
-        "owner": "lamineheskoura",
-        "repo": "huntertoon-sources",
-        "branch": "main",
-        "raw_base_url": "https://raw.githubusercontent.com/lamineheskoura/huntertoon-sources/main"
+  "version": "1.55.0",
+  "schema_version": 3,
+  "runtime_api_version": "1.0",
+  "manifest_version": "2026.10.09.1",
+  "generated_at": "2026-09-04T14:30:00Z",
+  "last_updated": "2026-10-06T12:00:00Z",
+  "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
+  "min_app_version": "1.4.0",
+  "repository": {
+    "owner": "lamineheskoura",
+    "repo": "huntertoon-sources",
+    "branch": "main",
+    "raw_base_url": "https://raw.githubusercontent.com/lamineheskoura/huntertoon-sources/main"
+  },
+  "update_policy": {
+    "check_interval_hours": 6,
+    "allow_auto_update_installed": true,
+    "keep_previous_versions": 2
+  },
+  "sources": {
+    "azora": {
+      "id": "azora",
+      "sid": 103,
+      "name": "أزورا مانجا (Azora Manga)",
+      "version": "1.3.0",
+      "enabled": true,
+      "status": "stable",
+      "base_url": "https://azorafly.com",
+      "website_url": "https://azorafly.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=azorafly.com",
+      "requires_cf": false,
+      "image_referer": "https://azorafly.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://azorafly.com/",
+        "Origin": "https://azorafly.com"
+      },
+      "script": {
+        "url": "sources/azora/source.js",
+        "sha256": "914C60C653449B9A31E034466200638A23861DBE088A4AFDA3A059753508788B",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Azora Manga source using the current azorafly.com API",
+        "changelog": "v1.3.0: Direct API-based fetching via api.azorafly.com; bypass broken frontend HTML entirely for instant chapter and image loading."
+      }
     },
-    "update_policy": {
-        "check_interval_hours": 6,
-        "allow_auto_update_installed": true,
-        "keep_previous_versions": 2
+    "brownmanga": {
+      "id": "brownmanga",
+      "sid": 104,
+      "name": "Brown Manga",
+      "version": "2.0.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://brownmanga.site",
+      "website_url": "https://brownmanga.site",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=brownmanga.site",
+      "requires_cf": false,
+      "image_referer": "https://brownmanga.site/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://brownmanga.site/"
+      },
+      "script": {
+        "url": "sources/brownmanga/source.js",
+        "sha256": "898D7B3949BFA19622543903440389E6095D9DD353A2455543C2255FA1A03233",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga",
+          "manhwa",
+          "manhua",
+          "novel"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Brown Manga - Next.js SSR Arabic manga/manhwa/novel source",
+        "changelog": "v2.0.0: Rewrite to Next.js RSC payload extraction — site uses CSR, not SSR"
+      }
     },
-    "sources": {
-        "azora": {
-            "id": "azora",
-            "sid": 103,
-            "name": "أزورا مانجا (Azora Manga)",
-            "version": "1.3.0",
-            "enabled": true,
-            "status": "stable",
-            "base_url": "https://azorafly.com",
-            "website_url": "https://azorafly.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=azorafly.com",
-            "requires_cf": false,
-            "image_referer": "https://azorafly.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "application/json, text/plain, */*",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://azorafly.com/",
-                "Origin": "https://azorafly.com"
-            },
-            "script": {
-                "url": "sources/azora/source.js",
-                "sha256": "914C60C653449B9A31E034466200638A23861DBE088A4AFDA3A059753508788B",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Azora Manga source using the current azorafly.com API",
-                "changelog": "v1.3.0: Direct API-based fetching via api.azorafly.com; bypass broken frontend HTML entirely for instant chapter and image loading."
-            }
-        },
-        "brownmanga": {
-            "id": "brownmanga",
-            "sid": 104,
-            "name": "Brown Manga",
-            "version": "2.0.0",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://brownmanga.site",
-            "website_url": "https://brownmanga.site",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=brownmanga.site",
-            "requires_cf": false,
-            "image_referer": "https://brownmanga.site/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://brownmanga.site/"
-            },
-            "script": {
-                "url": "sources/brownmanga/source.js",
-                "sha256": "898D7B3949BFA19622543903440389E6095D9DD353A2455543C2255FA1A03233",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga",
-                    "manhwa",
-                    "manhua",
-                    "novel"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Brown Manga - Next.js SSR Arabic manga/manhwa/novel source",
-                "changelog": "v2.0.0: Rewrite to Next.js RSC payload extraction — site uses CSR, not SSR"
-            }
-        },
-        "sunovels": {
-            "id": "sunovels",
-            "sid": 130,
-            "name": "Sunovels",
-            "version": "1.0.0",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://sunovels.com",
-            "website_url": "https://sunovels.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=sunovels.com",
-            "requires_cf": false,
-            "image_referer": "https://sunovels.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://sunovels.com/"
-            },
-            "script": {
-                "url": "sources/sunovels/source.js",
-                "sha256": "03da71a9ca6df3bcea9e54eee921443d4f348eb572c5dd6384cf44d062e9fa73",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "novel"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": true,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Sunovels novel source with lazy chapter generation from JSON-LD page count",
-                "changelog": "Initial JS implementation with sequential chapter generation and anti-scrape text filtering"
-            }
-        },
-        "seanovel": {
-            "id": "seanovel",
-            "sid": 127,
-            "name": "SeaNovel",
-            "version": "1.0.0",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://seanovel.org",
-            "website_url": "https://seanovel.org",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=seanovel.org",
-            "requires_cf": false,
-            "image_referer": "https://seanovel.org/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "application/json, text/html, */*",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://seanovel.org/"
-            },
-            "script": {
-                "url": "sources/seanovel/source.js",
-                "sha256": "291d974d5a4d88058c1234b29291533ca162623278ce9b4f6abe0c72368d5323",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "novel"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": true,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "SeaNovel novel source using the seanovel.org REST API with lazy chapter generation and RSC paragraph extraction",
-                "changelog": "Initial JS implementation using /api/novels, /api/novel/{slug}, and RSC-based chapter content extraction"
-            }
-        },
-        "swat": {
-            "id": "swat",
-            "sid": 131,
-            "name": "سوات مانجا (Swat Manga)",
-            "version": "1.1.1",
-            "enabled": true,
-            "status": "stable",
-            "base_url": "https://appswat.com",
-            "website_url": "https://appswat.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=appswat.com",
-            "requires_cf": false,
-            "image_referer": "https://appswat.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-                "Accept": "application/json",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://appswat.com/",
-                "Origin": "https://appswat.com"
-            },
-            "script": {
-                "url": "sources/swat/source.js",
-                "sha256": "89c90ebe6881db22389b85a39ebf5203f07f954bf13c1fa54d4e7ee812b63824",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Swat API source migrated to JavaScript",
-                "changelog": "Initial JS migration for testing"
-            }
-        },
-        "team_x": {
-            "id": "team_x",
-            "sid": 132,
-            "name": "تيم إكس (Team-X)",
-            "version": "1.1.2",
-            "enabled": true,
-            "status": "stable",
-            "base_url": "https://olympustaff.com",
-            "website_url": "https://olympustaff.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=olympustaff.com",
-            "requires_cf": false,
-            "image_referer": "https://olympustaff.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://olympustaff.com/"
-            },
-            "script": {
-                "url": "sources/team_x/source.js",
-                "sha256": "4a4f6eec428d6592edc9ae472ea44284925383190a9cfeb80ac3e2c2a8fe641b",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Team-X (Madara CMS) source migrated to JavaScript",
-                "changelog": "Normalize canonical host to olympustaff.com so JS referer/image requests match the working built-in source"
-            }
-        },
-        "three_asq": {
-            "id": "three_asq",
-            "sid": 133,
-            "name": "3asq (شهامة)",
-            "version": "1.4.0",
-            "enabled": true,
-            "status": "stable",
-            "base_url": "https://3asq.online",
-            "website_url": "https://3asq.online",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=3asq.org",
-            "requires_cf": false,
-            "image_referer": "https://3asq.online/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://3asq.online/"
-            },
-            "script": {
-                "url": "sources/three_asq/source.js",
-                "sha256": "016EA61B7A25960099EE0E91F1D5BF21C8404DAFAE29333A4A5E5C8522764D8C",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "3asq Madara HTML source migrated to installable JavaScript",
-                "changelog": "v1.4.0: Fix search (parse tab-thumb result blocks, was always empty) and fix genre filter (use /manga-genre/{slug}/ URLs, site ignores ?genre[]= params)."
-            }
-        },
-        "hijala": {
-            "id": "hijala",
-            "sid": 108,
-            "name": "حجالة مانجا (Hijala)",
-            "version": "1.0.0",
-            "enabled": true,
-            "status": "stable",
-            "base_url": "https://hijala.com",
-            "website_url": "https://hijala.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=hijala.com",
-            "requires_cf": false,
-            "image_referer": "https://hijala.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://hijala.com/"
-            },
-            "script": {
-                "url": "sources/hijala/source.js",
-                "sha256": "2ec3259234fa70465d9659ea6f92667f3d28ce96eba7f5052857e480d2512282",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Hijala Tezuka-style HTML source migrated to installable JavaScript",
-                "changelog": "Initial JS implementation with repeated homepage-card filtering and resilient selector/noscript/regex/ts_reader extraction"
-            }
-        },
-        "dilar": {
-            "id": "dilar",
-            "sid": 106,
-            "name": "ديلار (Dilar)",
-            "version": "1.6.0",
-            "enabled": true,
-            "status": "stable",
-            "base_url": "https://dilar.tube",
-            "website_url": "https://dilar.tube",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=dilar.tube",
-            "requires_cf": false,
-            "image_referer": "https://dilar.tube/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-                "Accept": "application/json, text/plain, */*",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://dilar.tube/"
-            },
-            "script": {
-                "url": "sources/dilar/source.js",
-                "sha256": "c27add04a1fcb438edd0c6599525c29ff79ebbd6252df180cdd4381b57eb5119",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga",
-                    "novel"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Dilar API source with pure-JS v15 crypto (ECDH P-256 + AES-SIV, no app changes) for chapter content",
-                "changelog": "v1.6.0: pure-JS v15 chapter crypto (AES-SIV via generic bridge ops, www handshake, BigInt-guarded) - works on current app release."
-            }
-        },
-        "lekmanga": {
-            "id": "lekmanga",
-            "sid": 112,
-            "name": "LekManga",
-            "version": "1.5.1",
-            "enabled": true,
-            "status": "stable",
-            "base_url": "https://lekmanga.site",
-            "website_url": "https://lekmanga.site",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=lekmanga.site",
-            "requires_cf": true,
-            "image_referer": "https://lekmanga.site/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
-                "Referer": "https://lekmanga.site/",
-                "Origin": "https://lekmanga.site"
-            },
-            "script": {
-                "url": "sources/lekmanga/source.js",
-                "sha256": "D5C5A36077CDF7F4E6A13D197FB05073F33DC5115D262266233517F8E4D7C036",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": true
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "LekManga Madara source migrated to JavaScript",
-                "changelog": "v1.5.0: Switch base to lekmanga.site (reachable edges; mangalik.net blackholed) + rewrite dead tempsolo image host to tempstorm (verified 200, reference-reader behavior)."
-            }
-        },
-        "mangastarz": {
-            "id": "mangastarz",
-            "sid": 116,
-            "name": "MangaStarz",
-            "version": "1.4.0",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://starzmanga.com",
-            "website_url": "https://starzmanga.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=manga-starz.net",
-            "requires_cf": false,
-            "image_referer": "https://starzmanga.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://starzmanga.com/"
-            },
-            "script": {
-                "url": "sources/mangastarz/source.js",
-                "sha256": "090DDCC228A2EDC139D33A8C1A197C87FAC779E1FFF9B29D12E98875CF3B6143",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "MangaStarz Madara source migrated to JavaScript",
-                "changelog": "v1.4.0: Fix search (parse c-tabs-item result blocks) and genre filter (use /manga-genre/{arabic-slug}/ URLs with homepage-redirect guard; site ignores ?genre[]= params)."
-            }
-        },
-        "lava_scans": {
-            "id": "lava_scans",
-            "sid": 111,
-            "name": "لافا سكانز (Lava Scans)",
-            "version": "1.3.0",
-            "enabled": true,
-            "status": "stable",
-            "base_url": "https://lavascans.com",
-            "website_url": "https://lavascans.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=lavascans.com",
-            "requires_cf": false,
-            "image_referer": "https://lavascans.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://lavascans.com/"
-            },
-            "script": {
-                "url": "sources/lava_scans/source.js",
-                "sha256": "C42384AB05D4AEACEBDA39142C7C2DDBCE9237C22E3C0041FAA9894F904DA118",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Canonical lava_scans installable JavaScript source matching the built-in LavaScans behavior",
-                "changelog": "v1.3.0: detect locked chapters via data-coin=yes attribute (fa-lock icon has no text)"
-            }
-        },
-        "mangatime": {
-            "id": "mangatime",
-            "sid": 118,
-            "name": "مانجا تايم (MangaTime)",
-            "version": "1.3.1",
-            "enabled": true,
-            "status": "stable",
-            "base_url": "https://mangatime.org",
-            "website_url": "https://mangatime.org",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=mangatime.org",
-            "requires_cf": false,
-            "image_referer": "https://mangatime.org/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "application/json, text/html, */*",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://mangatime.org/"
-            },
-            "script": {
-                "url": "sources/mangatime/source.js",
-                "sha256": "2BE6B9C671C7B47676244D86632A9D3B923D62BA7D4075CC9F470DD153308316",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga",
-                    "overlay"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "MangaTime source using homepage.getHomepage, search.searchSeries, content.getSeriesBySlug, content.getChapters, and content.getChapterPages tRPC APIs",
-                "changelog": "v1.3.0: Full chapter lists (limit:1000, lazy growth, flat {url,nextPage} contract) + REAL overlay text via getChapterOverlay/chunks (bbox/style mapping, Amiri fonts)."
-            }
-        },
-        "mangatek": {
-            "id": "mangatek",
-            "sid": 117,
-            "name": "مانجاتك (Mangatek)",
-            "version": "1.2.0",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://mangatek.com",
-            "website_url": "https://mangatek.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=mangatek.com",
-            "requires_cf": false,
-            "image_referer": "https://mangatek.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://mangatek.com/"
-            },
-            "selectors": {
-                "homepage_list": "a[href^='/manga/'], .manga-card, .listupd .bs",
-                "homepage_url": "a",
-                "homepage_cover": "img",
-                "homepage_title": "h3, .manga-title, .tt",
-                "search_list": "a[href^='/manga/'], .manga-card, .listupd .bs",
-                "search_url": "a",
-                "search_cover": "img",
-                "search_title": "h3, .manga-title, .tt",
-                "manga_title": "h1, .manga-title, .entry-title, meta[property='og:title']",
-                "manga_cover": ".manga-cover img, .thumb img, meta[property='og:image']",
-                "manga_description": ".manga-description, .entry-content p, .entry-content",
-                "manga_genres": ".genre-link, .mgen a, .genres a",
-                "chapter_list": "a[href*='/reader/'], a[href*='/chapter/'], .chapter-item, #chapterlist li, .eplister li",
-                "chapter_number_attr": "data-num",
-                "chapter_date": ".chapter-date, .chapterdate",
-                "chapter_locked": ".fa-lock, .paywall, .locked",
-                "chapter_reader_container": ".reader-area, #readerarea, .reading-content",
-                "filter_list": "a[href^='/manga/'], .manga-card, .listupd .bs",
-                "filter_url": "a",
-                "filter_cover": "img",
-                "filter_title": "h3, .manga-title, .tt",
-                "chapter_page_image": "#readerarea img, .reading-content img, .page-break img"
-            },
-            "other": {
-                "icon_asset": "assets/icons/mangatek.png",
-                "reader_fallback_strategy": "selector,noscript,regex,ts_reader",
-                "chapter_image_extensions": ".webp,.jpg,.jpeg,.png",
-                "is_nsfw": false
-            },
-            "script": {
-                "url": "sources/mangatek/source.js",
-                "sha256": "BF7A88ED40EFE643036563EA596C78F22FB075BF274CB59884629B528C9B780E",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga",
-                    "overlay"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Mangatek Astro/overlay-capable source migrated to JavaScript",
-                "changelog": "v1.2.0: Rotated unlock proof salt from live viewer bundle + 2-step challenge unlock (PoW solver, Turnstile fail-closed) + dual bridge names; v1.1.0: width-only Y scaling"
-            }
-        },
-        "mangasid": {
-            "id": "mangasid",
-            "sid": 115,
-            "name": "مانجا سيد (Mangasid)",
-            "version": "1.2.0",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://mangasid.com",
-            "website_url": "https://mangasid.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=mangasid.com",
-            "requires_cf": false,
-            "image_referer": "https://mangasid.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://mangasid.com/"
-            },
-            "script": {
-                "url": "sources/mangasid/source.js",
-                "sha256": "2364EDEF55BD3E5B6F9A7D58C15651B5906174417327C515EBBF542A0E956C25",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga",
-                    "overlay"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Mangasid Astro/overlay-capable source migrated to JavaScript",
-                "changelog": "v1.2.0: Rotated unlock proof salt (shared backend family) + 2-step challenge unlock (PoW solver, Turnstile fail-closed) + dual bridge names; v1.1.0: width-only Y scaling"
-            }
-        },
-        "hizo_manga": {
-            "id": "hizo_manga",
-            "sid": 109,
-            "name": "Hizo Manga",
-            "version": "1.2.0",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://hizomanga.net",
-            "website_url": "https://hizomanga.net",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=hizomanga.net",
-            "requires_cf": false,
-            "image_referer": "https://hizomanga.net/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://hizomanga.net/"
-            },
-            "script": {
-                "url": "sources/hizo_manga/source.js",
-                "sha256": "03ACE35351E90AD335BCF47533457F2C06743D288F864C2DA698FDD57294AA1A",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga",
-                    "novel"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Hizo Manga mixed manga/novel source migrated to JavaScript",
-                "changelog": "v1.2.0: Fix reader for live markup (chapter-type-text gate, entry-content fallback, h3.chapter-name title, h2 detail title, excerpt description, srcset/noscript image fallbacks, ajax POST headers)"
-            }
-        },
-        "sparkmanga": {
-            "id": "sparkmanga",
-            "sid": 128,
-            "name": "Spark Manga",
-            "version": "1.2.1",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://sparkmanga.net",
-            "website_url": "https://sparkmanga.net",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=sparkmanga.net",
-            "requires_cf": false,
-            "image_referer": "https://sparkmanga.net/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
-                "Referer": "https://sparkmanga.net/"
-            },
-            "script": {
-                "url": "sources/sparkmanga/source.js",
-                "sha256": "DB49F572D65B37B50AE732685DF6A3C2B36CA4FC79AA2862520FC5BD69922006",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga",
-                    "manhwa",
-                    "manhua"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Spark Manga - Madara-based Arabic manga source with Cloudflare protection on browse/detail/search pages",
-                "changelog": "v1.2.1: Added headless browser fallback for Cloudflare-protected paginated pages /page/N/, infinite scroll fixed."
-            }
-        },
-        "mangalionz": {
-            "id": "mangalionz",
-            "sid": 114,
-            "name": "Manga Lionz",
-            "version": "1.1.1",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://manga-lionz.org",
-            "website_url": "https://manga-lionz.org",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=manga-lionz.org",
-            "requires_cf": true,
-            "image_referer": "https://manga-lionz.org/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
-                "Referer": "https://manga-lionz.org/"
-            },
-            "script": {
-                "url": "sources/mangalionz/source.js",
-                "sha256": "C1C3CBCCF86CFE2D893617DFBDA3172FACD5AFFC3FD8CA088A9D79A6DB18D678",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga",
-                    "manhwa",
-                    "manhua"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": true
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Manga Lionz - Madara-based Arabic manga source with Cloudflare protection",
-                "changelog": "v1.1.0: Homepage via / + /page/N/ wp-pagenavi scheme with archive fallback; 3-tier fetch; widened reader selectors + srcset; search tab-thumb fallback."
-            }
-        },
-        "manhasama": {
-            "id": "manhasama",
-            "sid": 119,
-            "name": "مانها السماء (Manha Alsamaa)",
-            "version": "1.3.8",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://realmnovel.com",
-            "website_url": "https://realmnovel.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=realmnovel.com",
-            "requires_cf": false,
-            "image_referer": "https://realmnovel.com/",
-            "headers": {
-                "User-Agent": "Dart/3.6 (dart:io) Chrome/124",
-                "Accept": "application/json, text/plain, */*",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Authorization": "Bearer guest",
-                "x-app-version": "1.0.5",
-                "Referer": ""
-            },
-            "script": {
-                "url": "sources/manhasama/source.js",
-                "sha256": "7C9E85231BEDB8481BEF1863BEA3BB4D4161EDA54BFC09993CEAB5518CBB5FD6",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga",
-                    "overlay"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Manha Alsamaa - Arabic manga source using realmnovel.com manga API with guest auth and app version",
-                "changelog": "v1.3.8: Harden makeCdnUrl (trim, //-prefix, missing leading slash, http-to-https) so restored library covers reheal instead of 404; v1.3.7: Capitalized /api/Manga + /api/Chapters routes (origin nginx 403s lowercase paths only) plus x-app-version 1.0.5 like the official app"
-            }
-        },
-        "kawaii": {
-            "id": "kawaii",
-            "sid": 110,
-            "name": "كواي مانجا (Kawaii Manga)",
-            "version": "1.0.1",
-            "enabled": true,
-            "status": "stable",
-            "base_url": "https://kawaiimanga.org",
-            "website_url": "https://kawaiimanga.org",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=kawaiimanga.org",
-            "requires_cf": false,
-            "image_referer": "https://kawaiimanga.org/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "application/json",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://kawaiimanga.org/",
-                "x-app-key": "km_2026_live"
-            },
-            "script": {
-                "url": "sources/kawaii/source.js",
-                "sha256": "fddd244ea14a56110839e7596d500b3eddc3240bb2f0517dec32a5b12d930459",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Kawaii Manga source using the manga-api.kawaii-anime.com API for browse, search, details, and reader pages",
-                "changelog": "v1.0.1: guest-token auth (x-app-token + 401 retry) for token_required API. Full rewrite: uses the real browse/search/series/pages API with CDN fallback for reader images"
-            }
-        },
-        "fada_riwayat": {
-            "id": "fada_riwayat",
-            "sid": 107,
-            "name": "فضاء الروايات (Fada Riwayat)",
-            "version": "1.3.1",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://cenele.com",
-            "website_url": "https://cenele.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=cenele.com",
-            "requires_cf": false,
-            "image_referer": "https://cenele.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "",
-                "Sec-Fetch-Dest": "",
-                "Sec-Fetch-Mode": "",
-                "Sec-Fetch-Site": "",
-                "Upgrade-Insecure-Requests": "0"
-            },
-            "script": {
-                "url": "sources/fada_riwayat/source.js",
-                "sha256": "7C6115BFF885634015DEDFCE509ECEBC2BBBBB045AD3CBA12D7085E01CB8CDC6",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga",
-                    "novel"
-                ],
-                "supports_search": true,
-                "supports_filters": false,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Fada Riwayat novel-first source migrated to JavaScript",
-                "changelog": "v1.3.1: Fix pagination URL for pages 2+ (was /page/N/ which returns homepage, now /cont/page/N/); v1.3.0: Fix Referer/Sec-Fetch 403 on detail pages; fix entity decoding no-op; fix isNovelMarker case; harden nhvConfig regex"
-            }
-        },
-        "nadi_al_riwayt": {
-            "id": "nadi_al_riwayt",
-            "sid": 124,
-            "name": "نادي الروايات (Nadi Al Riwayat)",
-            "version": "1.1.2",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://rewayat.club",
-            "website_url": "https://rewayat.club",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=rewayat.club",
-            "requires_cf": false,
-            "image_referer": "https://rewayat.club/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://rewayat.club/"
-            },
-            "script": {
-                "url": "sources/nadi_al_riwayt/source.js",
-                "sha256": "DFAB588869EA662AE7CB7F3FA495874CAD434CD4872D1FA888044DBFE480D2BE",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "novel"
-                ],
-                "supports_search": true,
-                "supports_filters": false,
-                "supports_lazy_chapters": true,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Nadi Al Riwayat novel-only source migrated to JavaScript",
-                "changelog": "v1.1.2: Send X-App-Version 1.2.0 like the operator app (harmless today, gate-proof); v1.1.1: hardened details, cover routing, cache guard"
-            }
-        },
-        "despair_manga": {
-            "id": "despair_manga",
-            "sid": 105,
-            "name": "ديسبر مانجا (Despair Manga)",
-            "version": "1.0.0",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://despair-manga.net",
-            "website_url": "https://despair-manga.net",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=despair-manga.net",
-            "requires_cf": false,
-            "image_referer": "https://despair-manga.net/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://despair-manga.net/"
-            },
-            "script": {
-                "url": "sources/despair_manga/source.js",
-                "sha256": "0e331dad90777feb5bd02aa77e5eb097cb9bc2aa965ee90a2d1f6be38314515d",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Despair Manga WordPress source - new JS-only source",
-                "changelog": "Initial JS implementation for despair-manga.net"
-            }
-        },
-        "mnga4all": {
-            "id": "mnga4all",
-            "sid": 123,
-            "name": "Mnga4all",
-            "version": "1.0.0",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://mnga4all.com",
-            "website_url": "https://mnga4all.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=mnga4all.com",
-            "requires_cf": false,
-            "image_referer": "https://mnga4all.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://mnga4all.com/"
-            },
-            "script": {
-                "url": "sources/mnga4all/source.js",
-                "sha256": "570b183926ca6cb7704e5197735f8a960a5c3acf075febb4b0a45b4586dc33bc",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Mnga4all WordPress Madara source - new JS-only source",
-                "changelog": "Initial JS implementation for mnga4all.com"
-            }
-        },
-        "area_manga": {
-            "id": "area_manga",
-            "sid": 101,
-            "name": "أريا مانجا (AREA Manga)",
-            "version": "1.0.2",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://ar.kenmanga.com",
-            "website_url": "https://ar.kenmanga.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=ar.kenmanga.com",
-            "requires_cf": false,
-            "image_referer": "https://ar.kenmanga.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://ar.kenmanga.com/"
-            },
-            "script": {
-                "url": "sources/area_manga/source.js",
-                "sha256": "78462940ff3a27cc22dac42aef2091bee7b96e2f6604976402ab8d884d5d40e9",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "AREA Manga source using MangaReader Premium WordPress theme with Cloudflare HTML parsing",
-                "changelog": "Fix reader image extraction: remove wrong fallback selectors; add AJAX POST to admin-ajax.php with get_secure_chapter_images action using ARYA_CHAPTER_ID; images are loaded dynamically, not embedded in HTML"
-            }
-        },
-        "rocks_manga": {
-            "id": "rocks_manga",
-            "sid": 126,
-            "name": "روكس مانجا (Rocks Manga)",
-            "version": "1.0.0",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://rocksmanga.com",
-            "website_url": "https://rocksmanga.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=rocksmanga.com",
-            "requires_cf": false,
-            "image_referer": "https://rocksmanga.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://rocksmanga.com/"
-            },
-            "script": {
-                "url": "sources/rocks_manga/source.js",
-                "sha256": "c07d88825f0670f52533f9b7d8a63d63f9251b5544baf3e41a02ba93e73fe99d",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Rocks Manga source using wp-fire theme with Madara Core. Homepage at /manga/ with pagination; detail pages at /manga/{slug}/; reader images via direct img tags with data-src",
-                "changelog": "Initial JS implementation for rocksmanga.com"
-            }
-        },
-        "mgeko": {
-            "id": "mgeko",
-            "sid": 121,
-            "name": "MGeko",
-            "version": "1.0.0",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://www.mgeko.cc",
-            "website_url": "https://www.mgeko.cc",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=www.mgeko.cc",
-            "requires_cf": false,
-            "image_referer": "https://www.mgeko.cc/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "application/json, text/html, */*",
-                "Accept-Language": "en-US,en;q=0.9",
-                "Referer": "https://www.mgeko.cc/",
-                "Origin": "https://www.mgeko.cc"
-            },
-            "script": {
-                "url": "sources/mgeko/source.js",
-                "sha256": "7daf99f750afc2f3efd60277317fdb45dc04e6531cd006832675cae81702f3c5",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "en",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "MGeko English manga/manhwa source. Homepage and search use /browse-comics/data/ API returning JSON with results_html; reader images hosted on imgsrv4.com",
-                "changelog": "Initial JS implementation for mgeko.cc"
-            }
-        },
-        "manhuaus": {
-            "id": "manhuaus",
-            "sid": 120,
-            "name": "MANHUAUS.COM",
-            "version": "1.0.0",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://manhuaus.com",
-            "website_url": "https://manhuaus.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=manhuaus.com",
-            "requires_cf": true,
-            "image_referer": "https://manhuaus.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "en-US,en;q=0.9",
-                "Referer": "https://manhuaus.com/",
-                "Origin": "https://manhuaus.com"
-            },
-            "script": {
-                "url": "sources/manhuaus/source.js",
-                "sha256": "4ee84383fc07b2accb343515473c82924c41354d46b867de6aaf85d5e2eb56b5",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": true
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "en",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "MANHUAUS.COM English manhua/manga source (WordPress Madara). Protected by Cloudflare Turnstile. Homepage at /; archive at /manga/?page=N; detail at /manga/{slug}/; reader images hosted on img.manhuaus.com",
-                "changelog": "Initial JS implementation for manhuaus.com with Cloudflare support"
-            }
-        },
-        "asurascans": {
-            "id": "asurascans",
-            "sid": 102,
-            "name": "Asura Scans",
-            "version": "1.1.0",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://asurascans.com",
-            "website_url": "https://asurascans.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=asurascans.com",
-            "requires_cf": false,
-            "image_referer": "https://asurascans.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "en-US,en;q=0.9",
-                "Referer": "https://asurascans.com/",
-                "Origin": "https://asurascans.com"
-            },
-            "script": {
-                "url": "sources/asurascans/source.js",
-                "sha256": "dda54433388a67a222aafd3ceed5414607aaab83856fa7c6d4024fbf4f41b662",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "en",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Asura Scans English manga/manhwa source (Astro.js SSR). Homepage at /; browse at /browse?page=N; detail at /comics/{slug}; reader at /comics/{slug}/chapter/{num}; images on cdn.asurascans.com. Supports locked chapter detection.",
-                "changelog": "v1.1.0 (studied against live site): (1) FIX pagination/browse: the real server-rendered listing is /browse/comics?page=N (verified: 40 cards/page, page 1 != page 2); plain /browse?page=N returns an empty client-side shell, which is why the list never advanced. Homepage page>1 and filtered browse now use /browse/comics?page=N; genre/type filters try /browse/comics?genres=..&page=N first and fall back to the plain listing if the server returns no cards (filters are client-side/API only). (2) FIX search: /browse?search= is also a client-side shell; search now calls the site API api.asurascans.com/api/search?q= (returns {data:[{slug,title,cover|cover_url,type}]}), mapping slug to /comics/{slug}. (3) FIX intermittent chapter images: cdn.asurascans.com intermittently drops non-browser HTTP clients (verified: our IP was TCP-blocked while the site kept serving browsers and weserv fetched the CDN fine); chapter images now go through images.weserv.nl with output=jpeg (serves any client, no webp decode issues). List/detail/chapter-list logic unchanged."
-            }
-        },
-        "stellarsaber": {
-            "id": "stellarsaber",
-            "sid": 129,
-            "name": "ستيلار سابير (Stellar Saber)",
-            "version": "1.0.0",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://stellarsaber.pro",
-            "website_url": "https://stellarsaber.pro",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=stellarsaber.pro",
-            "requires_cf": true,
-            "image_referer": "https://stellarsaber.pro/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://stellarsaber.pro/"
-            },
-            "script": {
-                "url": "sources/stellarsaber/source.js",
-                "sha256": "0186711c2f54437143198803fb584fcfd688367f36f9c48afb23b05987fc40eb",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga",
-                    "manhua",
-                    "anime",
-                    "novel"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": true
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Stellar Saber (ستيلار سابير) - Arabic manga/manhwa/anime/novel WordPress source. Homepage at /manga/ and /manga/page/N/; search via ?s=; detail at /manga/{slug}/; reader extracts data-cdn-url from chapter page; images on cdn-stellarsaber.com.",
-                "changelog": "v1.0.0: Initial release - HTML scraping-based source supporting manga listing, search, detail, chapter images, and genre/type/status filtering."
-            }
-        },
-        "realmnovel": {
-            "id": "realmnovel",
-            "sid": 125,
-            "name": "عالم الروايات (RealmNovel)",
-            "version": "4.0.2",
-            "enabled": true,
-            "status": "stable",
-            "base_url": "http://62.171.141.197:5007",
-            "website_url": "https://www.realmnovel.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=realmnovel.com",
-            "requires_cf": false,
-            "image_referer": "https://www.realmnovel.com/",
-            "headers": {
-                "x-app-version": "10",
-                "User-Agent": "Dart/3.9 (dart:io) Chrome/124",
-                "Accept": "application/json, text/plain, */*",
-                "Content-Type": "application/json",
-                "Referer": "",
-                "Sec-Fetch-Dest": "",
-                "Sec-Fetch-Mode": "",
-                "Sec-Fetch-Site": "",
-                "Upgrade-Insecure-Requests": "0"
-            },
-            "script": {
-                "url": "sources/realmnovel/source.js",
-                "sha256": "81305FA1B213EB5CF225AA976A04119FEFEB8A4FACA4FBEF266C58BDB825A4CB",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "novel"
-                ],
-                "supports_search": true,
-                "supports_filters": false,
-                "supports_lazy_chapters": true,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "RealmNovel (عالم الروايات) Arabic novel source using the Novels Sky API with x-app-version bypass (no login).",
-                "changelog": "v4.0.2: Survive app orchestrator rewrites (dual-gate UA keeps Dart prefix + Chrome token; empty Referer/Sec-Fetch/UIR override injected defaults that the origin denies); v4.0.1: fetchMoreChapters flat args"
-            }
-        },
-        "mknov": {
-            "id": "mknov",
-            "sid": 122,
-            "name": "مملكة الروايات (MK Novel)",
-            "version": "1.0.2",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://www.mknov.com",
-            "website_url": "https://www.mknov.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=mknov.com",
-            "requires_cf": false,
-            "image_referer": "https://www.mknov.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://www.mknov.com/"
-            },
-            "script": {
-                "url": "sources/mknov/source.js",
-                "sha256": "cae8a579e9a0d57cc649ab70e378c8935306c91c4020399c02f192ec071f221d",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "novel"
-                ],
-                "supports_search": true,
-                "supports_filters": false,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "MK Novel (مملكة الروايات) - Next.js Arabic novel source. Homepage / ; search /library?q= ; detail /novel/{id} ; chapters via /api/works/{id}/chapters . Scrambled text is decoded with per-page protected-font substitution tables embedded in the source.",
-                "changelog": "v1.0.2: Homepage pagination fixed via /api/works?limit=30&offset=N (site ignores ?page=); v1.0.1: Homepage now uses /library (deep link) + donghuaList; sanitize control chars before JSON.parse"
-            }
-        },
-        "mangadar": {
-            "id": "mangadar",
-            "sid": 113,
-            "name": "مانغادار (MangaDar)",
-            "version": "1.1.0",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://mangadar.com",
-            "website_url": "https://mangadar.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=mangadar.com",
-            "requires_cf": false,
-            "image_referer": "https://mangadar.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://mangadar.com/"
-            },
-            "script": {
-                "url": "sources/mangadar/source.js",
-                "sha256": "1AE84540EF3A13B8C1C2AD19954307AE0D1FA19ADCA2F2DE83F9882354E586C7",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manga",
-                    "manhwa",
-                    "manhua"
-                ],
-                "supports_search": true,
-                "supports_filters": false,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "MangaDar - WordPress/Alpine manga source, no Cloudflare protection",
-                "changelog": "v1.0.1: no Cloudflare protection - direct HTTP verified live (homepage/detail/chapter/search)"
-            }
-        },
-        "witanime": {
-            "id": "witanime",
-            "sid": 134,
-            "name": "ويت أنمي (WitAnime)",
-            "version": "1.3.2",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://witanime.site",
-            "website_url": "https://witanime.site",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64\u0026domain=witanime.site",
-            "requires_cf": false,
-            "image_referer": "https://witanime.site/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://witanime.site/"
-            },
-            "script": {
-                "url": "sources/witanime/source.js",
-                "sha256": "015A33D9306C7F2EDEDCF7E7D20ADBD5CBCBF9058D26071D557B40C1D7ADD0CC",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "anime"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": false,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "WitAnime - Arabic anime source on witanime.site (Laravel Livewire). Browse/movies cards, suggest search, anime+movie details, native direct-mp4 episode servers (4shared/mp4upload/videa).",
-                "changelog": "v1.3.2: google/drive truthful gate (no blind DROP) + unresolved else as embed+reason + FHD-first ordering; bud(7)/deadline(12s)/drops(mega/buckets) untouched. v1.3.1: honest embed broadcast — failed resolutions emit live gate + reason instead of dropping; DROP/budget/deadline untouched. v1.3.0: native-only servers — direct mp4 for 4shared/mp4upload/videa (RC4 XML chain)/ok-flashvars; drop unresolvable gates; 12s deadline."
-            }
-        },
-        "anime4up": {
-            "id": "anime4up",
-            "sid": 135,
-            "name": "أنمي فور أب (Anime4up)",
-            "version": "1.3.6",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://w1.anime4up.rest",
-            "website_url": "https://w1.anime4up.rest",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64\u0026domain=w1.anime4up.rest",
-            "requires_cf": false,
-            "image_referer": "https://w1.anime4up.rest/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://w1.anime4up.rest/"
-            },
-            "script": {
-                "url": "sources/anime4up/source.js",
-                "sha256": "72E92A75AAEA143FA8FBF5B157EF38ECDA4AABE88FEE1C0DE1D8C05988C62BBB",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "anime"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": false,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Anime4up - Arabic anime WordPress source (Anime4up v1.0 theme). Homepage cards, WP search, anime details with DOM episode list incl. load-more walk, direct data-watch servers (megamax/voe/videa/uqload/doodstream/mp4upload).",
-                "changelog": "v1.3.6: streamUrl quote-tolerant (double+single quotes; minified themes missed the master and nulled S1). v1.3.5: token/query survival (resolveUrl inherits base ?query for relative HLS variants; absolute keeps own) + S1 first-party in resolveServer allow-list (anime4up-s1/s2/s path match, rotation-proof). v1.3.4: vk tier zero-fetch honest embed (type=embed+reason vk-passthrough, no fetch/budget; resolveVk dormant-deprecated; ft 6 joins 8/10 honest path; costOrder/tierOf/sort untouched). v1.3.3: vk redirect-loop kill (resolveVk Referer now https://vkvideo.ru/ instead of baseUrl; Location resolves against request origin via resolveAgainst, no more baseUrl-joined 404 hop; makeAbsolute gains optional base, all 15 single-arg callers byte-identical). v1.3.2: resolveServer google/drive fix (drive passthrough, no blind dead) + tier99/s1tried/deadline/budget untried as embed+reason (no delete); bud(16)/deadline(12s) untouched. v1.3.1: honest embed broadcast (ok-no-resolver, vk-unresolved, tier-unresolved) + vk redirect fix + ok.ru in okHost; budgets/dead-lists untouched. v1.3.0: embed allow-list (drive/filemoon only), 4shared/drive/vidbem tiers, leak-proof emit filter."
-            }
-        },
-        "animeslayer": {
-            "id": "animeslayer",
-            "sid": 136,
-            "name": "أنمي سلاير (AnimeSlayer)",
-            "version": "1.3.7",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://anslayer.com/anime/public",
-            "website_url": "https://anslayer.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=anslayer.com",
-            "requires_cf": false,
-            "image_referer": "https://anslayer.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "application/json, text/plain, */*",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://anslayer.com/"
-            },
-            "script": {
-                "url": "sources/animeslayer/source.js",
-                "sha256": "0E51651E4F52844A4EBEDFF3BBC65B602D2D34C5EACD04966367852B4D2E1EF1",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "anime"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": false,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "AnimeSlayer - Arabic anime source on anslayer.com public JSON API. Lists, search, details, episodes, native direct-mp4 servers plus drive passthrough.",
-                "changelog": "v1.3.7: genre filter via anime_genre_ids string (verified live) + trailer/duration/source from more_info_result + official f2 mirror first + vinovo/playmate/firestream/qiwi passthrough + roberteachfinal dropped (DNS dead) + filemoon referer + fail stays video kind + إصلاح كوميديا. v1.3.6: soft deadline 12s->7s (app sheet times out at 10s; late answers render as empty sheets) + deadline-untried honest embeds instead of silent vanish + resolve-failed honest embeds for alive-but-unparseable mediafire/mixdrop/streamtape pages (lastPageAlive gate; unreachable hosts stay dropped). v1.3.5: homepage = latest updates first with REAL _offset pagination (30/page, infinite; plain limit/offset proven ignored live) + ok.ru zero-fetch honest embed (embed page hangs 20s+, blew the app 10s server budget -> empty sheet; app owns native ok.ru extractor) + filters/search paginate via _offset; mystream dropped (verified dead DNS). v1.3.4: ok last always (links stable partition) + ok single attempt + proactive skip on deadline/low bud (honest embed, no fetch) + ok HEAD-probe like mediafire/mixdrop/streamtape (probe-failed honest embed); bud(14)/deadline(12s)/drop-list untouched. v1.3.3: muilt fetch-failure fallback (live episode_urls honest embed muilt_fetch_failed, no deletion; gate preserved) + okHost completion (vk/voe/videa/dood/mp4upload/uqload) + drive/filemoon honest reasons + resolveServer directUrl preserve; budget/deadline/drop-list untouched. v1.3.2: non-muilt episode_urls fallback (first live http link, fail-closed; muilt gate preserved, early-return replaced) + unresolved-host honest embed passthrough (reason); budget/deadline/drop-list untouched. v1.3.1: vk passthrough + failed-ok honest embed (reason) instead of dropping; drop-list/budget/deadline untouched. v1.3.0: Kotatsu-faithful extractors (ok data-options, streamtape assembly, mediafire API), true pagination, mp4 HEAD-probe gate."
-            }
-        },
-        "anime3rb": {
-            "id": "anime3rb",
-            "sid": 137,
-            "name": "أنمي 3rb (Anime3rb)",
-            "version": "1.0.1",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://anime3rb.com",
-            "website_url": "https://anime3rb.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=anime3rb.com",
-            "requires_cf": false,
-            "image_referer": "https://anime3rb.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://anime3rb.com/"
-            },
-            "script": {
-                "url": "sources/anime3rb/source.js",
-                "sha256": "3791C1179D5D67D913F48FA5EC1DC49C272AD5B10122F1CBF3B086F01332CC69",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "anime"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": false,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Anime3rb - Arabic anime source (Laravel). Title lists with pages, genre/type filters, anime details with full episodes, first-party vid3rb servers with qualities.",
-                "changelog": "v1.0.1: iframe multi (src/data-src) for vid3rb players + vid3rb_resolve_failed honest embed fallback (no deletion) + okHost completion (vk/voe/videa/dood/mp4upload/uqload) + resolveServer directUrl preserve. v1.0.0: initial JS source - lists, filters, details, vid3rb direct servers with qualities."
-            }
-        },
-        "animephoenix": {
-            "id": "animephoenix",
-            "sid": 138,
-            "name": "أنمي فينيكس (AnimePhoenix)",
-            "version": "1.0.1",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://anime-phoenix.com",
-            "website_url": "https://anime-phoenix.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=anime-phoenix.com",
-            "requires_cf": false,
-            "image_referer": "https://anime-phoenix.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://anime-phoenix.com/"
-            },
-            "script": {
-                "url": "sources/animephoenix/source.js",
-                "sha256": "5D54E5A78BD05C8FF843409E8E356619A266E3158CE1E432E51ACECFD6614846",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "anime"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": false,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "AnimePhoenix - Arabic anime source (WordPress streamit). Signed JSON API lists/search/filters, full episode pills, first-party workers.dev direct servers.",
-                "changelog": "v1.0.1: security HMAC retry inside bud (n=2 fresh ts/sig) + iframe multi (src/data-src/data-lazy-src) + seasons completion (parse + signed API filter) + phoenix_no_direct honest fallback + resolveServer directUrl preserve + okHost completion. v1.0.0: initial JS source - API-first lists/search/filters with HTML fallbacks, details with FJ-EpPill episodes, inline data-server direct mirrors with #.mp4 suffix."
-            }
-        },
-        "animerco": {
-            "id": "animerco",
-            "sid": 139,
-            "name": "أنمي ركو (Animerco)",
-            "version": "1.0.2",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://det.animerco.org",
-            "website_url": "https://det.animerco.org",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=det.animerco.org",
-            "requires_cf": false,
-            "image_referer": "https://det.animerco.org/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://det.animerco.org/"
-            },
-            "script": {
-                "url": "sources/animerco/source.js",
-                "sha256": "B39075673111A2631B43E2DCAAE9FBB27A0E519048E15AE87AA9BD52C551AB66",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "anime"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": false,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Animerco - Arabic anime source (WordPress Animerco/MiraiThemes). Server-rendered lists/search/genre filters, two-level details (hub-season-episodes), player_ajax+jwplayer chain with videas/mp4upload/yourupload/vidmoly direct extractors plus honest embed passthrough.",
-                "changelog": "v1.0.2: ok last always (options+out stable partition) + ok single attempt (no security retry) + proactive skip on deadline/low bud + ok honest embed+reason (no deep resolve); bud(60)/deadline(20s) untouched. v1.0.1: security retry inside bud (fresh nonce single retry, 60/20s untouched) + iframe multi (src/data-src/data-lazy-src/data-url) + nine direct resolvers (videa/uqload/vk/voe/dood) where possible else host-passthrough reason + okHost voe/dood completion + seasons completion (all 12, no early break) + resolveServer directUrl preserve + embedUrl fix. v1.0.0: initial JS source - lists/search/filters, hub-season-episode details, player_ajax chain with 4 direct extractors and embed passthrough."
-            }
-        },
-        "galaxy_novels": {
-            "id": "galaxy_novels",
-            "sid": 140,
-            "name": "Galaxy Novels",
-            "version": "1.0.4",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://galaxynovels.com",
-            "website_url": "https://galaxynovels.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=galaxynovels.com",
-            "requires_cf": true,
-            "image_referer": "https://galaxynovels.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://galaxynovels.com/"
-            },
-            "script": {
-                "url": "sources/galaxy_novels/source.js",
-                "sha256": "c99efead6d907be9055f6035848fb35f40eab524154c2b2aced8116644dbfc7f",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "novel"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": true,
-                "supports_download": true,
-                "requires_cloudflare": true
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Galaxy Novels - Arabic novels source (WordPress WOR-Reader). Server-rendered homepage/search (?s= server-side), details with SSR chapters (30) merged with manifest live_tail (50), text chapters via wor-reader-text-surface. Chapter path is Cloudflare-gated: requires browser stack.",
-                "changelog": "v1.0.4: library pagination (?library_page) + real genre/status filters (42 genres). v1.0.3: full chapter pack."
-            }
-        },
-        "atheer_toon": {
-            "id": "atheer_toon",
-            "sid": 141,
-            "name": "Atheer Toon",
-            "version": "1.0.0",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://api.atheertoon.com",
-            "website_url": "https://atheertoon.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=atheertoon.com",
-            "requires_cf": false,
-            "image_referer": "https://cdn.atheertoon.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "application/json, text/plain, */*",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://atheertoon.com/"
-            },
-            "script": {
-                "url": "sources/atheer_toon/source.js",
-                "sha256": "90736a86fd6d5c4f110fbd6ac9af0ebdf030bd835d87c5e6a395205cbdb08d31",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "manhwa",
-                    "manga"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Atheer Toon - Arabic manhwa/manga source via official public JSON API (api.atheertoon.com). Server paginated lists/search/genre filter, full chapter lists, CDN page images. No auth, no Cloudflare.",
-                "changelog": "v1.0.0: initial JS source - JSON API lists/search/filters/details/chapters/CDN pages, reverse-engineered from AtheerToon 1.0.5 APK."
-            }
-        },
-        "kolnovel": {
-            "id": "kolnovel",
-            "sid": 142,
-            "name": "KolNovel",
-            "version": "1.0.0",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://kolnovel.com",
-            "website_url": "https://kolnovel.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=kolnovel.com",
-            "requires_cf": false,
-            "image_referer": "https://kolnovel.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "application/json, text/plain, */*",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://kolnovel.com/"
-            },
-            "script": {
-                "url": "sources/kolnovel/source.js",
-                "sha256": "23ea91d9bbd0386f21c568a97ad6152a36dc5fc4ce47c06e74b612584e020ab8",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "novel"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "KolNovel - Arabic novels source (WordPress + app/v2 REST). Cursor-paginated discover lists/search, SSR eplister chapters with gap-fill, text chapters via reader API.",
-                "changelog": "v1.0.0: initial JS source - discover lists/search/filters, eplister chapters desc, text reader."
-            }
-        },
-        "arno": {
-            "id": "arno",
-            "sid": 143,
-            "name": "Ar-No",
-            "version": "1.0.0",
-            "enabled": true,
-            "status": "beta",
-            "base_url": "https://ar-no.com",
-            "website_url": "https://ar-no.com",
-            "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=ar-no.com",
-            "requires_cf": false,
-            "image_referer": "https://ar-no.com/",
-            "headers": {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-                "Referer": "https://ar-no.com/"
-            },
-            "script": {
-                "url": "sources/arno/source.js",
-                "sha256": "26ccc0f403f5fd7a534d021ded68f6798069c04b02219b6ab2646afc7a770942",
-                "entry": "createSource"
-            },
-            "capabilities": {
-                "content_types": [
-                    "novel"
-                ],
-                "supports_search": true,
-                "supports_filters": true,
-                "supports_lazy_chapters": false,
-                "supports_download": true,
-                "requires_cloudflare": false
-            },
-            "compatibility": {
-                "min_app_version": "1.4.0",
-                "runtime_api_version": "1.0"
-            },
-            "metadata": {
-                "language": "ar",
-                "adult": false,
-                "author": "HunterToon Team",
-                "description": "Ar-No - Arabic novels source (Madara). Paginated novels lists/search/genre filters, AJAX chapter lists desc, text chapters.",
-                "changelog": "v1.0.0: initial JS source - novels lists/search/filters, ajax chapters desc, text reader."
-            }
-        }
+    "sunovels": {
+      "id": "sunovels",
+      "sid": 130,
+      "name": "Sunovels",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://sunovels.com",
+      "website_url": "https://sunovels.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=sunovels.com",
+      "requires_cf": false,
+      "image_referer": "https://sunovels.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://sunovels.com/"
+      },
+      "script": {
+        "url": "sources/sunovels/source.js",
+        "sha256": "03da71a9ca6df3bcea9e54eee921443d4f348eb572c5dd6384cf44d062e9fa73",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "novel"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": true,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Sunovels novel source with lazy chapter generation from JSON-LD page count",
+        "changelog": "Initial JS implementation with sequential chapter generation and anti-scrape text filtering"
+      }
+    },
+    "seanovel": {
+      "id": "seanovel",
+      "sid": 127,
+      "name": "SeaNovel",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://seanovel.org",
+      "website_url": "https://seanovel.org",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=seanovel.org",
+      "requires_cf": false,
+      "image_referer": "https://seanovel.org/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "application/json, text/html, */*",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://seanovel.org/"
+      },
+      "script": {
+        "url": "sources/seanovel/source.js",
+        "sha256": "291d974d5a4d88058c1234b29291533ca162623278ce9b4f6abe0c72368d5323",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "novel"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": true,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "SeaNovel novel source using the seanovel.org REST API with lazy chapter generation and RSC paragraph extraction",
+        "changelog": "Initial JS implementation using /api/novels, /api/novel/{slug}, and RSC-based chapter content extraction"
+      }
+    },
+    "swat": {
+      "id": "swat",
+      "sid": 131,
+      "name": "سوات مانجا (Swat Manga)",
+      "version": "1.1.1",
+      "enabled": true,
+      "status": "stable",
+      "base_url": "https://appswat.com",
+      "website_url": "https://appswat.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=appswat.com",
+      "requires_cf": false,
+      "image_referer": "https://appswat.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "application/json",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://appswat.com/",
+        "Origin": "https://appswat.com"
+      },
+      "script": {
+        "url": "sources/swat/source.js",
+        "sha256": "89c90ebe6881db22389b85a39ebf5203f07f954bf13c1fa54d4e7ee812b63824",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Swat API source migrated to JavaScript",
+        "changelog": "Initial JS migration for testing"
+      }
+    },
+    "team_x": {
+      "id": "team_x",
+      "sid": 132,
+      "name": "تيم إكس (Team-X)",
+      "version": "1.1.2",
+      "enabled": true,
+      "status": "stable",
+      "base_url": "https://olympustaff.com",
+      "website_url": "https://olympustaff.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=olympustaff.com",
+      "requires_cf": false,
+      "image_referer": "https://olympustaff.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://olympustaff.com/"
+      },
+      "script": {
+        "url": "sources/team_x/source.js",
+        "sha256": "4a4f6eec428d6592edc9ae472ea44284925383190a9cfeb80ac3e2c2a8fe641b",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Team-X (Madara CMS) source migrated to JavaScript",
+        "changelog": "Normalize canonical host to olympustaff.com so JS referer/image requests match the working built-in source"
+      }
+    },
+    "three_asq": {
+      "id": "three_asq",
+      "sid": 133,
+      "name": "3asq (شهامة)",
+      "version": "1.4.0",
+      "enabled": true,
+      "status": "stable",
+      "base_url": "https://3asq.online",
+      "website_url": "https://3asq.online",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=3asq.org",
+      "requires_cf": false,
+      "image_referer": "https://3asq.online/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://3asq.online/"
+      },
+      "script": {
+        "url": "sources/three_asq/source.js",
+        "sha256": "016EA61B7A25960099EE0E91F1D5BF21C8404DAFAE29333A4A5E5C8522764D8C",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "3asq Madara HTML source migrated to installable JavaScript",
+        "changelog": "v1.4.0: Fix search (parse tab-thumb result blocks, was always empty) and fix genre filter (use /manga-genre/{slug}/ URLs, site ignores ?genre[]= params)."
+      }
+    },
+    "hijala": {
+      "id": "hijala",
+      "sid": 108,
+      "name": "حجالة مانجا (Hijala)",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "stable",
+      "base_url": "https://hijala.com",
+      "website_url": "https://hijala.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=hijala.com",
+      "requires_cf": false,
+      "image_referer": "https://hijala.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://hijala.com/"
+      },
+      "script": {
+        "url": "sources/hijala/source.js",
+        "sha256": "2ec3259234fa70465d9659ea6f92667f3d28ce96eba7f5052857e480d2512282",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Hijala Tezuka-style HTML source migrated to installable JavaScript",
+        "changelog": "Initial JS implementation with repeated homepage-card filtering and resilient selector/noscript/regex/ts_reader extraction"
+      }
+    },
+    "dilar": {
+      "id": "dilar",
+      "sid": 106,
+      "name": "ديلار (Dilar)",
+      "version": "1.6.0",
+      "enabled": true,
+      "status": "stable",
+      "base_url": "https://dilar.tube",
+      "website_url": "https://dilar.tube",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=dilar.tube",
+      "requires_cf": false,
+      "image_referer": "https://dilar.tube/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://dilar.tube/"
+      },
+      "script": {
+        "url": "sources/dilar/source.js",
+        "sha256": "c27add04a1fcb438edd0c6599525c29ff79ebbd6252df180cdd4381b57eb5119",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga",
+          "novel"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Dilar API source with pure-JS v15 crypto (ECDH P-256 + AES-SIV, no app changes) for chapter content",
+        "changelog": "v1.6.0: pure-JS v15 chapter crypto (AES-SIV via generic bridge ops, www handshake, BigInt-guarded) - works on current app release."
+      }
+    },
+    "lekmanga": {
+      "id": "lekmanga",
+      "sid": 112,
+      "name": "LekManga",
+      "version": "1.5.1",
+      "enabled": true,
+      "status": "stable",
+      "base_url": "https://lekmanga.site",
+      "website_url": "https://lekmanga.site",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=lekmanga.site",
+      "requires_cf": true,
+      "image_referer": "https://lekmanga.site/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
+        "Referer": "https://lekmanga.site/",
+        "Origin": "https://lekmanga.site"
+      },
+      "script": {
+        "url": "sources/lekmanga/source.js",
+        "sha256": "D5C5A36077CDF7F4E6A13D197FB05073F33DC5115D262266233517F8E4D7C036",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": true
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "LekManga Madara source migrated to JavaScript",
+        "changelog": "v1.5.0: Switch base to lekmanga.site (reachable edges; mangalik.net blackholed) + rewrite dead tempsolo image host to tempstorm (verified 200, reference-reader behavior)."
+      }
+    },
+    "mangastarz": {
+      "id": "mangastarz",
+      "sid": 116,
+      "name": "MangaStarz",
+      "version": "1.4.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://starzmanga.com",
+      "website_url": "https://starzmanga.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=manga-starz.net",
+      "requires_cf": false,
+      "image_referer": "https://starzmanga.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://starzmanga.com/"
+      },
+      "script": {
+        "url": "sources/mangastarz/source.js",
+        "sha256": "090DDCC228A2EDC139D33A8C1A197C87FAC779E1FFF9B29D12E98875CF3B6143",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "MangaStarz Madara source migrated to JavaScript",
+        "changelog": "v1.4.0: Fix search (parse c-tabs-item result blocks) and genre filter (use /manga-genre/{arabic-slug}/ URLs with homepage-redirect guard; site ignores ?genre[]= params)."
+      }
+    },
+    "lava_scans": {
+      "id": "lava_scans",
+      "sid": 111,
+      "name": "لافا سكانز (Lava Scans)",
+      "version": "1.3.0",
+      "enabled": true,
+      "status": "stable",
+      "base_url": "https://lavascans.com",
+      "website_url": "https://lavascans.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=lavascans.com",
+      "requires_cf": false,
+      "image_referer": "https://lavascans.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://lavascans.com/"
+      },
+      "script": {
+        "url": "sources/lava_scans/source.js",
+        "sha256": "C42384AB05D4AEACEBDA39142C7C2DDBCE9237C22E3C0041FAA9894F904DA118",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Canonical lava_scans installable JavaScript source matching the built-in LavaScans behavior",
+        "changelog": "v1.3.0: detect locked chapters via data-coin=yes attribute (fa-lock icon has no text)"
+      }
+    },
+    "mangatime": {
+      "id": "mangatime",
+      "sid": 118,
+      "name": "مانجا تايم (MangaTime)",
+      "version": "1.3.1",
+      "enabled": true,
+      "status": "stable",
+      "base_url": "https://mangatime.org",
+      "website_url": "https://mangatime.org",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=mangatime.org",
+      "requires_cf": false,
+      "image_referer": "https://mangatime.org/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "application/json, text/html, */*",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://mangatime.org/"
+      },
+      "script": {
+        "url": "sources/mangatime/source.js",
+        "sha256": "2BE6B9C671C7B47676244D86632A9D3B923D62BA7D4075CC9F470DD153308316",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga",
+          "overlay"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "MangaTime source using homepage.getHomepage, search.searchSeries, content.getSeriesBySlug, content.getChapters, and content.getChapterPages tRPC APIs",
+        "changelog": "v1.3.0: Full chapter lists (limit:1000, lazy growth, flat {url,nextPage} contract) + REAL overlay text via getChapterOverlay/chunks (bbox/style mapping, Amiri fonts)."
+      }
+    },
+    "mangatek": {
+      "id": "mangatek",
+      "sid": 117,
+      "name": "مانجاتك (Mangatek)",
+      "version": "1.2.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://mangatek.com",
+      "website_url": "https://mangatek.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=mangatek.com",
+      "requires_cf": false,
+      "image_referer": "https://mangatek.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://mangatek.com/"
+      },
+      "selectors": {
+        "homepage_list": "a[href^='/manga/'], .manga-card, .listupd .bs",
+        "homepage_url": "a",
+        "homepage_cover": "img",
+        "homepage_title": "h3, .manga-title, .tt",
+        "search_list": "a[href^='/manga/'], .manga-card, .listupd .bs",
+        "search_url": "a",
+        "search_cover": "img",
+        "search_title": "h3, .manga-title, .tt",
+        "manga_title": "h1, .manga-title, .entry-title, meta[property='og:title']",
+        "manga_cover": ".manga-cover img, .thumb img, meta[property='og:image']",
+        "manga_description": ".manga-description, .entry-content p, .entry-content",
+        "manga_genres": ".genre-link, .mgen a, .genres a",
+        "chapter_list": "a[href*='/reader/'], a[href*='/chapter/'], .chapter-item, #chapterlist li, .eplister li",
+        "chapter_number_attr": "data-num",
+        "chapter_date": ".chapter-date, .chapterdate",
+        "chapter_locked": ".fa-lock, .paywall, .locked",
+        "chapter_reader_container": ".reader-area, #readerarea, .reading-content",
+        "filter_list": "a[href^='/manga/'], .manga-card, .listupd .bs",
+        "filter_url": "a",
+        "filter_cover": "img",
+        "filter_title": "h3, .manga-title, .tt",
+        "chapter_page_image": "#readerarea img, .reading-content img, .page-break img"
+      },
+      "other": {
+        "icon_asset": "assets/icons/mangatek.png",
+        "reader_fallback_strategy": "selector,noscript,regex,ts_reader",
+        "chapter_image_extensions": ".webp,.jpg,.jpeg,.png",
+        "is_nsfw": false
+      },
+      "script": {
+        "url": "sources/mangatek/source.js",
+        "sha256": "BF7A88ED40EFE643036563EA596C78F22FB075BF274CB59884629B528C9B780E",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga",
+          "overlay"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Mangatek Astro/overlay-capable source migrated to JavaScript",
+        "changelog": "v1.2.0: Rotated unlock proof salt from live viewer bundle + 2-step challenge unlock (PoW solver, Turnstile fail-closed) + dual bridge names; v1.1.0: width-only Y scaling"
+      }
+    },
+    "mangasid": {
+      "id": "mangasid",
+      "sid": 115,
+      "name": "مانجا سيد (Mangasid)",
+      "version": "1.2.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://mangasid.com",
+      "website_url": "https://mangasid.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=mangasid.com",
+      "requires_cf": false,
+      "image_referer": "https://mangasid.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://mangasid.com/"
+      },
+      "script": {
+        "url": "sources/mangasid/source.js",
+        "sha256": "2364EDEF55BD3E5B6F9A7D58C15651B5906174417327C515EBBF542A0E956C25",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga",
+          "overlay"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Mangasid Astro/overlay-capable source migrated to JavaScript",
+        "changelog": "v1.2.0: Rotated unlock proof salt (shared backend family) + 2-step challenge unlock (PoW solver, Turnstile fail-closed) + dual bridge names; v1.1.0: width-only Y scaling"
+      }
+    },
+    "hizo_manga": {
+      "id": "hizo_manga",
+      "sid": 109,
+      "name": "Hizo Manga",
+      "version": "1.2.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://hizomanga.net",
+      "website_url": "https://hizomanga.net",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=hizomanga.net",
+      "requires_cf": false,
+      "image_referer": "https://hizomanga.net/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://hizomanga.net/"
+      },
+      "script": {
+        "url": "sources/hizo_manga/source.js",
+        "sha256": "03ACE35351E90AD335BCF47533457F2C06743D288F864C2DA698FDD57294AA1A",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga",
+          "novel"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Hizo Manga mixed manga/novel source migrated to JavaScript",
+        "changelog": "v1.2.0: Fix reader for live markup (chapter-type-text gate, entry-content fallback, h3.chapter-name title, h2 detail title, excerpt description, srcset/noscript image fallbacks, ajax POST headers)"
+      }
+    },
+    "sparkmanga": {
+      "id": "sparkmanga",
+      "sid": 128,
+      "name": "Spark Manga",
+      "version": "1.2.1",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://sparkmanga.net",
+      "website_url": "https://sparkmanga.net",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=sparkmanga.net",
+      "requires_cf": false,
+      "image_referer": "https://sparkmanga.net/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
+        "Referer": "https://sparkmanga.net/"
+      },
+      "script": {
+        "url": "sources/sparkmanga/source.js",
+        "sha256": "DB49F572D65B37B50AE732685DF6A3C2B36CA4FC79AA2862520FC5BD69922006",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga",
+          "manhwa",
+          "manhua"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Spark Manga - Madara-based Arabic manga source with Cloudflare protection on browse/detail/search pages",
+        "changelog": "v1.2.1: Added headless browser fallback for Cloudflare-protected paginated pages /page/N/, infinite scroll fixed."
+      }
+    },
+    "mangalionz": {
+      "id": "mangalionz",
+      "sid": 114,
+      "name": "Manga Lionz",
+      "version": "1.1.1",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://manga-lionz.org",
+      "website_url": "https://manga-lionz.org",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=manga-lionz.org",
+      "requires_cf": true,
+      "image_referer": "https://manga-lionz.org/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
+        "Referer": "https://manga-lionz.org/"
+      },
+      "script": {
+        "url": "sources/mangalionz/source.js",
+        "sha256": "C1C3CBCCF86CFE2D893617DFBDA3172FACD5AFFC3FD8CA088A9D79A6DB18D678",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga",
+          "manhwa",
+          "manhua"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": true
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Manga Lionz - Madara-based Arabic manga source with Cloudflare protection",
+        "changelog": "v1.1.0: Homepage via / + /page/N/ wp-pagenavi scheme with archive fallback; 3-tier fetch; widened reader selectors + srcset; search tab-thumb fallback."
+      }
+    },
+    "manhasama": {
+      "id": "manhasama",
+      "sid": 119,
+      "name": "مانها السماء (Manha Alsamaa)",
+      "version": "1.3.8",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://realmnovel.com",
+      "website_url": "https://realmnovel.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=realmnovel.com",
+      "requires_cf": false,
+      "image_referer": "https://realmnovel.com/",
+      "headers": {
+        "User-Agent": "Dart/3.6 (dart:io) Chrome/124",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Authorization": "Bearer guest",
+        "x-app-version": "1.0.5",
+        "Referer": ""
+      },
+      "script": {
+        "url": "sources/manhasama/source.js",
+        "sha256": "7C9E85231BEDB8481BEF1863BEA3BB4D4161EDA54BFC09993CEAB5518CBB5FD6",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga",
+          "overlay"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Manha Alsamaa - Arabic manga source using realmnovel.com manga API with guest auth and app version",
+        "changelog": "v1.3.8: Harden makeCdnUrl (trim, //-prefix, missing leading slash, http-to-https) so restored library covers reheal instead of 404; v1.3.7: Capitalized /api/Manga + /api/Chapters routes (origin nginx 403s lowercase paths only) plus x-app-version 1.0.5 like the official app"
+      }
+    },
+    "kawaii": {
+      "id": "kawaii",
+      "sid": 110,
+      "name": "كواي مانجا (Kawaii Manga)",
+      "version": "1.0.1",
+      "enabled": true,
+      "status": "stable",
+      "base_url": "https://kawaiimanga.org",
+      "website_url": "https://kawaiimanga.org",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=kawaiimanga.org",
+      "requires_cf": false,
+      "image_referer": "https://kawaiimanga.org/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "application/json",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://kawaiimanga.org/",
+        "x-app-key": "km_2026_live"
+      },
+      "script": {
+        "url": "sources/kawaii/source.js",
+        "sha256": "fddd244ea14a56110839e7596d500b3eddc3240bb2f0517dec32a5b12d930459",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Kawaii Manga source using the manga-api.kawaii-anime.com API for browse, search, details, and reader pages",
+        "changelog": "v1.0.1: guest-token auth (x-app-token + 401 retry) for token_required API. Full rewrite: uses the real browse/search/series/pages API with CDN fallback for reader images"
+      }
+    },
+    "fada_riwayat": {
+      "id": "fada_riwayat",
+      "sid": 107,
+      "name": "فضاء الروايات (Fada Riwayat)",
+      "version": "1.3.1",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://cenele.com",
+      "website_url": "https://cenele.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=cenele.com",
+      "requires_cf": false,
+      "image_referer": "https://cenele.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "",
+        "Sec-Fetch-Dest": "",
+        "Sec-Fetch-Mode": "",
+        "Sec-Fetch-Site": "",
+        "Upgrade-Insecure-Requests": "0"
+      },
+      "script": {
+        "url": "sources/fada_riwayat/source.js",
+        "sha256": "7C6115BFF885634015DEDFCE509ECEBC2BBBBB045AD3CBA12D7085E01CB8CDC6",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga",
+          "novel"
+        ],
+        "supports_search": true,
+        "supports_filters": false,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Fada Riwayat novel-first source migrated to JavaScript",
+        "changelog": "v1.3.1: Fix pagination URL for pages 2+ (was /page/N/ which returns homepage, now /cont/page/N/); v1.3.0: Fix Referer/Sec-Fetch 403 on detail pages; fix entity decoding no-op; fix isNovelMarker case; harden nhvConfig regex"
+      }
+    },
+    "nadi_al_riwayt": {
+      "id": "nadi_al_riwayt",
+      "sid": 124,
+      "name": "نادي الروايات (Nadi Al Riwayat)",
+      "version": "1.1.2",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://rewayat.club",
+      "website_url": "https://rewayat.club",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=rewayat.club",
+      "requires_cf": false,
+      "image_referer": "https://rewayat.club/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://rewayat.club/"
+      },
+      "script": {
+        "url": "sources/nadi_al_riwayt/source.js",
+        "sha256": "DFAB588869EA662AE7CB7F3FA495874CAD434CD4872D1FA888044DBFE480D2BE",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "novel"
+        ],
+        "supports_search": true,
+        "supports_filters": false,
+        "supports_lazy_chapters": true,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Nadi Al Riwayat novel-only source migrated to JavaScript",
+        "changelog": "v1.1.2: Send X-App-Version 1.2.0 like the operator app (harmless today, gate-proof); v1.1.1: hardened details, cover routing, cache guard"
+      }
+    },
+    "despair_manga": {
+      "id": "despair_manga",
+      "sid": 105,
+      "name": "ديسبر مانجا (Despair Manga)",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://despair-manga.net",
+      "website_url": "https://despair-manga.net",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=despair-manga.net",
+      "requires_cf": false,
+      "image_referer": "https://despair-manga.net/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://despair-manga.net/"
+      },
+      "script": {
+        "url": "sources/despair_manga/source.js",
+        "sha256": "0e331dad90777feb5bd02aa77e5eb097cb9bc2aa965ee90a2d1f6be38314515d",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Despair Manga WordPress source - new JS-only source",
+        "changelog": "Initial JS implementation for despair-manga.net"
+      }
+    },
+    "mnga4all": {
+      "id": "mnga4all",
+      "sid": 123,
+      "name": "Mnga4all",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://mnga4all.com",
+      "website_url": "https://mnga4all.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=mnga4all.com",
+      "requires_cf": false,
+      "image_referer": "https://mnga4all.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://mnga4all.com/"
+      },
+      "script": {
+        "url": "sources/mnga4all/source.js",
+        "sha256": "570b183926ca6cb7704e5197735f8a960a5c3acf075febb4b0a45b4586dc33bc",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Mnga4all WordPress Madara source - new JS-only source",
+        "changelog": "Initial JS implementation for mnga4all.com"
+      }
+    },
+    "area_manga": {
+      "id": "area_manga",
+      "sid": 101,
+      "name": "أريا مانجا (AREA Manga)",
+      "version": "1.0.2",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://ar.kenmanga.com",
+      "website_url": "https://ar.kenmanga.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=ar.kenmanga.com",
+      "requires_cf": false,
+      "image_referer": "https://ar.kenmanga.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://ar.kenmanga.com/"
+      },
+      "script": {
+        "url": "sources/area_manga/source.js",
+        "sha256": "78462940ff3a27cc22dac42aef2091bee7b96e2f6604976402ab8d884d5d40e9",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "AREA Manga source using MangaReader Premium WordPress theme with Cloudflare HTML parsing",
+        "changelog": "Fix reader image extraction: remove wrong fallback selectors; add AJAX POST to admin-ajax.php with get_secure_chapter_images action using ARYA_CHAPTER_ID; images are loaded dynamically, not embedded in HTML"
+      }
+    },
+    "rocks_manga": {
+      "id": "rocks_manga",
+      "sid": 126,
+      "name": "روكس مانجا (Rocks Manga)",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://rocksmanga.com",
+      "website_url": "https://rocksmanga.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=rocksmanga.com",
+      "requires_cf": false,
+      "image_referer": "https://rocksmanga.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://rocksmanga.com/"
+      },
+      "script": {
+        "url": "sources/rocks_manga/source.js",
+        "sha256": "c07d88825f0670f52533f9b7d8a63d63f9251b5544baf3e41a02ba93e73fe99d",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Rocks Manga source using wp-fire theme with Madara Core. Homepage at /manga/ with pagination; detail pages at /manga/{slug}/; reader images via direct img tags with data-src",
+        "changelog": "Initial JS implementation for rocksmanga.com"
+      }
+    },
+    "mgeko": {
+      "id": "mgeko",
+      "sid": 121,
+      "name": "MGeko",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://www.mgeko.cc",
+      "website_url": "https://www.mgeko.cc",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=www.mgeko.cc",
+      "requires_cf": false,
+      "image_referer": "https://www.mgeko.cc/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "application/json, text/html, */*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://www.mgeko.cc/",
+        "Origin": "https://www.mgeko.cc"
+      },
+      "script": {
+        "url": "sources/mgeko/source.js",
+        "sha256": "7daf99f750afc2f3efd60277317fdb45dc04e6531cd006832675cae81702f3c5",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "en",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "MGeko English manga/manhwa source. Homepage and search use /browse-comics/data/ API returning JSON with results_html; reader images hosted on imgsrv4.com",
+        "changelog": "Initial JS implementation for mgeko.cc"
+      }
+    },
+    "manhuaus": {
+      "id": "manhuaus",
+      "sid": 120,
+      "name": "MANHUAUS.COM",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://manhuaus.com",
+      "website_url": "https://manhuaus.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=manhuaus.com",
+      "requires_cf": true,
+      "image_referer": "https://manhuaus.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://manhuaus.com/",
+        "Origin": "https://manhuaus.com"
+      },
+      "script": {
+        "url": "sources/manhuaus/source.js",
+        "sha256": "4ee84383fc07b2accb343515473c82924c41354d46b867de6aaf85d5e2eb56b5",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": true
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "en",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "MANHUAUS.COM English manhua/manga source (WordPress Madara). Protected by Cloudflare Turnstile. Homepage at /; archive at /manga/?page=N; detail at /manga/{slug}/; reader images hosted on img.manhuaus.com",
+        "changelog": "Initial JS implementation for manhuaus.com with Cloudflare support"
+      }
+    },
+    "asurascans": {
+      "id": "asurascans",
+      "sid": 102,
+      "name": "Asura Scans",
+      "version": "1.1.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://asurascans.com",
+      "website_url": "https://asurascans.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=asurascans.com",
+      "requires_cf": false,
+      "image_referer": "https://asurascans.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://asurascans.com/",
+        "Origin": "https://asurascans.com"
+      },
+      "script": {
+        "url": "sources/asurascans/source.js",
+        "sha256": "dda54433388a67a222aafd3ceed5414607aaab83856fa7c6d4024fbf4f41b662",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "en",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Asura Scans English manga/manhwa source (Astro.js SSR). Homepage at /; browse at /browse?page=N; detail at /comics/{slug}; reader at /comics/{slug}/chapter/{num}; images on cdn.asurascans.com. Supports locked chapter detection.",
+        "changelog": "v1.1.0 (studied against live site): (1) FIX pagination/browse: the real server-rendered listing is /browse/comics?page=N (verified: 40 cards/page, page 1 != page 2); plain /browse?page=N returns an empty client-side shell, which is why the list never advanced. Homepage page>1 and filtered browse now use /browse/comics?page=N; genre/type filters try /browse/comics?genres=..&page=N first and fall back to the plain listing if the server returns no cards (filters are client-side/API only). (2) FIX search: /browse?search= is also a client-side shell; search now calls the site API api.asurascans.com/api/search?q= (returns {data:[{slug,title,cover|cover_url,type}]}), mapping slug to /comics/{slug}. (3) FIX intermittent chapter images: cdn.asurascans.com intermittently drops non-browser HTTP clients (verified: our IP was TCP-blocked while the site kept serving browsers and weserv fetched the CDN fine); chapter images now go through images.weserv.nl with output=jpeg (serves any client, no webp decode issues). List/detail/chapter-list logic unchanged."
+      }
+    },
+    "stellarsaber": {
+      "id": "stellarsaber",
+      "sid": 129,
+      "name": "ستيلار سابير (Stellar Saber)",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://stellarsaber.pro",
+      "website_url": "https://stellarsaber.pro",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=stellarsaber.pro",
+      "requires_cf": true,
+      "image_referer": "https://stellarsaber.pro/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://stellarsaber.pro/"
+      },
+      "script": {
+        "url": "sources/stellarsaber/source.js",
+        "sha256": "0186711c2f54437143198803fb584fcfd688367f36f9c48afb23b05987fc40eb",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga",
+          "manhua",
+          "anime",
+          "novel"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": true
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Stellar Saber (ستيلار سابير) - Arabic manga/manhwa/anime/novel WordPress source. Homepage at /manga/ and /manga/page/N/; search via ?s=; detail at /manga/{slug}/; reader extracts data-cdn-url from chapter page; images on cdn-stellarsaber.com.",
+        "changelog": "v1.0.0: Initial release - HTML scraping-based source supporting manga listing, search, detail, chapter images, and genre/type/status filtering."
+      }
+    },
+    "realmnovel": {
+      "id": "realmnovel",
+      "sid": 125,
+      "name": "عالم الروايات (RealmNovel)",
+      "version": "4.0.2",
+      "enabled": true,
+      "status": "stable",
+      "base_url": "http://62.171.141.197:5007",
+      "website_url": "https://www.realmnovel.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=realmnovel.com",
+      "requires_cf": false,
+      "image_referer": "https://www.realmnovel.com/",
+      "headers": {
+        "x-app-version": "10",
+        "User-Agent": "Dart/3.9 (dart:io) Chrome/124",
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "Referer": "",
+        "Sec-Fetch-Dest": "",
+        "Sec-Fetch-Mode": "",
+        "Sec-Fetch-Site": "",
+        "Upgrade-Insecure-Requests": "0"
+      },
+      "script": {
+        "url": "sources/realmnovel/source.js",
+        "sha256": "81305FA1B213EB5CF225AA976A04119FEFEB8A4FACA4FBEF266C58BDB825A4CB",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "novel"
+        ],
+        "supports_search": true,
+        "supports_filters": false,
+        "supports_lazy_chapters": true,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "RealmNovel (عالم الروايات) Arabic novel source using the Novels Sky API with x-app-version bypass (no login).",
+        "changelog": "v4.0.2: Survive app orchestrator rewrites (dual-gate UA keeps Dart prefix + Chrome token; empty Referer/Sec-Fetch/UIR override injected defaults that the origin denies); v4.0.1: fetchMoreChapters flat args"
+      }
+    },
+    "mknov": {
+      "id": "mknov",
+      "sid": 122,
+      "name": "مملكة الروايات (MK Novel)",
+      "version": "1.0.2",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://www.mknov.com",
+      "website_url": "https://www.mknov.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=mknov.com",
+      "requires_cf": false,
+      "image_referer": "https://www.mknov.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://www.mknov.com/"
+      },
+      "script": {
+        "url": "sources/mknov/source.js",
+        "sha256": "cae8a579e9a0d57cc649ab70e378c8935306c91c4020399c02f192ec071f221d",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "novel"
+        ],
+        "supports_search": true,
+        "supports_filters": false,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "MK Novel (مملكة الروايات) - Next.js Arabic novel source. Homepage / ; search /library?q= ; detail /novel/{id} ; chapters via /api/works/{id}/chapters . Scrambled text is decoded with per-page protected-font substitution tables embedded in the source.",
+        "changelog": "v1.0.2: Homepage pagination fixed via /api/works?limit=30&offset=N (site ignores ?page=); v1.0.1: Homepage now uses /library (deep link) + donghuaList; sanitize control chars before JSON.parse"
+      }
+    },
+    "mangadar": {
+      "id": "mangadar",
+      "sid": 113,
+      "name": "مانغادار (MangaDar)",
+      "version": "1.1.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://mangadar.com",
+      "website_url": "https://mangadar.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=mangadar.com",
+      "requires_cf": false,
+      "image_referer": "https://mangadar.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://mangadar.com/"
+      },
+      "script": {
+        "url": "sources/mangadar/source.js",
+        "sha256": "1AE84540EF3A13B8C1C2AD19954307AE0D1FA19ADCA2F2DE83F9882354E586C7",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga",
+          "manhwa",
+          "manhua"
+        ],
+        "supports_search": true,
+        "supports_filters": false,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "MangaDar - WordPress/Alpine manga source, no Cloudflare protection",
+        "changelog": "v1.0.1: no Cloudflare protection - direct HTTP verified live (homepage/detail/chapter/search)"
+      }
+    },
+    "witanime": {
+      "id": "witanime",
+      "sid": 134,
+      "name": "ويت أنمي (WitAnime)",
+      "version": "1.3.2",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://witanime.site",
+      "website_url": "https://witanime.site",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=witanime.site",
+      "requires_cf": false,
+      "image_referer": "https://witanime.site/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://witanime.site/"
+      },
+      "script": {
+        "url": "sources/witanime/source.js",
+        "sha256": "015A33D9306C7F2EDEDCF7E7D20ADBD5CBCBF9058D26071D557B40C1D7ADD0CC",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "anime"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": false,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "WitAnime - Arabic anime source on witanime.site (Laravel Livewire). Browse/movies cards, suggest search, anime+movie details, native direct-mp4 episode servers (4shared/mp4upload/videa).",
+        "changelog": "v1.3.2: google/drive truthful gate (no blind DROP) + unresolved else as embed+reason + FHD-first ordering; bud(7)/deadline(12s)/drops(mega/buckets) untouched. v1.3.1: honest embed broadcast — failed resolutions emit live gate + reason instead of dropping; DROP/budget/deadline untouched. v1.3.0: native-only servers — direct mp4 for 4shared/mp4upload/videa (RC4 XML chain)/ok-flashvars; drop unresolvable gates; 12s deadline."
+      }
+    },
+    "anime4up": {
+      "id": "anime4up",
+      "sid": 135,
+      "name": "أنمي فور أب (Anime4up)",
+      "version": "1.3.6",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://w1.anime4up.rest",
+      "website_url": "https://w1.anime4up.rest",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=w1.anime4up.rest",
+      "requires_cf": false,
+      "image_referer": "https://w1.anime4up.rest/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://w1.anime4up.rest/"
+      },
+      "script": {
+        "url": "sources/anime4up/source.js",
+        "sha256": "72E92A75AAEA143FA8FBF5B157EF38ECDA4AABE88FEE1C0DE1D8C05988C62BBB",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "anime"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": false,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Anime4up - Arabic anime WordPress source (Anime4up v1.0 theme). Homepage cards, WP search, anime details with DOM episode list incl. load-more walk, direct data-watch servers (megamax/voe/videa/uqload/doodstream/mp4upload).",
+        "changelog": "v1.3.6: streamUrl quote-tolerant (double+single quotes; minified themes missed the master and nulled S1). v1.3.5: token/query survival (resolveUrl inherits base ?query for relative HLS variants; absolute keeps own) + S1 first-party in resolveServer allow-list (anime4up-s1/s2/s path match, rotation-proof). v1.3.4: vk tier zero-fetch honest embed (type=embed+reason vk-passthrough, no fetch/budget; resolveVk dormant-deprecated; ft 6 joins 8/10 honest path; costOrder/tierOf/sort untouched). v1.3.3: vk redirect-loop kill (resolveVk Referer now https://vkvideo.ru/ instead of baseUrl; Location resolves against request origin via resolveAgainst, no more baseUrl-joined 404 hop; makeAbsolute gains optional base, all 15 single-arg callers byte-identical). v1.3.2: resolveServer google/drive fix (drive passthrough, no blind dead) + tier99/s1tried/deadline/budget untried as embed+reason (no delete); bud(16)/deadline(12s) untouched. v1.3.1: honest embed broadcast (ok-no-resolver, vk-unresolved, tier-unresolved) + vk redirect fix + ok.ru in okHost; budgets/dead-lists untouched. v1.3.0: embed allow-list (drive/filemoon only), 4shared/drive/vidbem tiers, leak-proof emit filter."
+      }
+    },
+    "animeslayer": {
+      "id": "animeslayer",
+      "sid": 136,
+      "name": "أنمي سلاير (AnimeSlayer)",
+      "version": "1.3.7",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://anslayer.com/anime/public",
+      "website_url": "https://anslayer.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=anslayer.com",
+      "requires_cf": false,
+      "image_referer": "https://anslayer.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://anslayer.com/"
+      },
+      "script": {
+        "url": "sources/animeslayer/source.js",
+        "sha256": "0E51651E4F52844A4EBEDFF3BBC65B602D2D34C5EACD04966367852B4D2E1EF1",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "anime"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": false,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "AnimeSlayer - Arabic anime source on anslayer.com public JSON API. Lists, search, details, episodes, native direct-mp4 servers plus drive passthrough.",
+        "changelog": "v1.3.7: genre filter via anime_genre_ids string (verified live) + trailer/duration/source from more_info_result + official f2 mirror first + vinovo/playmate/firestream/qiwi passthrough + roberteachfinal dropped (DNS dead) + filemoon referer + fail stays video kind + إصلاح كوميديا. v1.3.6: soft deadline 12s->7s (app sheet times out at 10s; late answers render as empty sheets) + deadline-untried honest embeds instead of silent vanish + resolve-failed honest embeds for alive-but-unparseable mediafire/mixdrop/streamtape pages (lastPageAlive gate; unreachable hosts stay dropped). v1.3.5: homepage = latest updates first with REAL _offset pagination (30/page, infinite; plain limit/offset proven ignored live) + ok.ru zero-fetch honest embed (embed page hangs 20s+, blew the app 10s server budget -> empty sheet; app owns native ok.ru extractor) + filters/search paginate via _offset; mystream dropped (verified dead DNS). v1.3.4: ok last always (links stable partition) + ok single attempt + proactive skip on deadline/low bud (honest embed, no fetch) + ok HEAD-probe like mediafire/mixdrop/streamtape (probe-failed honest embed); bud(14)/deadline(12s)/drop-list untouched. v1.3.3: muilt fetch-failure fallback (live episode_urls honest embed muilt_fetch_failed, no deletion; gate preserved) + okHost completion (vk/voe/videa/dood/mp4upload/uqload) + drive/filemoon honest reasons + resolveServer directUrl preserve; budget/deadline/drop-list untouched. v1.3.2: non-muilt episode_urls fallback (first live http link, fail-closed; muilt gate preserved, early-return replaced) + unresolved-host honest embed passthrough (reason); budget/deadline/drop-list untouched. v1.3.1: vk passthrough + failed-ok honest embed (reason) instead of dropping; drop-list/budget/deadline untouched. v1.3.0: Kotatsu-faithful extractors (ok data-options, streamtape assembly, mediafire API), true pagination, mp4 HEAD-probe gate."
+      }
+    },
+    "anime3rb": {
+      "id": "anime3rb",
+      "sid": 137,
+      "name": "أنمي 3rb (Anime3rb)",
+      "version": "1.0.1",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://anime3rb.com",
+      "website_url": "https://anime3rb.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=anime3rb.com",
+      "requires_cf": false,
+      "image_referer": "https://anime3rb.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://anime3rb.com/"
+      },
+      "script": {
+        "url": "sources/anime3rb/source.js",
+        "sha256": "3791C1179D5D67D913F48FA5EC1DC49C272AD5B10122F1CBF3B086F01332CC69",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "anime"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": false,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Anime3rb - Arabic anime source (Laravel). Title lists with pages, genre/type filters, anime details with full episodes, first-party vid3rb servers with qualities.",
+        "changelog": "v1.0.1: iframe multi (src/data-src) for vid3rb players + vid3rb_resolve_failed honest embed fallback (no deletion) + okHost completion (vk/voe/videa/dood/mp4upload/uqload) + resolveServer directUrl preserve. v1.0.0: initial JS source - lists, filters, details, vid3rb direct servers with qualities."
+      }
+    },
+    "animephoenix": {
+      "id": "animephoenix",
+      "sid": 138,
+      "name": "أنمي فينيكس (AnimePhoenix)",
+      "version": "1.0.1",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://anime-phoenix.com",
+      "website_url": "https://anime-phoenix.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=anime-phoenix.com",
+      "requires_cf": false,
+      "image_referer": "https://anime-phoenix.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://anime-phoenix.com/"
+      },
+      "script": {
+        "url": "sources/animephoenix/source.js",
+        "sha256": "5D54E5A78BD05C8FF843409E8E356619A266E3158CE1E432E51ACECFD6614846",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "anime"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": false,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "AnimePhoenix - Arabic anime source (WordPress streamit). Signed JSON API lists/search/filters, full episode pills, first-party workers.dev direct servers.",
+        "changelog": "v1.0.1: security HMAC retry inside bud (n=2 fresh ts/sig) + iframe multi (src/data-src/data-lazy-src) + seasons completion (parse + signed API filter) + phoenix_no_direct honest fallback + resolveServer directUrl preserve + okHost completion. v1.0.0: initial JS source - API-first lists/search/filters with HTML fallbacks, details with FJ-EpPill episodes, inline data-server direct mirrors with #.mp4 suffix."
+      }
+    },
+    "animerco": {
+      "id": "animerco",
+      "sid": 139,
+      "name": "أنمي ركو (Animerco)",
+      "version": "1.0.2",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://det.animerco.org",
+      "website_url": "https://det.animerco.org",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=det.animerco.org",
+      "requires_cf": false,
+      "image_referer": "https://det.animerco.org/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://det.animerco.org/"
+      },
+      "script": {
+        "url": "sources/animerco/source.js",
+        "sha256": "B39075673111A2631B43E2DCAAE9FBB27A0E519048E15AE87AA9BD52C551AB66",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "anime"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": false,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Animerco - Arabic anime source (WordPress Animerco/MiraiThemes). Server-rendered lists/search/genre filters, two-level details (hub-season-episodes), player_ajax+jwplayer chain with videas/mp4upload/yourupload/vidmoly direct extractors plus honest embed passthrough.",
+        "changelog": "v1.0.2: ok last always (options+out stable partition) + ok single attempt (no security retry) + proactive skip on deadline/low bud + ok honest embed+reason (no deep resolve); bud(60)/deadline(20s) untouched. v1.0.1: security retry inside bud (fresh nonce single retry, 60/20s untouched) + iframe multi (src/data-src/data-lazy-src/data-url) + nine direct resolvers (videa/uqload/vk/voe/dood) where possible else host-passthrough reason + okHost voe/dood completion + seasons completion (all 12, no early break) + resolveServer directUrl preserve + embedUrl fix. v1.0.0: initial JS source - lists/search/filters, hub-season-episode details, player_ajax chain with 4 direct extractors and embed passthrough."
+      }
+    },
+    "galaxy_novels": {
+      "id": "galaxy_novels",
+      "sid": 140,
+      "name": "Galaxy Novels",
+      "version": "1.0.4",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://galaxynovels.com",
+      "website_url": "https://galaxynovels.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=galaxynovels.com",
+      "requires_cf": true,
+      "image_referer": "https://galaxynovels.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://galaxynovels.com/"
+      },
+      "script": {
+        "url": "sources/galaxy_novels/source.js",
+        "sha256": "c99efead6d907be9055f6035848fb35f40eab524154c2b2aced8116644dbfc7f",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "novel"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": true,
+        "supports_download": true,
+        "requires_cloudflare": true
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Galaxy Novels - Arabic novels source (WordPress WOR-Reader). Server-rendered homepage/search (?s= server-side), details with SSR chapters (30) merged with manifest live_tail (50), text chapters via wor-reader-text-surface. Chapter path is Cloudflare-gated: requires browser stack.",
+        "changelog": "v1.0.4: library pagination (?library_page) + real genre/status filters (42 genres). v1.0.3: full chapter pack."
+      }
+    },
+    "atheer_toon": {
+      "id": "atheer_toon",
+      "sid": 141,
+      "name": "Atheer Toon",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://api.atheertoon.com",
+      "website_url": "https://atheertoon.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=atheertoon.com",
+      "requires_cf": false,
+      "image_referer": "https://cdn.atheertoon.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://atheertoon.com/"
+      },
+      "script": {
+        "url": "sources/atheer_toon/source.js",
+        "sha256": "90736a86fd6d5c4f110fbd6ac9af0ebdf030bd835d87c5e6a395205cbdb08d31",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manhwa",
+          "manga"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Atheer Toon - Arabic manhwa/manga source via official public JSON API (api.atheertoon.com). Server paginated lists/search/genre filter, full chapter lists, CDN page images. No auth, no Cloudflare.",
+        "changelog": "v1.0.0: initial JS source - JSON API lists/search/filters/details/chapters/CDN pages, reverse-engineered from AtheerToon 1.0.5 APK."
+      }
+    },
+    "kolnovel": {
+      "id": "kolnovel",
+      "sid": 142,
+      "name": "KolNovel",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://kolnovel.com",
+      "website_url": "https://kolnovel.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=kolnovel.com",
+      "requires_cf": false,
+      "image_referer": "https://kolnovel.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://kolnovel.com/"
+      },
+      "script": {
+        "url": "sources/kolnovel/source.js",
+        "sha256": "23ea91d9bbd0386f21c568a97ad6152a36dc5fc4ce47c06e74b612584e020ab8",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "novel"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "KolNovel - Arabic novels source (WordPress + app/v2 REST). Cursor-paginated discover lists/search, SSR eplister chapters with gap-fill, text chapters via reader API.",
+        "changelog": "v1.0.0: initial JS source - discover lists/search/filters, eplister chapters desc, text reader."
+      }
+    },
+    "arno": {
+      "id": "arno",
+      "sid": 143,
+      "name": "Ar-No",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://ar-no.com",
+      "website_url": "https://ar-no.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=ar-no.com",
+      "requires_cf": false,
+      "image_referer": "https://ar-no.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://ar-no.com/"
+      },
+      "script": {
+        "url": "sources/arno/source.js",
+        "sha256": "26ccc0f403f5fd7a534d021ded68f6798069c04b02219b6ab2646afc7a770942",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "novel"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Ar-No - Arabic novels source (Madara). Paginated novels lists/search/genre filters, AJAX chapter lists desc, text chapters.",
+        "changelog": "v1.0.0: initial JS source - novels lists/search/filters, ajax chapters desc, text reader."
+      }
+    },
+    "onma": {
+      "sid": 144,
+      "name": "مانجا اون لاين",
+      "kind": "manga",
+      "script": {
+        "url": "https://raw.githubusercontent.com/lamineheskoura/huntertoon-sources/main/sources/onma/source.js",
+        "sha256": "965de5edbf6901892bc16988f4a21e360ee83212bd2ceeb921356ffa1a73d087"
+      },
+      "enabled": true
     }
+  }
 }
