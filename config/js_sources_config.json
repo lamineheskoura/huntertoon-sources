@@ -2,7 +2,7 @@
   "version": "1.55.0",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.10.09.1",
+  "manifest_version": "2026.10.09.2",
   "generated_at": "2026-09-04T14:30:00Z",
   "last_updated": "2026-10-06T12:00:00Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -2023,14 +2023,49 @@
       }
     },
     "onma": {
+      "id": "onma",
       "sid": 144,
       "name": "مانجا اون لاين",
-      "kind": "manga",
-      "script": {
-        "url": "https://raw.githubusercontent.com/lamineheskoura/huntertoon-sources/main/sources/onma/source.js",
-        "sha256": "965de5edbf6901892bc16988f4a21e360ee83212bd2ceeb921356ffa1a73d087"
+      "version": "1.1.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://mail.onma.top",
+      "website_url": "https://mail.onma.top",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=onma.top",
+      "requires_cf": false,
+      "image_referer": "https://mail.onma.top/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://mail.onma.top/"
       },
-      "enabled": true
+      "script": {
+        "url": "sources/onma/source.js",
+        "sha256": "460a353ce1060ba32b386b6254dff688e40632f9915af8e69dec6fe77f79fc14",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manga"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "مانجا اون لاين - manga source (MangaStream-style SSR). /manga-list library pagination, search, 13 genre filters, chapters via ul.chapters, reader pages via data-src/src.",
+        "changelog": "v1.1.0: app-contract fix - plain arrays from lists, {kind:\"image\", imageUrls} reader, getChapterPages fallback, single-fetch details, host guard, entity decode. v1.0.0: initial."
+      }
     }
   }
 }

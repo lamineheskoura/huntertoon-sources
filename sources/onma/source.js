@@ -11,7 +11,27 @@ function createSource(api, config) {
     "Sec-Fetch-Site": "same-origin",
     "Upgrade-Insecure-Requests": "1"
   };
-  var GENRES = ["أكشن", "خارق للطبيعة", "فنون قتال", "دراما", "شونين", "غموض", "كوميديا", "خيال", "مغامرات"];
+  var GENRES = [
+    { name: "أكشن", slug: "action" },
+    { name: "مغامرات", slug: "adventure" },
+    { name: "كوميديا", slug: "comedy" },
+    { name: "دراما", slug: "drama" },
+    { name: "خيال", slug: "fantasy" },
+    { name: "فنون قتال", slug: "martial-arts" },
+    { name: "غموض", slug: "mystery" },
+    { name: "خارق للطبيعة", slug: "supernatural" },
+    { name: "شونين", slug: "shounen" },
+    { name: "ون شوت", slug: "one-shot" },
+    { name: "حياة مدرسية", slug: "school-life" },
+    { name: "شريحة من الحياة", slug: "slice-of-life" },
+    { name: "رياضة", slug: "sports" }
+  ];
+  var GENRE_NAMES = [];
+  var GENRE_BY_NAME = {};
+  for (var gi = 0; gi < GENRES.length; gi++) {
+    GENRE_NAMES.push(GENRES[gi].name);
+    GENRE_BY_NAME[GENRES[gi].name] = GENRES[gi].slug;
+  }
 
   function abs(url) {
     if (!url) return "";
@@ -24,14 +44,18 @@ function createSource(api, config) {
     return baseUrl + "/" + url;
   }
 
-  async function fetchHtml(url, method) {
+  async function fetchHtml(url) {
     if (api.http) {
-      var res = await api.http(url, { method: method || "GET", headers: headers });
+      var res = await api.http(url, { method: "GET", headers: headers });
       if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : 0) + " for " + url);
       return res.body || "";
     }
-    if (method && method !== "GET") return "";
     return (await api.fetchText(url, headers)) || "";
+  }
+
+
+  function isOnmaUrl(url) {
+    return String(url || "").indexOf("onma.top") !== -1;
   }
 
   function stripHtml(value) {
@@ -57,131 +81,46 @@ function createSource(api, config) {
     return m ? m[1] : "";
   }
 
-  function parseCards(html) {
-    var raw = html;
-    var out = [];
-    var re = /<div class="chapter-container">([\s\S]*?)(?=<div class="chapter-container">|<\/div>\s*<div class="row">|$)/gi;
-    var m;
-    while ((m = re.exec(raw)) !== null) {
-      out.push(m[1]);
-    }
-    if (out.length === 0) {
-      var re2 = /<div class="col-sm-4">([\s\S]*?)(?=<div class="col-sm-4">|$)/gi;
-      while ((m = re2.exec(raw)) !== null) {
-        out.push(m[1]);
-      }
-    }
-    return out;
+  function safeList(v) {
+    return Array.isArray(v) ? v : [];
   }
 
   async function extractItems(html) {
-    var cards = parseCards(html);
+    var cards = safeList(await api.cssAll(html, "div.chapter-container, div.manga-item"));
     var items = [];
     var seen = {};
     for (var i = 0; i < cards.length; i++) {
-      var inner = cards[i];
-      var href = await api.cssAttr(inner, "a.thumbnail", "href") || await api.cssAttr(inner, "a.chart-title", "href") || "";
+      var inner = (cards[i] && cards[i].html) || "";
+      if (!inner) continue;
+      var href = await api.cssAttr(inner, "a.thumbnail", "href");
+      if (!href) href = await api.cssAttr(inner, "h3 a", "href");
+      if (!href) href = await api.cssAttr(inner, "a", "href");
       var url = abs(href);
       if (!url) continue;
       var slug = slugFromUrl(url);
       if (!slug || seen[url]) continue;
       seen[url] = 1;
       var title = stripHtml(await api.cssText(inner, "a.chart-title") || "");
+      if (!title) title = stripHtml(await api.cssText(inner, "h3 a") || "");
       if (!title) title = stripHtml(await api.cssText(inner, "h5.media-heading") || "");
-      var cover = await api.cssAttr(inner, "img", "src") || "";
-      cover = abs(cover);
+      if (!title) title = stripHtml((cards[i] && cards[i].text) || "");
+      var cover = abs(await api.cssAttr(inner, "img", "src") || "");
       items.push({ title: title, coverUrl: cover, detailUrl: url, contentType: "manga" });
     }
     return items;
   }
 
-  async function parseLibraryPage(page) {
-    var url = baseUrl + "/manga-list?page=" + page;
-    var html = await fetchHtml(url);
-    var items = await extractItems(html);
-    var hasMore = items.length > 0 && page < 15;
-    return { items: items, hasMore: hasMore, lastFetchedPage: page };
-  }
-
-  async function search(query) {
-    var url = baseUrl + "/?s=" + encodeURIComponent(query) + "&post_type=wp-manga";
-    var html = await fetchHtml(url);
-    return await extractItems(html);
-  }
-
-  async function getDetails(url) {
-    var html = await fetchHtml(url);
-    var title = stripHtml(await api.cssText(html, "div.panel-heading") || "");
-    if (!title) title = stripHtml(await api.cssText(html, "h1") || "");
-    var cover = await api.cssAttr(html, "div.boxed img", "src") || "";
-    cover = abs(cover);
-    var desc = await api.cssAttr(html, "meta[name='description']", "content") || "";
-    desc = stripHtml(desc);
-    var genreEls = await api.cssAll(html, "a[href*='/manga-list/category/']");
-    var genres = [];
-    for (var i = 0; i < genreEls.length; i++) {
-      var g = stripHtml((genreEls[i] || {}).text || "");
-      if (g) genres.push(g);
-    }
-    var authorEl = await api.cssAll(html, "a[href*='/manga-list/author/']");
-    var author = authorEl.length > 0 ? stripHtml((authorEl[0] || {}).text || "") : "";
-    var status = stripHtml(await api.cssText(html, "span.label") || "");
-    return {
-      title: title,
-      coverUrl: cover,
-      description: desc,
-      genres: genres,
-      author: author,
-      status: status
-    };
-  }
-
-  async function getChapters(url) {
-    var html = await fetchHtml(url);
-    var items = await api.cssAll(html, "ul.chapters li");
-    var out = [];
-    var seen = {};
-    for (var i = 0; i < items.length; i++) {
-      var it = items[i] || {};
-      var inner = it.html || "";
-      var href = await api.cssAttr(inner, "h5 a", "href") || "";
-      var curl = abs(href);
-      if (!curl || seen[curl]) continue;
-      seen[curl] = 1;
-      var linkText = stripHtml(await api.cssText(inner, "h5 a") || "");
-      var nm = linkText.match(/(\d+)/);
-      var num = nm ? parseInt(nm[1], 10) : 0;
-      if (!num || isNaN(num)) num = 0;
-      var date = stripHtml(await api.cssText(inner, "div.date-chapter-title-rtl") || "");
-      out.push({ number: num, title: linkText, url: curl, date: date });
-    }
-    out.sort(function (a, b) { return b.number - a.number; });
-    return out;
-  }
-
-  async function getChapterContent(url) {
-    var html = await fetchHtml(url);
-    var title = stripHtml(await api.cssText(html, "h1") || "");
-    var images = await api.cssAll(html, "div.viewer-cnt img.img-responsive");
+  async function extractPageUrls(html) {
+    var imgs = safeList(await api.cssAll(html, "div.viewer-cnt img"));
     var pages = [];
-    for (var i = 0; i < images.length; i++) {
-      var el = images[i] || {};
-      var src = el.attrs && el.attrs["data-src"] ? el.attrs["data-src"] : "";
-      if (!src) src = await api.cssAttr(el.html || "", "data-src") || "";
+    for (var i = 0; i < imgs.length; i++) {
+      var attrs = (imgs[i] && imgs[i].attrs) || {};
+      var src = String(attrs["data-src"] || attrs["src"] || "");
       src = abs(src);
       if (src) pages.push(src);
     }
-    if (pages.length === 0) {
-      var allImgs = await api.cssAll(html, "div.viewer-cnt img");
-      for (var j = 0; j < allImgs.length; j++) {
-        var el2 = allImgs[j] || {};
-        var s = el2.attrs && el2.attrs["src"] ? el2.attrs["src"] : "";
-        if (!s) s = await api.cssAttr(el2.html || "", "src") || "";
-        s = abs(s);
-        if (s && s.indexOf("data:image") !== 0) pages.push(s);
-      }
-    }
-    return { title: title, kind: "images", pages: pages };
+    if (pages.length > 1 && pages[pages.length - 1] === pages[0]) pages.pop();
+    return pages;
   }
 
   return {
@@ -191,9 +130,9 @@ function createSource(api, config) {
       var page = (args && args.page) || 1;
       if (page < 1) page = 1;
       try {
-        return await parseLibraryPage(page);
+        return await extractItems(await fetchHtml(baseUrl + "/manga-list?page=" + page));
       } catch (e) {
-        return { items: [], hasMore: false, lastFetchedPage: page };
+        return [];
       }
     },
 
@@ -201,7 +140,8 @@ function createSource(api, config) {
       var q = ((args && args.query) || "").trim();
       if (!q) return [];
       try {
-        return await search(q);
+        return await extractItems(await fetchHtml(
+          baseUrl + "/?s=" + encodeURIComponent(q) + "&post_type=wp-manga"));
       } catch (e) {
         return [];
       }
@@ -212,9 +152,10 @@ function createSource(api, config) {
       var page = (args && args.page) || 1;
       if (page < 1) page = 1;
       try {
-        var url = baseUrl + "/manga-list/category/" + encodeURIComponent(genre) + "?page=" + page;
-        var html = await fetchHtml(url);
-        return await extractItems(html);
+        var slug = GENRE_BY_NAME[genre] || "";
+        if (!slug) return [];
+        return await extractItems(await fetchHtml(
+          baseUrl + "/manga-list/category/" + encodeURIComponent(slug) + "?page=" + page));
       } catch (e) {
         return [];
       }
@@ -223,24 +164,77 @@ function createSource(api, config) {
     async getMangaDetails(args) {
       var url = abs((args && args.url) || "");
       var slug = slugFromUrl(url);
-      if (!slug) throw new Error("bad manga url");
+      if (!slug || !isOnmaUrl(url)) throw new Error("bad manga url");
+      var html = await fetchHtml(url);
+
+      var title = stripHtml(await api.cssText(html, "div.panel-heading") || "");
+      if (!title) title = slug;
+      var cover = abs(await api.cssAttr(html, "div.boxed img", "src") || "");
+      if (!cover) cover = abs(await api.cssAttr(html, "meta[property='og:image']", "content") || "");
+      var description = stripHtml(await api.cssAttr(html, "meta[name='description']", "content") || "");
+
+      var genres = [];
       try {
-        var details = await getDetails(url);
-        var chapters = await getChapters(url);
-        return {
-          title: details.title,
-          coverUrl: details.coverUrl,
-          description: details.description,
-          genres: details.genres,
-          chapters: chapters,
-          originalUrl: url,
-          hasMoreChapters: false,
-          lastFetchedPage: chapters.length,
-          contentType: "manga"
-        };
-      } catch (e) {
-        throw e;
-      }
+        var gnodes = safeList(await api.cssAll(html, "a[href*='/manga-list/category/']"));
+        var gseen = {};
+        for (var gi = 0; gi < gnodes.length; gi++) {
+          var gt = stripHtml((gnodes[gi] && gnodes[gi].text) || "");
+          if (gt && gt.length > 1 && !gseen[gt]) {
+            gseen[gt] = true;
+            genres.push(gt);
+          }
+        }
+      } catch (e2) {}
+
+      var author = "";
+      try {
+        var anodes = safeList(await api.cssAll(html, "a[href*='/manga-list/author/']"));
+        if (anodes.length > 0) author = stripHtml((anodes[0] && anodes[0].text) || "");
+      } catch (e3) {}
+
+      var status = stripHtml(await api.cssText(html, "span.label") || "");
+
+      var chapters = [];
+      try {
+        var items = safeList(await api.cssAll(html, "ul.chapters li"));
+        var seen = {};
+        for (var i = 0; i < items.length; i++) {
+          var inner = (items[i] && items[i].html) || "";
+          if (!inner) continue;
+          var href = await api.cssAttr(inner, "h5 a", "href");
+          var curl = abs(href);
+          if (!curl || seen[curl]) continue;
+          seen[curl] = true;
+          var linkText = stripHtml(await api.cssText(inner, "h5 a") || "");
+          var nm = linkText.match(/(\d+)/);
+          var num = nm ? parseInt(nm[1], 10) : 0;
+          if (!num || isNaN(num)) num = 0;
+          var date = stripHtml(await api.cssText(inner, "div.date-chapter-title-rtl") || "");
+          chapters.push({
+            number: num,
+            title: linkText || ("الفصل " + num),
+            views: 0,
+            url: curl,
+            isLocked: false,
+            date: date
+          });
+        }
+        chapters.sort(function (a, b) { return b.number - a.number; });
+      } catch (e4) {}
+
+      return {
+        title: title,
+        coverUrl: cover,
+        description: description,
+        genres: genres,
+        author: author,
+        status: status,
+        chapters: chapters,
+        originalUrl: url,
+        hasMoreChapters: false,
+        lastFetchedPage: 1,
+        contentType: "manga"
+      };
     },
 
     async fetchMoreChapters(args) {
@@ -248,23 +242,32 @@ function createSource(api, config) {
     },
 
     async getChapterPages(args) {
-      return [];
+      var url = abs((args && args.url) || "");
+      if (!url || !isOnmaUrl(url) || url.indexOf("/manga/") === -1) return [];
+      try {
+        var html = await fetchHtml(url);
+        return await extractPageUrls(html);
+      } catch (e) {
+        return [];
+      }
     },
 
     async getChapterContent(args) {
       var url = abs((args && args.url) || "");
-      if (!url || url.indexOf("/manga/") === -1) {
-        return { kind: "images", chapterTitle: "", pages: [] };
+      if (!url || !isOnmaUrl(url) || url.indexOf("/manga/") === -1) {
+        return { kind: "image", imageUrls: [] };
       }
       try {
-        return await getChapterContent(url);
+        var html = await fetchHtml(url);
+        var pages = await extractPageUrls(html);
+        return { kind: "image", imageUrls: pages };
       } catch (e) {
-        return { kind: "images", chapterTitle: "", pages: [] };
+        return { kind: "image", imageUrls: [] };
       }
     },
 
     async getGenresAndTypes() {
-      return { genres: GENRES, types: ["manga"] };
+      return { genres: GENRE_NAMES, types: ["manga"] };
     },
 
     getImageHeaders(args) {
