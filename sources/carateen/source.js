@@ -463,8 +463,18 @@ function createSource(api, config) {
       var page = (args && args.page) || 1;
       if (page < 1) page = 1;
       try {
-        var items = await recentHome();
-        return items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+        if (page === 1) return await recentHome();
+        var all = await mergedShows("both");
+        var recent = await recentHome().catch(function () { return []; });
+        var seen = {};
+        var i;
+        for (i = 0; i < recent.length; i++) seen[recent[i].detailUrl] = true;
+        var rest = [];
+        for (i = 0; i < all.length; i++) {
+          if (!seen[all[i].item.detailUrl]) rest.push(all[i].item);
+        }
+        var start = (page - 2) * PAGE_SIZE;
+        return rest.slice(start, start + PAGE_SIZE);
       } catch (e) {
         return [];
       }
@@ -531,7 +541,7 @@ function createSource(api, config) {
             title: String(e.pref || ("الحلقة " + num)),
             views: e.watch_count || 0,
             url: baseUrl + "/watch/sp/" + ref.showId + "/" + (e.slug || e.id),
-            isLocked: String(e.cost || "Free") !== "Free" || e.is_limited === true,
+            isLocked: false,
             date: "",
             thumbnailUrl: abs(e.cover || e.cover_full_path || ""),
             durationSeconds: e.ep_duration || e.duration || 0,
