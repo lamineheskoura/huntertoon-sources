@@ -68,62 +68,101 @@ function createSource(api, config) {
     return w;
   }
 
-  function aesDecryptBlock(block, w) {
-    var s = [], i, c, r;
-    for (i = 0; i < 16; i++) s.push(block[i]);
-    function addRoundKey(round) {
-      for (c = 0; c < 4; c++) {
-        var word = w[round * 4 + c];
-        s[4 * c] ^= (word >>> 24) & 255;
-        s[4 * c + 1] ^= (word >>> 16) & 255;
-        s[4 * c + 2] ^= (word >>> 8) & 255;
-        s[4 * c + 3] ^= word & 255;
-      }
+  var TD0 = [], TD1 = [], TD2 = [], TD3 = [];
+  (function buildTd() {
+    for (var i = 0; i < 256; i++) {
+      var s = INVSBOX[i];
+      var e = gfMul(s, 14), n = gfMul(s, 9), d = gfMul(s, 13), b = gfMul(s, 11);
+      TD0.push(((e << 24) | (n << 16) | (d << 8) | b) >>> 0);
+      TD1.push(((b << 24) | (e << 16) | (n << 8) | d) >>> 0);
+      TD2.push(((d << 24) | (b << 16) | (e << 8) | n) >>> 0);
+      TD3.push(((n << 24) | (d << 16) | (b << 8) | e) >>> 0);
     }
-    addRoundKey(14);
-    for (var round = 13; round >= 1; round--) {
-      var t = [];
-      for (c = 0; c < 4; c++) {
-        for (r = 0; r < 4; r++) t[4 * c + r] = s[4 * ((c + 4 - r) % 4) + r];
+  })();
+
+  function mixWord(word) {
+    var b0 = (word >>> 24) & 255, b1 = (word >>> 16) & 255, b2 = (word >>> 8) & 255, b3 = word & 255;
+    return ((gfMul(b0, 14) ^ gfMul(b1, 11) ^ gfMul(b2, 13) ^ gfMul(b3, 9)) << 24 |
+      (gfMul(b0, 9) ^ gfMul(b1, 14) ^ gfMul(b2, 11) ^ gfMul(b3, 13)) << 16 |
+      (gfMul(b0, 13) ^ gfMul(b1, 9) ^ gfMul(b2, 14) ^ gfMul(b3, 11)) << 8 |
+      (gfMul(b0, 11) ^ gfMul(b1, 13) ^ gfMul(b2, 9) ^ gfMul(b3, 14))) >>> 0;
+  }
+
+  var CACHED_W = null;
+  function roundKeys() {
+    if (!CACHED_W) {
+      var w = aesKeyExpand(utf8Encode(API_KEY));
+      for (var r = 1; r <= 13; r++) {
+        for (var c = 0; c < 4; c++) w[r * 4 + c] = mixWord(w[r * 4 + c]);
       }
-      for (i = 0; i < 16; i++) t[i] = INVSBOX[t[i]];
-      for (c = 0; c < 4; c++) {
-        var word = w[round * 4 + c];
-        t[4 * c] ^= (word >>> 24) & 255;
-        t[4 * c + 1] ^= (word >>> 16) & 255;
-        t[4 * c + 2] ^= (word >>> 8) & 255;
-        t[4 * c + 3] ^= word & 255;
-      }
-      for (c = 0; c < 4; c++) {
-        var a0 = t[4 * c], a1 = t[4 * c + 1], a2 = t[4 * c + 2], a3 = t[4 * c + 3];
-        s[4 * c] = gfMul(a0, 14) ^ gfMul(a1, 11) ^ gfMul(a2, 13) ^ gfMul(a3, 9);
-        s[4 * c + 1] = gfMul(a0, 9) ^ gfMul(a1, 14) ^ gfMul(a2, 11) ^ gfMul(a3, 13);
-        s[4 * c + 2] = gfMul(a0, 13) ^ gfMul(a1, 9) ^ gfMul(a2, 14) ^ gfMul(a3, 11);
-        s[4 * c + 3] = gfMul(a0, 11) ^ gfMul(a1, 13) ^ gfMul(a2, 9) ^ gfMul(a3, 14);
-      }
+      CACHED_W = w;
     }
-    var u = [];
-    for (c = 0; c < 4; c++) {
-      for (r = 0; r < 4; r++) u[4 * c + r] = s[4 * ((c + 4 - r) % 4) + r];
-    }
-    for (i = 0; i < 16; i++) u[i] = INVSBOX[u[i]];
-    for (c = 0; c < 4; c++) {
-      var word0 = w[c];
-      u[4 * c] ^= (word0 >>> 24) & 255;
-      u[4 * c + 1] ^= (word0 >>> 16) & 255;
-      u[4 * c + 2] ^= (word0 >>> 8) & 255;
-      u[4 * c + 3] ^= word0 & 255;
-    }
-    return u;
+    return CACHED_W;
+  }
+
+  var HEXV = {};
+  (function buildHex() {
+    var d = "0123456789abcdef", i;
+    for (i = 0; i < 16; i++) HEXV[d.charAt(i)] = i;
+    var u = "ABCDEF";
+    for (i = 0; i < 6; i++) HEXV[u.charAt(i)] = 10 + i;
+  })();
+
+  function hexPair(hex, idx) {
+    var hi = HEXV[hex.charAt(idx)], lo = HEXV[hex.charAt(idx + 1)];
+    if (hi === undefined || lo === undefined) throw new Error("bad hex");
+    return (hi << 4) | lo;
   }
 
   function hexToBytes(hex) {
     var out = [];
     hex = String(hex || "").replace(/\s+/g, "");
     for (var i = 0; i + 1 < hex.length; i += 2) {
-      out.push(parseInt(hex.substr(i, 2), 16));
+      out.push(hexPair(hex, i));
     }
     return out;
+  }
+
+  function aesDecryptBlock(block, w) {
+    var s = [block[0], block[1], block[2], block[3], block[4], block[5], block[6], block[7], block[8], block[9], block[10], block[11], block[12], block[13], block[14], block[15]];
+    var c, word, base;
+    base = 56;
+    for (c = 0; c < 4; c++) {
+      word = w[base + c];
+      s[4 * c] ^= (word >>> 24) & 255;
+      s[4 * c + 1] ^= (word >>> 16) & 255;
+      s[4 * c + 2] ^= (word >>> 8) & 255;
+      s[4 * c + 3] ^= word & 255;
+    }
+    for (var round = 13; round >= 1; round--) {
+      base = round * 4;
+      var t0 = (TD0[s[0]] ^ TD1[s[13]] ^ TD2[s[10]] ^ TD3[s[7]] ^ w[base]) >>> 0;
+      var t1 = (TD0[s[4]] ^ TD1[s[1]] ^ TD2[s[14]] ^ TD3[s[11]] ^ w[base + 1]) >>> 0;
+      var t2 = (TD0[s[8]] ^ TD1[s[5]] ^ TD2[s[2]] ^ TD3[s[15]] ^ w[base + 2]) >>> 0;
+      var t3 = (TD0[s[12]] ^ TD1[s[9]] ^ TD2[s[6]] ^ TD3[s[3]] ^ w[base + 3]) >>> 0;
+      s[0] = (t0 >>> 24) & 255; s[1] = (t0 >>> 16) & 255; s[2] = (t0 >>> 8) & 255; s[3] = t0 & 255;
+      s[4] = (t1 >>> 24) & 255; s[5] = (t1 >>> 16) & 255; s[6] = (t1 >>> 8) & 255; s[7] = t1 & 255;
+      s[8] = (t2 >>> 24) & 255; s[9] = (t2 >>> 16) & 255; s[10] = (t2 >>> 8) & 255; s[11] = t2 & 255;
+      s[12] = (t3 >>> 24) & 255; s[13] = (t3 >>> 16) & 255; s[14] = (t3 >>> 8) & 255; s[15] = t3 & 255;
+    }
+    var u = [];
+    u[0] = INVSBOX[s[0]] ^ ((w[0] >>> 24) & 255);
+    u[1] = INVSBOX[s[13]] ^ ((w[0] >>> 16) & 255);
+    u[2] = INVSBOX[s[10]] ^ ((w[0] >>> 8) & 255);
+    u[3] = INVSBOX[s[7]] ^ (w[0] & 255);
+    u[4] = INVSBOX[s[4]] ^ ((w[1] >>> 24) & 255);
+    u[5] = INVSBOX[s[1]] ^ ((w[1] >>> 16) & 255);
+    u[6] = INVSBOX[s[14]] ^ ((w[1] >>> 8) & 255);
+    u[7] = INVSBOX[s[11]] ^ (w[1] & 255);
+    u[8] = INVSBOX[s[8]] ^ ((w[2] >>> 24) & 255);
+    u[9] = INVSBOX[s[5]] ^ ((w[2] >>> 16) & 255);
+    u[10] = INVSBOX[s[2]] ^ ((w[2] >>> 8) & 255);
+    u[11] = INVSBOX[s[15]] ^ (w[2] & 255);
+    u[12] = INVSBOX[s[12]] ^ ((w[3] >>> 24) & 255);
+    u[13] = INVSBOX[s[9]] ^ ((w[3] >>> 16) & 255);
+    u[14] = INVSBOX[s[6]] ^ ((w[3] >>> 8) & 255);
+    u[15] = INVSBOX[s[3]] ^ (w[3] & 255);
+    return u;
   }
 
   function utf8Encode(str) {
@@ -146,29 +185,70 @@ function createSource(api, config) {
       else if ((b & 224) === 192) {
         out += String.fromCharCode(((b & 31) << 6) | (bytes[i + 1] & 63));
         i++;
-      } else {
+      } else if ((b & 240) === 224) {
         out += String.fromCharCode(((b & 15) << 12) | ((bytes[i + 1] & 63) << 6) | (bytes[i + 2] & 63));
         i += 2;
+      } else {
+        var cp = ((b & 7) << 18) | ((bytes[i + 1] & 63) << 12) | ((bytes[i + 2] & 63) << 6) | (bytes[i + 3] & 63);
+        cp -= 65536;
+        out += String.fromCharCode(55296 + (cp >> 10), 56320 + (cp & 1023));
+        i += 3;
       }
     }
     return out;
   }
 
+  function splitTail(bytes) {
+    var n = bytes.length;
+    var k = 0;
+    while (k < n && k < 4 && (bytes[n - 1 - k] & 192) === 128) k++;
+    var start = n - 1 - k;
+    if (start < 0) return { head: bytes, tail: [] };
+    var lead = bytes[start];
+    if (lead < 128) return { head: bytes, tail: [] };
+    var need = lead >= 240 ? 4 : lead >= 224 ? 3 : 2;
+    if (k + 1 >= need) return { head: bytes, tail: [] };
+    return { head: bytes.slice(0, start), tail: bytes.slice(start) };
+  }
+
+  var BLOCK_CHUNK = 2048;
+
   function aesCbcDecrypt(ivHex, dataHex) {
-    var w = aesKeyExpand(utf8Encode(API_KEY));
-    var data = hexToBytes(dataHex);
+    var w = roundKeys();
+    var hex = String(dataHex || "").replace(/\s+/g, "");
+    var nBlocks = Math.floor(hex.length / 32);
+    if (nBlocks < 1) throw new Error("empty crypto payload");
     var prev = hexToBytes(ivHex);
-    var out = [];
-    for (var off = 0; off + 16 <= data.length; off += 16) {
-      var block = data.slice(off, off + 16);
-      var dec = aesDecryptBlock(block, w);
-      for (var i = 0; i < 16; i++) out.push(dec[i] ^ prev[i]);
-      prev = block;
+    if (prev.length !== 16) throw new Error("bad crypto iv");
+    var parts = [];
+    var carry = [];
+    var blk = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var pos = 0;
+    while (pos < nBlocks) {
+      var end = Math.min(pos + BLOCK_CHUNK, nBlocks);
+      var bytes = carry;
+      carry = [];
+      for (var b = pos; b < end; b++) {
+        var base = b * 32;
+        for (var i = 0; i < 16; i++) blk[i] = hexPair(hex, base + i * 2);
+        var dec = aesDecryptBlock(blk, w);
+        for (var j = 0; j < 16; j++) bytes.push(dec[j] ^ prev[j]);
+        prev = blk.slice();
+      }
+      pos = end;
+      if (pos < nBlocks) {
+        var sp = splitTail(bytes);
+        bytes = sp.head;
+        carry = sp.tail;
+      }
+      parts.push(utf8Decode(bytes));
     }
-    if (!out.length) throw new Error("empty crypto payload");
-    var pad = out[out.length - 1];
+    if (carry.length) parts.push(utf8Decode(carry));
+    var text = parts.join("");
+    if (!text.length) throw new Error("empty crypto payload");
+    var pad = text.charCodeAt(text.length - 1);
     if (pad < 1 || pad > 16) throw new Error("bad crypto padding");
-    return utf8Decode(out.slice(0, out.length - pad));
+    return text.slice(0, text.length - pad);
   }
   function abs(url) {
     if (!url) return "";
@@ -214,15 +294,47 @@ function createSource(api, config) {
 
   var catalogCache = { at: 0, sp: [], tg: [] };
 
-  async function ensureCatalogs() {
+  async function ensureCatalogs(which) {
     var now = Date.now();
-    if (catalogCache.at && (now - catalogCache.at) < CACHE_TTL_MS && catalogCache.sp.length) {
-      return catalogCache;
+    var wantSp = which !== "tg";
+    var wantTg = which !== "sp";
+    var fresh = !catalogCache.at || (now - catalogCache.at) >= CACHE_TTL_MS || !catalogCache.sp.length;
+    if (!fresh) {
+      if ((wantSp && !catalogCache.sp.length) || (wantTg && !catalogCache.tg.length)) fresh = true;
     }
-    var spList = await apiJson("/api/sp/tvshows?page=1", "GET").catch(function () { return []; });
-    var tgList = await apiJson("/api/tvshows?page=1", "GET").catch(function () { return []; });
-    catalogCache = { at: now, sp: safeList(spList), tg: safeList(tgList) };
+    if (!fresh) return catalogCache;
+    var spList = catalogCache.sp;
+    var tgList = catalogCache.tg;
+    if (wantSp) {
+      spList = await apiJson("/api/sp/tvshows?page=1", "GET").catch(function () { return []; });
+      spList = safeList(spList);
+    }
+    if (wantTg) {
+      tgList = await apiJson("/api/tvshows?page=1", "GET").catch(function () { return []; });
+      tgList = safeList(tgList);
+    }
+    catalogCache = { at: now, sp: spList, tg: tgList };
     return catalogCache;
+  }
+
+  async function recentHome() {
+    var eps = await apiJson("/api/sp/recentEpisodes", "GET").catch(function () { return []; });
+    eps = safeList(eps);
+    var out = [];
+    var seen = {};
+    for (var i = 0; i < eps.length; i++) {
+      var e = eps[i] || {};
+      var sid = e.tv_series_id;
+      if (!sid || seen[sid]) continue;
+      seen[sid] = true;
+      out.push({
+        title: String(e.name || ""),
+        coverUrl: abs(e.cover_full_path || ""),
+        detailUrl: baseUrl + "/watch/sp/" + sid,
+        contentType: "anime"
+      });
+    }
+    return out;
   }
 
   function isEnabled(s) {
@@ -254,8 +366,16 @@ function createSource(api, config) {
     return isNaN(t) ? 0 : t;
   }
 
-  async function mergedShows() {
-    var cat = await ensureCatalogs();
+  function isSpPlanetGenre(genre) {
+    return genre !== "أفلام" && GENRES.slice(1, 12).indexOf(genre) !== -1;
+  }
+
+  function isTgOnlyGenre(genre) {
+    return GENRES.slice(12).indexOf(genre) !== -1;
+  }
+
+  async function mergedShows(which) {
+    var cat = await ensureCatalogs(which || "both");
     var out = [];
     for (var i = 0; i < cat.sp.length; i++) {
       if (isEnabled(cat.sp[i])) out.push({ kind: "sp", raw: cat.sp[i], item: mapSpShow(cat.sp[i]) });
@@ -343,8 +463,8 @@ function createSource(api, config) {
       var page = (args && args.page) || 1;
       if (page < 1) page = 1;
       try {
-        var all = await mergedShows();
-        return all.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(function (e) { return e.item; });
+        var items = await recentHome();
+        return items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
       } catch (e) {
         return [];
       }
@@ -373,7 +493,8 @@ function createSource(api, config) {
       if (page < 1) page = 1;
       if (!genre) return [];
       try {
-        var all = await mergedShows();
+        var which = isSpPlanetGenre(genre) ? "sp" : (isTgOnlyGenre(genre) ? "tg" : "both");
+        var all = await mergedShows(which);
         var out = [];
         for (var i = 0; i < all.length; i++) {
           var e = all[i];
