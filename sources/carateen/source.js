@@ -411,6 +411,12 @@ function createSource(api, config) {
     return cat === genre || cat.indexOf(genre) === 0;
   }
 
+  async function fullHome(page) {
+    var all = await mergedShows("both");
+    var start = (page - 1) * PAGE_SIZE;
+    return all.slice(start, start + PAGE_SIZE).map(function (e) { return e.item; });
+  }
+
   function parseRef(url) {
     var m = String(url || "").match(/\/watch\/sp\/(\d+)(?:\/([^\/?#]+))?/);
     if (m) return { kind: "sp", showId: m[1], epSlug: m[2] || "" };
@@ -463,19 +469,14 @@ function createSource(api, config) {
       var page = (args && args.page) || 1;
       if (page < 1) page = 1;
       try {
-        if (page === 1) return await recentHome();
-        var all = await mergedShows("both");
-        var recent = await recentHome().catch(function () { return []; });
-        var seen = {};
-        var i;
-        for (i = 0; i < recent.length; i++) seen[recent[i].detailUrl] = true;
-        var rest = [];
-        for (i = 0; i < all.length; i++) {
-          if (!seen[all[i].item.detailUrl]) rest.push(all[i].item);
-        }
-        var start = (page - 2) * PAGE_SIZE;
-        return rest.slice(start, start + PAGE_SIZE);
+        var items = await fullHome(page);
+        if (items.length) return items;
+        if (page === 1) return await recentHome().catch(function () { return []; });
+        return [];
       } catch (e) {
+        if (page === 1) {
+          try { return await recentHome(); } catch (e2) { return []; }
+        }
         return [];
       }
     },
