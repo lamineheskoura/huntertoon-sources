@@ -654,6 +654,15 @@ function createSource(api, config) {
       opened = await dilarJsOpenV16(CHAPTER_API + "/chapters/" + relId, H, privHex, pubRaw);
       if (opened && opened.freePass === true) throw new Error("locked");
     }
+    if (opened && !opened.freePass && !(opened.imageUrls && opened.imageUrls.length) && !opened.textContent) {
+      delete unlockCache[relId];
+      try {
+        token = await dilarUnlockToken(relId, true, pubB64);
+        H["X-Unlock-Free-Chapter"] = token;
+        var retry = await dilarJsOpenV16(CHAPTER_API + "/chapters/" + relId, H, privHex, pubRaw);
+        if (retry && ((retry.imageUrls && retry.imageUrls.length) || retry.textContent)) return retry;
+      } catch (e2) {}
+    }
     return opened;
   }
 

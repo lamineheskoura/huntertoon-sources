@@ -2,7 +2,7 @@
   "version": "1.55.0",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.10.12.2",
+  "manifest_version": "2026.10.12.3",
   "generated_at": "2026-09-04T14:30:00Z",
   "last_updated": "2026-10-06T12:00:00Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -388,7 +388,7 @@
       "id": "dilar",
       "sid": 106,
       "name": "ديلار (Dilar)",
-      "version": "1.7.2",
+      "version": "1.7.3",
       "enabled": true,
       "status": "stable",
       "base_url": "https://dilar.tube",
@@ -404,7 +404,7 @@
       },
       "script": {
         "url": "sources/dilar/source.js",
-        "sha256": "be458bba886e9f6901a005d8b2efbb5bdd611b920e3e4640b55e4fdcd17b9a7c",
+        "sha256": "eeedc58ec07f71e7bd3b0d2563f5c691faa15b1e13e094311bbb41ad93499a6a",
         "entry": "createSource"
       },
       "capabilities": {
@@ -427,7 +427,7 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Dilar API source with pure-JS v15 crypto (ECDH P-256 + AES-SIV, no app changes) for chapter content",
-        "changelog": "v1.7.2: unlock POST carries DH headers (CF hardening). v1.7.1: freePass retry + clock-independent cache. v1.7.0: v16 XChaCha20-Poly1305 + registry trial."
+        "changelog": "v1.7.3: retry with fresh token on silent-empty v16 open. v1.7.2: unlock POST DH headers. v1.7.1: freePass retry + clock-independent cache. v1.7.0: v16 XChaCha20-Poly1305."
       }
     },
     "lekmanga": {
