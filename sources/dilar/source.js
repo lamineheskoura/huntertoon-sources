@@ -544,11 +544,18 @@ function createSource(api, config) {
   // v15: AES-SIV, HKDF-SHA512(76B) (proven, kept for rollback envelopes).
   // v12 and older: legacy native bridge api.dilarChapter (app-side, frozen).
   var unlockCache = {};
+  var unlockTick = 0;
 
-  async function dilarUnlockToken(relId) {
-    var now = Date.now();
+  function unlockNow() {
+    if (typeof Date !== "undefined" && Date.now) return Date.now();
+    unlockTick++;
+    return unlockTick * 60000;
+  }
+
+  async function dilarUnlockToken(relId, force) {
+    var now = unlockNow();
     var hit = unlockCache[relId];
-    if (hit && hit.exp > now) return hit.token;
+    if (!force && hit && hit.exp > now) return hit.token;
     var ru = await api.http(CHAPTER_API + "/chapters/" + relId + "/unlock/free", {
       method: "POST",
       headers: chapterHeaders({ "Content-Type": "application/json" }),
@@ -628,13 +635,21 @@ function createSource(api, config) {
     if (!pubPt) throw new Error("bad-key");
     var pubRaw = hxArr("04" + ecPad64(pubPt[0]) + ecPad64(pubPt[1]));
     var pubB64 = b64encArr(pubRaw);
-    var token = await dilarUnlockToken(relId);
+    var token = await dilarUnlockToken(relId, false);
     var H = chapterHeaders({
       "X-Crypto-Caps": DH_CAPS,
       "X-DH-Pub": pubB64,
       "X-Unlock-Free-Chapter": token
     });
-    return await dilarJsOpenV16(CHAPTER_API + "/chapters/" + relId, H, privHex, pubRaw);
+    var opened = await dilarJsOpenV16(CHAPTER_API + "/chapters/" + relId, H, privHex, pubRaw);
+    if (opened && opened.freePass === true) {
+      delete unlockCache[relId];
+      token = await dilarUnlockToken(relId, true);
+      H["X-Unlock-Free-Chapter"] = token;
+      opened = await dilarJsOpenV16(CHAPTER_API + "/chapters/" + relId, H, privHex, pubRaw);
+      if (opened && opened.freePass === true) throw new Error("locked");
+    }
+    return opened;
   }
 
   async function dilarJsHandshake(relId) {
