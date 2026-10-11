@@ -2,7 +2,7 @@
   "version": "1.55.0",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.10.11.1",
+  "manifest_version": "2026.10.11.2",
   "generated_at": "2026-09-04T14:30:00Z",
   "last_updated": "2026-10-06T12:00:00Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -2071,7 +2071,7 @@
       "id": "carateen",
       "sid": 145,
       "name": "كراتين",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "enabled": true,
       "status": "beta",
       "base_url": "https://carateen.tv",
@@ -2109,7 +2109,7 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "كراتين - Arabic cartoon/anime source (Vue SPA + encrypted JSON API). SP+TG catalogs, episodes, direct HLS via pure-JS AES-256-CBC.",
-        "changelog": "v1.0.0: initial JS source - homepage/search/filters, SP+TG details+episodes desc, HLS video servers."
+        "changelog": "v1.0.1: crash fix - recentEpisodes homepage (6KB not 2.3MB), T-table AES, chunked decrypt, split catalogs. v1.0.0: initial."
       }
     }
   }
