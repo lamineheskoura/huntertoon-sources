@@ -91,7 +91,7 @@ function createSource(api, config) {
 
   var WIN_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
   var CHAPTER_API = "https://www.dilar.tube/api";
-  var DH_CAPS = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15";
+  var DH_CAPS = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16";
   var HAS_BIGINT = (typeof BigInt !== "undefined");
 
   function chapterHeaders(extra) {
@@ -412,7 +412,247 @@ function createSource(api, config) {
     return out;
   }
 
+  // ==================== PURE-JS XChaCha20-Poly1305 (envelope v16+, no app changes) ====================
+  // ChaCha20 block + HChaCha20 (32-bit ops only) + Poly1305 (BigInt constructor
+  // form only — never BigInt literals, which are a QuickJS parse-time SyntaxError).
+  // Verified against Node crypto vectors, noble/ciphers vectors, and live v16 envelopes.
+  function xcRotl(v, n) {
+    return ((v << n) | (v >>> (32 - n))) | 0;
+  }
+  function xcQuarter(x, a, b, c, d) {
+    x[a] = (x[a] + x[b]) | 0; x[d] = xcRotl(x[d] ^ x[a], 16);
+    x[c] = (x[c] + x[d]) | 0; x[b] = xcRotl(x[b] ^ x[c], 12);
+    x[a] = (x[a] + x[b]) | 0; x[d] = xcRotl(x[d] ^ x[a], 8);
+    x[c] = (x[c] + x[d]) | 0; x[b] = xcRotl(x[b] ^ x[c], 7);
+  }
+  function xcWords(bytes16, off) {
+    var out = [];
+    for (var i = 0; i < 4; i++) {
+      out.push((bytes16[off + i * 4] | (bytes16[off + i * 4 + 1] << 8) | (bytes16[off + i * 4 + 2] << 16) | (bytes16[off + i * 4 + 3] << 24)) | 0);
+    }
+    return out;
+  }
+  function chachaBlock20(key32, nonce12, counter) {
+    var k = xcWords(key32, 0).concat(xcWords(key32, 16));
+    var n = xcWords(nonce12, 0).concat(xcWords(nonce12, 8));
+    var st = [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574,
+      k[0], k[1], k[2], k[3], k[4], k[5], k[6], k[7],
+      counter | 0, n[0], n[1], n[2]];
+    var w = st.slice();
+    for (var i = 0; i < 10; i++) {
+      xcQuarter(w, 0, 4, 8, 12); xcQuarter(w, 1, 5, 9, 13);
+      xcQuarter(w, 2, 6, 10, 14); xcQuarter(w, 3, 7, 11, 15);
+      xcQuarter(w, 0, 5, 10, 15); xcQuarter(w, 1, 6, 11, 12);
+      xcQuarter(w, 2, 7, 8, 13); xcQuarter(w, 3, 4, 9, 14);
+    }
+    var out = [];
+    for (var j = 0; j < 16; j++) {
+      var v = (w[j] + st[j]) | 0;
+      out.push(v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255);
+    }
+    return out;
+  }
+  function hchacha20Subkey(key32, nonce16) {
+    var k = xcWords(key32, 0).concat(xcWords(key32, 16));
+    var n = xcWords(nonce16, 0).concat(xcWords(nonce16, 16));
+    var st = [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574,
+      k[0], k[1], k[2], k[3], k[4], k[5], k[6], k[7],
+      n[0], n[1], n[2], n[3]];
+    var w = st.slice();
+    for (var i = 0; i < 10; i++) {
+      xcQuarter(w, 0, 4, 8, 12); xcQuarter(w, 1, 5, 9, 13);
+      xcQuarter(w, 2, 6, 10, 14); xcQuarter(w, 3, 7, 11, 15);
+      xcQuarter(w, 0, 5, 10, 15); xcQuarter(w, 1, 6, 11, 12);
+      xcQuarter(w, 2, 7, 8, 13); xcQuarter(w, 3, 4, 9, 14);
+    }
+    var out = [];
+    var idx = [0, 1, 2, 3, 12, 13, 14, 15];
+    for (var j = 0; j < 8; j++) {
+      var v = w[idx[j]];
+      out.push(v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255);
+    }
+    return out;
+  }
+  function poly1305tag(key32, aad, ct) {
+    var B0 = BigInt(0);
+    function le(bytes) {
+      var v = B0;
+      for (var i = bytes.length - 1; i >= 0; i--) {
+        v = (v << BigInt(8)) + BigInt(bytes[i]);
+      }
+      return v;
+    }
+    var P = (BigInt(1) << BigInt(130)) - BigInt(5);
+    var M128 = BigInt(1) << BigInt(128);
+    var r = le(key32.slice(0, 16)) & BigInt("0x0ffffffc0ffffffc0ffffffc0fffffff");
+    var s = le(key32.slice(16, 32));
+    var h = B0;
+    function absorb(msg) {
+      for (var off = 0; off < msg.length; off += 16) {
+        var blk = msg.slice(off, off + 16);
+        var padded = blk.slice();
+        while (padded.length < 16) padded.push(0);
+        padded.push(0);
+        padded[16] = 1;
+        h = ((h + le(padded.slice(0, 17))) * r) % P;
+      }
+    }
+    absorb(aad);
+    absorb(ct);
+    var lb = [];
+    var lens = [aad.length, ct.length];
+    for (var li = 0; li < 2; li++) {
+      var vv = lens[li];
+      for (var i = 0; i < 8; i++) {
+        lb.push(vv % 256);
+        vv = Math.floor(vv / 256);
+      }
+    }
+    absorb(lb);
+    var tag = (h + s) % M128;
+    var out = [];
+    for (var k = 0; k < 16; k++) {
+      out.push(Number(tag & BigInt(255)));
+      tag = tag >> BigInt(8);
+    }
+    return out;
+  }
+  function xchachaOpen(key32, nonce24, aad, msg) {
+    var subkey = hchacha20Subkey(key32, nonce24.slice(0, 16));
+    var nonce12 = [0, 0, 0, 0].concat(nonce24.slice(16, 24));
+    var ct = msg.slice(0, msg.length - 16);
+    var tag = msg.slice(msg.length - 16);
+    var ks0 = chachaBlock20(subkey, nonce12, 0);
+    var pt = [];
+    var ctr = 1, off, i;
+    for (off = 0; off < ct.length; off += 64) {
+      var ks = chachaBlock20(subkey, nonce12, ctr++);
+      for (i = 0; i < 64 && off + i < ct.length; i++) pt.push(ct[off + i] ^ ks[i]);
+    }
+    var mac = poly1305tag(ks0.slice(0, 32), aad, ct);
+    var diff = 0;
+    for (var j = 0; j < 16; j++) diff |= (mac[j] ^ tag[j]);
+    if (diff !== 0) return null;
+    return pt;
+  }
+
+  // ==================== VERSION REGISTRY (source-only future-proofing) ====================
+  // Envelope `v` selects the opener; unknown versions trial newest-first. Each
+  // opener is cryptographically self-verifying (SIV/AEAD tag), so trials cannot
+  // false-positive. Adding a future version = one opener + one registry line.
+  // v16: XChaCha20-Poly1305, HKDF-SHA384(56B), unlock-token-first flow (verified live).
+  // v15: AES-SIV, HKDF-SHA512(76B) (proven, kept for rollback envelopes).
+  // v12 and older: legacy native bridge api.dilarChapter (app-side, frozen).
+  var unlockCache = {};
+
+  async function dilarUnlockToken(relId) {
+    var now = Date.now();
+    var hit = unlockCache[relId];
+    if (hit && hit.exp > now) return hit.token;
+    var ru = await api.http(CHAPTER_API + "/chapters/" + relId + "/unlock/free", {
+      method: "POST",
+      headers: chapterHeaders({ "Content-Type": "application/json" }),
+      body: "{}"
+    });
+    var token = "";
+    try {
+      token = JSON.parse((ru && ru.body) || "{}").token || "";
+    } catch (e) {}
+    if (!token) throw new Error("no-token");
+    var keys = Object.keys(unlockCache);
+    if (keys.length >= 40) unlockCache = {};
+    unlockCache[relId] = { token: String(token), exp: now + 1500000 };
+    return String(token);
+  }
+
+  function decToPages(dec) {
+    if (dec && dec.free_pass_required === true) return { freePass: true };
+    var pages = (dec && (dec.pages || dec.webp_pages)) || [];
+    var sk = (dec && dec.storage_key) || "", mt = (dec && dec.media_token) || "";
+    var out = [];
+    for (var p = 0; p < pages.length; p++) {
+      var f = pages[p].url || pages[p].webp_url || "";
+      if (f) out.push(baseUrl + "/uploads/releases/" + sk + "/hq/" + f + "?t=" + mt);
+    }
+    if (dec && dec.content && !out.length) return { textContent: String(dec.content) };
+    return { imageUrls: out };
+  }
+
+  async function dilarJsOpenV16(url, H, privHex, pubRaw) {
+    var r = await api.http(url, { method: "GET", headers: H });
+    if (!r || !r.ok) throw new Error("HTTP " + (r ? r.status : 0));
+    var env = JSON.parse(r.body || "{}");
+    if (!env || typeof env.ct !== "string") throw new Error("bad-envelope");
+    var epk = b64decArr(env.epk), ivb = b64decArr(env.iv);
+    var ct = b64decArr(env.ct), tag = b64decArr(env.tag);
+    var e = String(env.e);
+    var S = ecMultPt(BigInt("0x" + privHex), [
+      BigInt("0x" + arrHx(epk.slice(1, 33))),
+      BigInt("0x" + arrHx(epk.slice(33, 65)))
+    ]);
+    if (!S) throw new Error("bad-shared");
+    var sharedHex = ecPad64(S[0]);
+    var saltHex = await api.cryptoOp("hmacSha384",
+      arrHx(concatArrs([u16beArr(epk.length), epk])),
+      { key: arrHx(concatArrs([pubRaw, ivb])) });
+    var infoDigHex = await api.cryptoOp("sha384",
+      arrHx(concatArrs([u16beArr(ivb.length), ivb, u16beArr(epk.length), epk])), {});
+    var infoB64 = b64encArr(hxArr(infoDigHex)).slice(0, 22);
+    var infoStr = "dilar.response.ecies.v16|" + e + "|" + infoB64;
+    var derivedHex = await api.cryptoOp("hkdf", sharedHex,
+      { salt: saltHex, info: arrHx(utf8Arr(infoStr)), hash: "sha384", length: 56 });
+    var key32 = hxArr(derivedHex.slice(0, 64));
+    var nonce24 = hxArr(derivedHex.slice(64, 112));
+    var T = hxArr(await api.cryptoOp("sha256",
+      arrHx(concatArrs([
+        u16beArr(24), utf8Arr("dilar.response.ecies.v16"),
+        u16beArr(2), utf8Arr("16"), u16beArr(e.length), utf8Arr(e),
+        u16beArr(epk.length), epk, u16beArr(ivb.length), ivb,
+        u16beArr(4), u32beArr(ct.length)
+      ])), {}));
+    var pt = xchachaOpen(key32, nonce24, T, ct.concat(tag));
+    if (!pt) throw new Error("xchacha-mismatch");
+    var dec = JSON.parse(new TextDecoder().decode(new Uint8Array(pt)));
+    return decToPages(dec);
+  }
+
+  async function dilarJsHandshakeV16(relId) {
+    if (!ecInit()) throw new Error("no-bigint");
+    if (typeof api.http !== "function" || typeof api.cryptoOp !== "function") {
+      throw new Error("no-bridge");
+    }
+    var priv = [];
+    for (var i = 0; i < 32; i++) priv.push(Math.floor(Math.random() * 256));
+    var privHex = arrHx(priv);
+    var pubPt = ecMultPt(BigInt("0x" + privHex), [EC.GX, EC.GY]);
+    if (!pubPt) throw new Error("bad-key");
+    var pubRaw = hxArr("04" + ecPad64(pubPt[0]) + ecPad64(pubPt[1]));
+    var pubB64 = b64encArr(pubRaw);
+    var token = await dilarUnlockToken(relId);
+    var H = chapterHeaders({
+      "X-Crypto-Caps": DH_CAPS,
+      "X-DH-Pub": pubB64,
+      "X-Unlock-Free-Chapter": token
+    });
+    return await dilarJsOpenV16(CHAPTER_API + "/chapters/" + relId, H, privHex, pubRaw);
+  }
+
   async function dilarJsHandshake(relId) {
+    var lastErr = null;
+    try {
+      return await dilarJsHandshakeV16(relId);
+    } catch (e) {
+      lastErr = e;
+    }
+    try {
+      return await dilarJsHandshakeV15(relId);
+    } catch (e2) {
+      lastErr = e2;
+    }
+    throw lastErr || new Error("empty");
+  }
+
+  async function dilarJsHandshakeV15(relId) {
     if (!ecInit()) throw new Error("no-bigint");
     if (typeof api.http !== "function" || typeof api.cryptoOp !== "function") {
       throw new Error("no-bridge");
