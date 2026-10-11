@@ -2,7 +2,7 @@
   "version": "1.55.0",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.10.09.2",
+  "manifest_version": "2026.10.11.1",
   "generated_at": "2026-09-04T14:30:00Z",
   "last_updated": "2026-10-06T12:00:00Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -2065,6 +2065,51 @@
         "author": "HunterToon Team",
         "description": "مانجا اون لاين - manga source (MangaStream-style SSR). /manga-list library pagination, search, 13 genre filters, chapters via ul.chapters, reader pages via data-src/src.",
         "changelog": "v1.1.0: app-contract fix - plain arrays from lists, {kind:\"image\", imageUrls} reader, getChapterPages fallback, single-fetch details, host guard, entity decode. v1.0.0: initial."
+      }
+    },
+    "carateen": {
+      "id": "carateen",
+      "sid": 145,
+      "name": "كراتين",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://carateen.tv",
+      "website_url": "https://carateen.tv",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=carateen.tv",
+      "requires_cf": true,
+      "image_referer": "https://carateen.tv/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://carateen.tv/"
+      },
+      "script": {
+        "url": "sources/carateen/source.js",
+        "sha256": "9f55321e8b16f0d903b19928772f63eb580d6d96dc46e6216f3deb2f4f81f88c",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "anime"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": true
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "كراتين - Arabic cartoon/anime source (Vue SPA + encrypted JSON API). SP+TG catalogs, episodes, direct HLS via pure-JS AES-256-CBC.",
+        "changelog": "v1.0.0: initial JS source - homepage/search/filters, SP+TG details+episodes desc, HLS video servers."
       }
     }
   }
