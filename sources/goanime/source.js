@@ -228,34 +228,32 @@ function createSource(api, config) {
   async function serversForEpisode(ep) {
     var base = serversFromPayload(ep);
     var out = [];
-    var cache = {};
     for (var i = 0; i < base.length; i++) {
       var s = base[i];
       if (!needsExtract(s._slot)) {
         var h0 = s.headers;
-        s.qualities = [{ label: "Auto", url: s.directUrl, isDefault: true, headers: h0 }];
+        var du = mediaUrl(s.directUrl);
+        s.directUrl = du;
+        s.qualities = [{ label: "Auto", url: du, isDefault: true, headers: h0 }];
         delete s._slot;
         out.push(s);
         continue;
       }
       var key = s._slot.toLowerCase();
-      if (!(key in cache)) {
-        cache[key] = null;
+      var quals = gqGet(key);
+      if (quals === undefined) {
+        quals = null;
         if (key.indexOf("photos.google.com/share") !== -1) {
-          var done = false;
-          for (var att = 0; att < 3 && !done; att++) {
+          for (var att = 0; att < 3 && !quals; att++) {
             try {
               var html = await fetchText(s._slot, { "User-Agent": userAgent, "Accept": "text/html,*/*" });
               var q = gphotosExtract(html);
-              if (q && q.length) {
-                cache[key] = q;
-                done = true;
-              }
+              if (q && q.length) quals = q;
             } catch (e) { /* retry */ }
           }
         }
+        gqSet(key, quals);
       }
-      var quals = cache[key];
       if (quals && quals.length) {
         s.directUrl = quals[0].url;
         s.type = "mp4";
@@ -269,6 +267,40 @@ function createSource(api, config) {
     return out;
   }
 
+  // Session cache: share URL -> extracted qualities. Module state persists
+  // across invokes (same pattern as catalog caches), so reopening an
+  // episode / preloading next / switching servers never re-fetches 1MB+.
+  var gqCache = {};
+  var gqKeys = [];
+  function gqGet(k) {
+    return Object.prototype.hasOwnProperty.call(gqCache, k) ? gqCache[k] : undefined;
+  }
+  function gqSet(k, v) {
+    if (!Object.prototype.hasOwnProperty.call(gqCache, k)) {
+      gqKeys.push(k);
+      if (gqKeys.length > 30) {
+        var old = gqKeys.shift();
+        delete gqCache[old];
+      }
+    }
+    gqCache[k] = v;
+  }
+
+  // Google video URLs are extensionless opaque IDs. The app's verifier,
+  // extractor and WebView gate ALL key off a literal .mp4/.m3u8 in the URL
+  // string (kDirectMediaExt, step-1 endsWith check, isHtmlEmbed). A "#.mp4"
+  // fragment flips every one of those to the direct-media path while never
+  // reaching the wire (fragments are stripped by HTTP clients).
+  function mediaUrl(u) {
+    u = String(u || "");
+    if (!u) return u;
+    var s = u.toLowerCase();
+    var isGoogle = s.indexOf("googleusercontent.com") !== -1 || s.indexOf("photos.google.com") !== -1;
+    if (!isGoogle) return u;
+    if (/\.(mp4|m3u8|mpd)(\?|#|$)/.test(s)) return u;
+    return u + "#.mp4";
+  }
+
   // Google Photos share-page extraction (mirrors GPhotosUtils from the APK):
   // cleanString -> "Original" (video-downloads) else best itag (37>22>18>36).
   function gphotosExtract(html) {
@@ -276,10 +308,11 @@ function createSource(api, config) {
     try {
       clean = decodeURIComponent(clean);
     } catch (e) { /* keep raw */ }
-    var h = { "User-Agent": userAgent, "Referer": "https://photos.google.com/" };
+    // No Referer on google video hosts (official-app-like: bare player fetch).
+    var h = {};
     var quals = [];
     var om = clean.match(/https:\/\/video-downloads(.*?)"/s);
-    if (om) quals.push({ label: "Original", url: om[0].replace(/"$/, ""), isDefault: false, headers: h });
+    if (om) quals.push({ label: "Original", url: mediaUrl(om[0].replace(/"$/, "")), isDefault: false, headers: h });
     var labels = { "37": "1080p", "22": "720p", "18": "360p", "36": "180p" };
     var order = ["37", "22", "18", "36"];
     var seen = {};
@@ -289,7 +322,7 @@ function createSource(api, config) {
       var itag = m[2];
       if (seen[itag]) continue;
       seen[itag] = true;
-      quals.push({ label: labels[itag], url: m[0], isDefault: false, headers: h });
+      quals.push({ label: labels[itag], url: mediaUrl(m[0]), isDefault: false, headers: h });
     }
     quals.sort(function (a, b) {
       var rank = function (l) {
@@ -344,12 +377,13 @@ function createSource(api, config) {
       return null;
     }
     var h = { "User-Agent": userAgent, "Referer": baseUrl + "/" };
+    var du = mediaUrl(u);
     return {
-      url: u,
-      directUrl: u,
+      url: du,
+      directUrl: du,
       type: "mp4",
       quality: "Auto",
-      qualities: [{ label: "Auto", url: u, isDefault: true, headers: h }],
+      qualities: [{ label: "Auto", url: du, isDefault: true, headers: h }],
       selectedQualityIndex: 0,
       headers: h
     };

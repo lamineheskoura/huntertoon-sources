@@ -2,7 +2,7 @@
   "version": "1.55.0",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.10.12.6",
+  "manifest_version": "2026.10.12.7",
   "generated_at": "2026-09-04T14:30:00Z",
   "last_updated": "2026-10-06T12:00:00Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -2116,7 +2116,7 @@
       "id": "goanime",
       "sid": 146,
       "name": "Go Anime",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "enabled": true,
       "status": "beta",
       "base_url": "http://xgtimayfsa.com",
@@ -2132,7 +2132,7 @@
       },
       "script": {
         "url": "sources/goanime/source.js",
-        "sha256": "e9c169b01373df504b5e02c8c5d48fcc57345d21dac9531efe2c7e2f06dfc1f2",
+        "sha256": "a81c27b66d6655bd082c036e22f7840c61d0c8f362359674ed64cf1a7a7fb28f",
         "entry": "createSource"
       },
       "capabilities": {
@@ -2154,7 +2154,7 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Go Anime - Arabic anime/cartoons source reverse-engineered from the official Go Anime v1.3 APK (PHP JSON API + Basic auth, Google Photos extraction). Series, movies, playlists, episodes, direct mp4.",
-        "changelog": "v1.0.1: fix episode duplication (API ignores page param — single fetch per playlist + dedupe), eager GPhotos extraction in getChapterContent with type mp4 + directUrl (app never calls resolveServer; its extractor lacks Google Photos), 3x retry on share fetch. v1.0.0: initial REA release."
+        "changelog": "v1.0.2: #.mp4 fragment on extensionless google URLs (app verifier/extractor/player all key off literal .mp4), session extraction cache (repeat opens instant, kills re-fetch lag), empty headers on google direct (official-app-like). v1.0.1: no-duplicate episodes, eager mp4 extraction with retry."
       }
     }
   }
