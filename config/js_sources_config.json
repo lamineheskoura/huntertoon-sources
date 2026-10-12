@@ -2,7 +2,7 @@
   "version": "1.55.0",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.10.12.5",
+  "manifest_version": "2026.10.12.6",
   "generated_at": "2026-09-04T14:30:00Z",
   "last_updated": "2026-10-06T12:00:00Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -2116,7 +2116,7 @@
       "id": "goanime",
       "sid": 146,
       "name": "Go Anime",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "enabled": true,
       "status": "beta",
       "base_url": "http://xgtimayfsa.com",
@@ -2132,7 +2132,7 @@
       },
       "script": {
         "url": "sources/goanime/source.js",
-        "sha256": "32bdf52719d2caaef2fc8224debf0649c91ff1c2ce5895a51f5ff56cfa549e05",
+        "sha256": "e9c169b01373df504b5e02c8c5d48fcc57345d21dac9531efe2c7e2f06dfc1f2",
         "entry": "createSource"
       },
       "capabilities": {
@@ -2154,7 +2154,7 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Go Anime - Arabic anime/cartoons source reverse-engineered from the official Go Anime v1.3 APK (PHP JSON API + Basic auth, Google Photos extraction). Series, movies, playlists, episodes, direct mp4.",
-        "changelog": "v1.0.0: initial release (REA APK reverse-engineering: Basic-auth API, cartoon/movie catalogs, playlists, episode servers, GPhotos Original/itags extraction)."
+        "changelog": "v1.0.1: fix episode duplication (API ignores page param — single fetch per playlist + dedupe), eager GPhotos extraction in getChapterContent with type mp4 + directUrl (app never calls resolveServer; its extractor lacks Google Photos), 3x retry on share fetch. v1.0.0: initial REA release."
       }
     }
   }

@@ -194,25 +194,77 @@ function createSource(api, config) {
 
   function serversFromPayload(ep) {
     var out = [];
+    var seen = {};
     var v = Array.isArray(ep.v) ? ep.v : [];
     for (var i = 0; i < v.length; i++) {
       var u = abs(v[i]);
       if (!u) continue;
-      var hn = hostName(u) || ("سيرفر " + (i + 1));
-      var direct = needsExtract(u) ? "" : u;
+      var key = u.toLowerCase();
+      if (seen[key]) continue;
+      seen[key] = true;
+      var hn = hostName(u) || ("سيرفر " + (out.length + 1));
       var h = { "User-Agent": userAgent, "Referer": baseUrl + "/" };
       out.push({
-        id: "go-" + (ep.i || 0) + "-" + i,
+        id: "go-" + (ep.i || 0) + "-" + out.length,
         name: hn,
         embedUrl: u,
         url: u,
-        directUrl: direct,
-        type: direct ? "video" : "extract",
+        directUrl: needsExtract(u) ? "" : u,
+        type: needsExtract(u) ? "embed" : "mp4",
         quality: "Auto",
-        qualities: direct ? [{ label: "Auto", url: direct, isDefault: true, headers: h }] : [],
+        qualities: [],
         selectedQualityIndex: 0,
-        headers: h
+        headers: h,
+        _slot: u
       });
+    }
+    return out;
+  }
+
+  // Eager extraction: the app never calls resolveServer in its watch flow —
+  // it plays getChapterContent servers as-is (type mp4/m3u8 => in-app player,
+  // else its own extractor which does NOT know Google Photos). So photos
+  // share links must be resolved here into direct mp4 servers.
+  async function serversForEpisode(ep) {
+    var base = serversFromPayload(ep);
+    var out = [];
+    var cache = {};
+    for (var i = 0; i < base.length; i++) {
+      var s = base[i];
+      if (!needsExtract(s._slot)) {
+        var h0 = s.headers;
+        s.qualities = [{ label: "Auto", url: s.directUrl, isDefault: true, headers: h0 }];
+        delete s._slot;
+        out.push(s);
+        continue;
+      }
+      var key = s._slot.toLowerCase();
+      if (!(key in cache)) {
+        cache[key] = null;
+        if (key.indexOf("photos.google.com/share") !== -1) {
+          var done = false;
+          for (var att = 0; att < 3 && !done; att++) {
+            try {
+              var html = await fetchText(s._slot, { "User-Agent": userAgent, "Accept": "text/html,*/*" });
+              var q = gphotosExtract(html);
+              if (q && q.length) {
+                cache[key] = q;
+                done = true;
+              }
+            } catch (e) { /* retry */ }
+          }
+        }
+      }
+      var quals = cache[key];
+      if (quals && quals.length) {
+        s.directUrl = quals[0].url;
+        s.type = "mp4";
+        s.quality = quals[0].label;
+        s.qualities = quals;
+        s.selectedQualityIndex = 0;
+      }
+      delete s._slot;
+      out.push(s);
     }
     return out;
   }
@@ -269,14 +321,20 @@ function createSource(api, config) {
     if (!u) return null;
     if (needsExtract(u)) {
       if (u.toLowerCase().indexOf("photos.google.com/share") !== -1) {
-        var html = await fetchText(u, { "User-Agent": userAgent, "Accept": "text/html,*/*" });
-        var quals = gphotosExtract(html);
+        var quals = null;
+        for (var att = 0; att < 3 && !quals; att++) {
+          try {
+            var html = await fetchText(u, { "User-Agent": userAgent, "Accept": "text/html,*/*" });
+            var q = gphotosExtract(html);
+            if (q && q.length) quals = q;
+          } catch (e) { /* retry */ }
+        }
         if (!quals || !quals.length) return null;
         var best = quals[0];
         return {
           url: best.url,
           directUrl: best.url,
-          type: "video",
+          type: "mp4",
           quality: best.label,
           qualities: quals,
           selectedQualityIndex: 0,
@@ -289,7 +347,7 @@ function createSource(api, config) {
     return {
       url: u,
       directUrl: u,
-      type: "video",
+      type: "mp4",
       quality: "Auto",
       qualities: [{ label: "Auto", url: u, isDefault: true, headers: h }],
       selectedQualityIndex: 0,
@@ -305,37 +363,38 @@ function createSource(api, config) {
       pls = [];
     }
     var chapters = [];
+    var seenIds = {};
     var multi = pls.length > 1;
     for (var pi = 0; pi < pls.length; pi++) {
       var pl = pls[pi] || {};
       var plId = pl.id;
       if (!plId) continue;
       var plTitle = decodeEnt(pl.title);
-      var page = 1;
-      for (var guard = 0; guard < 20; guard++) {
-        var eps = [];
-        try {
-          eps = safeList(await apiPost("episode/readPaging.php", { playlist_id: plId, page: page }));
-        } catch (e) {
-          break;
-        }
-        if (!eps.length) break;
-        for (var i = 0; i < eps.length; i++) {
-          var e = eps[i] || {};
-          var t = decodeEnt(e.title) || ("الحلقة " + (e.id || ""));
-          chapters.push({
-            number: epNumber(t, e.id || 0),
-            title: multi && plTitle ? (plTitle + " - " + t) : t,
-            views: 0,
-            url: epUrl(e),
-            isLocked: false,
-            date: "",
-            thumbnailUrl: abs(e.thumb),
-            durationSeconds: 0,
-            servers: []
-          });
-        }
-        page++;
+      // NOTE: episode/readPaging.php ignores `page` (p1==p2==p3) — one fetch
+      // per playlist returns everything; looping pages duplicates episodes.
+      var eps = [];
+      try {
+        eps = safeList(await apiPost("episode/readPaging.php", { playlist_id: plId, page: 1 }));
+      } catch (e) {
+        eps = [];
+      }
+      for (var i = 0; i < eps.length; i++) {
+        var e = eps[i] || {};
+        var eid = parseInt(e.id, 10) || 0;
+        if (eid && seenIds[eid]) continue;
+        if (eid) seenIds[eid] = true;
+        var t = decodeEnt(e.title) || ("الحلقة " + (e.id || ""));
+        chapters.push({
+          number: epNumber(t, eid),
+          title: multi && plTitle ? (plTitle + " - " + t) : t,
+          views: 0,
+          url: epUrl(e),
+          isLocked: false,
+          date: "",
+          thumbnailUrl: abs(e.thumb),
+          durationSeconds: 0,
+          servers: []
+        });
       }
     }
     chapters.sort(function (a, b) { return b.number - a.number; });
@@ -504,7 +563,7 @@ function createSource(api, config) {
       var ep = parseEpUrl(url);
       if (!ep) return [];
       try {
-        return serversFromPayload(ep);
+        return await serversForEpisode(ep);
       } catch (e) {
         return [];
       }
@@ -515,7 +574,7 @@ function createSource(api, config) {
       var ep = parseEpUrl(url);
       if (!ep) return { kind: "video", servers: [] };
       try {
-        return { kind: "video", servers: serversFromPayload(ep) };
+        return { kind: "video", servers: await serversForEpisode(ep) };
       } catch (e) {
         return { kind: "video", servers: [] };
       }
