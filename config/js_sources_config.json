@@ -2,7 +2,7 @@
   "version": "1.55.0",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.10.12.4",
+  "manifest_version": "2026.10.12.5",
   "generated_at": "2026-09-04T14:30:00Z",
   "last_updated": "2026-10-06T12:00:00Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -2110,6 +2110,51 @@
         "author": "HunterToon Team",
         "description": "كراتين - Arabic cartoon/anime source (Vue SPA + encrypted JSON API). SP+TG catalogs, episodes, direct HLS via pure-JS AES-256-CBC.",
         "changelog": "v1.0.3: homepage = full All-Works grid with load-more (recent fallback), all episodes unlocked. v1.0.2/1.0.1: crash fixes."
+      }
+    },
+    "goanime": {
+      "id": "goanime",
+      "sid": 146,
+      "name": "Go Anime",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "http://xgtimayfsa.com",
+      "website_url": "http://xgtimayfsa.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=xgtimayfsa.com",
+      "requires_cf": false,
+      "image_referer": "http://xgtimayfsa.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "*/*",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "http://xgtimayfsa.com/"
+      },
+      "script": {
+        "url": "sources/goanime/source.js",
+        "sha256": "32bdf52719d2caaef2fc8224debf0649c91ff1c2ce5895a51f5ff56cfa549e05",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "anime"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Go Anime - Arabic anime/cartoons source reverse-engineered from the official Go Anime v1.3 APK (PHP JSON API + Basic auth, Google Photos extraction). Series, movies, playlists, episodes, direct mp4.",
+        "changelog": "v1.0.0: initial release (REA APK reverse-engineering: Basic-auth API, cartoon/movie catalogs, playlists, episode servers, GPhotos Original/itags extraction)."
       }
     }
   }
