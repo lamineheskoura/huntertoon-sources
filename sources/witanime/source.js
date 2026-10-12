@@ -24,16 +24,12 @@ function createSource(api, config) {
   };
 
   // Anime-Online-Theme filter vocab (verified live on /قائمة-الانمي/).
-  var defaultGenres = [
-    "أكشن", "مغامرات", "كوميدي", "دراما", "خيال", "خيال علمي",
-    "رومانسي", "رعب", "غموض", "نفسي", "رياضي", "مدرسي",
-    "شونين", "شوجو", "سينين", "ايسيكاي", "قوة خارقة", "شريحة من الحياة",
-    "تاريخي", "عسكري", "فضاء", "ميكان", "موسيقى",
-    "لعبة", "ساخر", "مصاصي دماء", "شياطين", "سحر", "ساموراي",
-    "تحقيق", "بوليسي", "ايتشي", "حريم", "جوسي", "شوجو آي",
-    "إثارة", "تشويق", "خارق للطبيعة", "فنون قتالية", "أطفال"
-  ];
-  var defaultTypes = ["TV", "Movie", "ONA", "OVA", "Special"];
+  // NOTE 2026-10-12: the 40-genre legacy list is RETIRED — the new site has
+  // no GET genre route (genre/type/status params are ignored; Livewire-only).
+  // Only verified dimensions are exposed: type path (/browse vs /movies),
+  // status=ongoing, year=YYYY, /seasonal, /schedule, ?search=.
+  var defaultGenres = ["مسلسلات", "أفلام", "مستمر", "أنميات الموسم", "جدول الأسبوع"];
+  var defaultTypes = ["anime"];
 
   function mergeHeaders(a, b) {
     var out = {};
@@ -62,15 +58,20 @@ function createSource(api, config) {
       }
       var store = {};
       var i, j;
+      function setCookie(name, value) {
+        if (!name || name === "__proto__" || name === "constructor" || name === "prototype") return;
+        value = String(value == null ? "" : value).replace(/[\r\n]/g, "");
+        if (value) store[name] = value;
+      }
       var existing = String(cookieJar || "").split(/;\s*/);
       for (i = 0; i < existing.length; i++) {
         var kv = existing[i].split("=");
-        if (kv.length >= 2 && kv[0]) store[kv[0]] = existing[i].substring(kv[0].length + 1);
+        if (kv.length >= 2 && kv[0]) setCookie(kv[0], existing[i].substring(kv[0].length + 1));
       }
       for (i = 0; i < parts.length; i++) {
         var first = String(parts[i] || "").split(";")[0].trim();
         var eq = first.indexOf("=");
-        if (eq > 0) store[first.substring(0, eq).trim()] = first.substring(eq + 1).trim();
+        if (eq > 0) setCookie(first.substring(0, eq).trim(), first.substring(eq + 1).trim());
       }
       var out = [];
       for (j in store) {
@@ -207,6 +208,26 @@ function createSource(api, config) {
           title = unescapeHtml(cleanTitle(await api.cssAttr(inner, "img", "alt"))) || "";
         } catch (e) {}
       }
+      if (!title) {
+        // Compact row cards (/search?q= Arabic results): no h3, empty alt —
+        // title lives in span.block.truncate or bare inner text.
+        try {
+          var spans = await api.cssAll(inner, "span.block") || [];
+          for (var si = 0; si < spans.length; si++) {
+            var st = unescapeHtml(cleanTitle((spans[si] && spans[si].text) || ""));
+            if (st && st.length > 1) {
+              title = st;
+              break;
+            }
+          }
+        } catch (e) {}
+      }
+      if (!title) {
+        var tx = unescapeHtml(cleanTitle(stripTags(inner)));
+        var tl = tx.split("\n")[0] || tx;
+        if (tl.length > 60) tl = tl.substring(0, 60);
+        if (tl.length > 1) title = tl;
+      }
       if (!title) continue;
       var cover = "";
       try {
@@ -247,6 +268,17 @@ function createSource(api, config) {
       if (!title) {
         var am = inner.match(/<img[^>]+alt="([^"]*)"/);
         if (am) title = unescapeHtml(cleanTitle(am[1]));
+      }
+      if (!title) {
+        // Compact row cards: title in span.block.truncate or bare text.
+        var spm = inner.match(/<span[^>]*class="[^"]*block[^"]*truncate[^"]*"[^>]*>([^<]*)<\/span>/);
+        if (spm) title = unescapeHtml(cleanTitle(spm[1]));
+      }
+      if (!title) {
+        var tx = unescapeHtml(cleanTitle(stripTags(inner)));
+        var tl = tx.split("\n")[0] || tx;
+        if (tl.length > 60) tl = tl.substring(0, 60);
+        if (tl.length > 1) title = tl;
       }
       if (!title) continue;
       var cover = "";
@@ -308,9 +340,9 @@ function createSource(api, config) {
 
     var genres = [];
     try {
-      var genreSpans = await api.cssList(html, "span.rounded-full") || [];
-      for (var gi = 0; gi < genreSpans.length; gi++) {
-        var g = unescapeHtml(cleanTitle(genreSpans[gi]));
+      var genreEls = await api.cssAll(html, "span.rounded-full") || [];
+      for (var gi = 0; gi < genreEls.length; gi++) {
+        var g = unescapeHtml(cleanTitle((genreEls[gi] && genreEls[gi].text) || ""));
         if (g && genres.indexOf(g) === -1) genres.push(g);
       }
     } catch (e) {}
@@ -669,11 +701,26 @@ function createSource(api, config) {
     return "";
   }
 
-  // ---- episode servers (Laravel CSRF chain, verified live) ----
+  // ---- episode servers (browser-exact chain, re-verified 2026-10-12) ----
+  // The site bot-gates API POSTs (fingerprint): node-style clients get
+  // {"message":"Not Found."} while real Chromium gets 200 (proven via XHR
+  // capture). The Alpine bundle sends ONLY {Accept, X-CSRF-TOKEN} + cookies —
+  // notably NO X-Requested-With (the /search/suggest route 404s WITH it),
+  // NO Origin/Content-Type/body. Replicate exactly; extras risk the gate.
   // GET {watchUrl} (cookies + csrf-token meta)
-  // -> POST {watchUrl}/sources (X-CSRF-TOKEN + Cookie + Referer)
+  // -> POST {watchUrl}/sources {Accept, X-CSRF-TOKEN} (no body)
   // -> {players:{FHD:[{token,label,version,lang}],...}, downloads:{...}}
-  // playback url = /watch/stream-gate/{token} (verified in watchPlayer bundle).
+  // -> POST /watch/stream-source/{token} (same headers)
+  // playback iframe = /watch/stream-gate/{token} (gate HTML holds player).
+
+  function apiPostHeaders(csrf, referer) {
+    var h = {
+      "Accept": "application/json",
+      "X-CSRF-TOKEN": csrf || ""
+    };
+    if (referer) h["Referer"] = referer;
+    return withCookies(h);
+  }
 
   async function decodeEpisodeServers(watchUrl) {
     var out = [];
@@ -684,12 +731,7 @@ function createSource(api, config) {
       var sourcesUrl = String(watchUrl).replace(/\/+$/, "") + "/sources";
       var data;
       try {
-        data = await fetchJson(sourcesUrl, {
-          "X-CSRF-TOKEN": csrf,
-          "X-Requested-With": "XMLHttpRequest",
-          "Referer": watchUrl,
-          "Origin": baseUrl
-        }, "POST", "");
+        data = await fetchJson(sourcesUrl, apiPostHeaders(csrf, watchUrl), "POST");
       } catch (e) {
         return [];
       }
@@ -752,6 +794,10 @@ function createSource(api, config) {
       // Resolution budget: watch+POST above, max 7 extra fetches here.
       // Soft 12s deadline keeps slow networks responsive:
       // resolved-so-far is returned, the rest is dropped (owner rule).
+      // NOTE: gates 404 without the stream-source handshake first
+      // (verified: fresh tokens fail direct gate GET), so shake each
+      // token before fetching its gate (handshake failures are free —
+      // no budget spent, no extra fetch counted).
       var bud = { n: 7 };
       var t0 = 0;
       try {
@@ -769,21 +815,33 @@ function createSource(api, config) {
         }
         var nl = String(it.label || "").toLowerCase();
         var durl = "";
+        // Gate handshake: POST /watch/stream-source/{token} unlocks the gate
+        // for this session (browser-exact minimal headers, no budget cost).
+        // Only for labels whose gate we actually fetch (videa/4shared/
+        // mp4upload/ok); passthrough labels skip it.
+        var shook = false;
+        var needsGate = nl.indexOf("videa") !== -1 || isMp4Capable(it.label) || isOkLabel(it.label);
+        if (needsGate) {
+          try {
+            await fetchJson(baseUrl + "/watch/stream-source/" + it.token, apiPostHeaders(csrf, watchUrl), "POST");
+            shook = true;
+          } catch (e) {}
+        }
         try {
           if (nl.indexOf("videa") !== -1) {
-            if (bud.n >= 2) {
+            if (shook && bud.n >= 2) {
               var ph = await fetchHtml(it.gate, { "Referer": watchUrl });
               bud.n--;
               durl = await resolveVideaUrl(ph, bud);
             }
           } else if (isMp4Capable(it.label)) {
-            if (bud.n >= 1) {
+            if (shook && bud.n >= 1) {
               var tg = await fetchHtml(it.gate, { "Referer": watchUrl });
               bud.n--;
               durl = extractDirectMp4(tg);
             }
           } else if (isOkLabel(it.label)) {
-            if (bud.n >= 1) {
+            if (shook && bud.n >= 1) {
               var og = await fetchHtml(it.gate, { "Referer": watchUrl });
               bud.n--;
               durl = extractOkMp4(og);
@@ -804,6 +862,8 @@ function createSource(api, config) {
               directUrl: "",
               type: "embed",
               quality: unresolvedQuality,
+              qualities: [],
+              selectedQualityIndex: 0,
               headers: { "Referer": unresolvedRef, "User-Agent": userAgent },
               reason: unresolvedReason
             });
@@ -831,12 +891,16 @@ function createSource(api, config) {
             directUrl: "",
             type: "embed",
             quality: embedQuality,
+            qualities: [],
+            selectedQualityIndex: 0,
             headers: { "Referer": ref, "User-Agent": userAgent },
             reason: embedReason
           });
           continue;
         }
         rememberMedia(durl, ref);
+        var rqual = qualityOf(it.bucket) || qualityOf(it.name);
+        var rh = { "Referer": ref, "User-Agent": userAgent };
         out.push({
           id: it.token,
           name: it.name,
@@ -844,8 +908,10 @@ function createSource(api, config) {
           url: it.gate,
           directUrl: durl,
           type: "mp4",
-          quality: qualityOf(it.bucket) || qualityOf(it.name),
-          headers: { "Referer": ref, "User-Agent": userAgent }
+          quality: rqual,
+          qualities: [{ label: rqual || "Auto", url: durl, isDefault: true, headers: rh }],
+          selectedQualityIndex: 0,
+          headers: rh
         });
       }
     } catch (e) {}
@@ -857,7 +923,8 @@ function createSource(api, config) {
 
     async getHomepageManga(args) {
       try {
-        var page = (args && args.page) || 1;
+        var page = parseInt((args && args.page) || 1, 10);
+        if (!page || page < 1) page = 1;
         var url = page > 1 ? baseUrl + "/browse/page/" + page : baseUrl + "/browse";
         return await parseCards(await fetchHtml(url));
       } catch (e) {
@@ -1021,12 +1088,7 @@ function createSource(api, config) {
           var watchHtml = await fetchHtml(csrfPage);
           var csrf = getCsrfToken(watchHtml);
           if (csrf) {
-            await fetchJson(baseUrl + "/watch/stream-source/" + token, {
-              "X-CSRF-TOKEN": csrf,
-              "X-Requested-With": "XMLHttpRequest",
-              "Referer": csrfPage,
-              "Origin": baseUrl
-            }, "POST", "");
+            await fetchJson(baseUrl + "/watch/stream-source/" + token, apiPostHeaders(csrf, csrfPage), "POST");
           }
         } catch (e) {}
         return {
@@ -1046,14 +1108,44 @@ function createSource(api, config) {
 
     async getFilteredManga(args) {
       try {
-        var page = (args && args.page) || 1;
-        var type = cleanTitle((args && args.type) || "");
-        // Genre/status have no GET routes on the new site (Livewire only) —
-        // downgrade to the browse list instead of returning nothing.
-        var isMovie = type.indexOf("فيلم") !== -1 || type.toLowerCase().indexOf("movie") !== -1;
-        var base = isMovie ? baseUrl + "/movies" : baseUrl + "/browse";
-        var url = page > 1 ? base + "/page/" + page : base;
-        return await parseCards(await fetchHtml(url));
+        var page = parseInt((args && args.page) || 1, 10);
+        if (!page || page < 1) page = 1;
+        var raw = String((args && (args.genre || args.type || args.status || args.kind)) || "").trim();
+        var yearArg = String((args && args.year) || "").trim();
+        var query = String((args && (args.query || args.q || args.search)) || "").trim();
+        var low = raw.toLowerCase();
+        var isMovie = low.indexOf("فيلم") !== -1 || low.indexOf("movie") !== -1;
+        var isOngoing = low.indexOf("مستمر") !== -1 || low === "ongoing";
+        var isSeasonal = low.indexOf("الموسم") !== -1 || low === "seasonal";
+        var isSchedule = low.indexOf("جدول") !== -1 || low === "schedule";
+        var ym = raw.match(/(^|\D)(19|20)\d{2}(\D|$)/) || yearArg.match(/^(19|20)\d{2}$/);
+        var year = ym ? ym[0].replace(/\D/g, "") : "";
+        var base, tail;
+        if (query) {
+          // Search results are a single list; slice per page client-side.
+          var found = await parseCards(await fetchHtml(baseUrl + "/search?q=" + encodeURIComponent(query)));
+          if (!found.length) found = await parseCards(await fetchHtml(baseUrl + "/browse?search=" + encodeURIComponent(query)));
+          return found.slice((page - 1) * 20, page * 20);
+        }
+        if (isMovie) {
+          base = baseUrl + "/movies";
+          tail = page > 1 ? "/page/" + page : "";
+          return await parseCards(await fetchHtml(base + tail));
+        }
+        if (isSeasonal) {
+          if (page > 1) return [];
+          return await parseCards(await fetchHtml(baseUrl + "/seasonal"));
+        }
+        if (isSchedule) {
+          if (page > 1) return [];
+          return await parseCards(await fetchHtml(baseUrl + "/schedule"));
+        }
+        // Query-string filters must use the /browse/page/N path form —
+        // the ?page= form 301s and drops parameters.
+        tail = page > 1 ? "/page/" + page : "";
+        if (isOngoing) return await parseCards(await fetchHtml(baseUrl + "/browse" + tail + "?status=ongoing"));
+        if (year) return await parseCards(await fetchHtml(baseUrl + "/browse" + tail + "?year=" + year));
+        return await parseCards(await fetchHtml(baseUrl + "/browse" + tail));
       } catch (e) {
         return [];
       }
