@@ -92,7 +92,6 @@ function createSource(api, config) {
   var WIN_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
   var CHAPTER_API = "https://www.dilar.tube/api";
   var DH_CAPS = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16";
-  var HAS_BIGINT = (typeof BigInt !== "undefined");
 
   function chapterHeaders(extra) {
     var out = {
@@ -111,67 +110,193 @@ function createSource(api, config) {
   // against RFC 4493/5297 vectors and live envelopes. Ephemeral keys come
   // from Math.random (single-use transport keys; documented trade-off).
 
-  var EC = null;
-  function ecInit() {
-    if (EC) return true;
-    if (!HAS_BIGINT) return false;
-    try {
-      EC = {
-        P: BigInt("0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF"),
-        N: BigInt("0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551"),
-        GX: BigInt("0x6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296"),
-        GY: BigInt("0x4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5")
-      };
-      return true;
-    } catch (e) {
-      EC = null;
-      return false;
+  // ==================== LIMB P-256 (zero BigInt; runs on bare QuickJS) ====================
+  // 16-bit limbs, doubles-exact arithmetic, NIST closed-form reduction, Jacobian
+  // scalar mult. Verified element-wise against a BigInt reference implementation.
+  function ecHexToF(h) {
+    var f = [];
+    for (var i = 0; i < 16; i++) f.push(parseInt(h.substr(h.length - 4 * (i + 1), 4), 16));
+    return f;
+  }
+  function ecFToHex(f) {
+    var s = "";
+    for (var i = 15; i >= 0; i--) s += f[i].toString(16).padStart(4, "0");
+    return s;
+  }
+  var FP = ecHexToF("FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF");
+  var FGX = ecHexToF("6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296");
+  var FGY = ecHexToF("4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5");
+  var FGB = ecHexToF("5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B");
+  var FZERO = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  var FONE = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  function ecarry(w, n) {
+    var o = w.slice();
+    while (o.length < n + 1) o.push(0);
+    for (var i = 0; i < n; i++) {
+      var c = Math.floor(o[i] / 65536);
+      o[i] -= c * 65536;
+      o[i + 1] += c;
     }
+    return o;
   }
-
-  function ecMod(a) {
-    var r = a % EC.P;
-    return r < BigInt(0) ? r + EC.P : r;
+  function cmpP(r) {
+    for (var i = 15; i >= 0; i--) {
+      if (r[i] !== FP[i]) return r[i] > FP[i] ? 1 : -1;
+    }
+    return 0;
   }
-  function ecInv(a) {
-    var e = EC.P - BigInt(2), r = BigInt(1), b = ecMod(a);
-    while (e > BigInt(0)) {
-      if (e & BigInt(1)) r = ecMod(r * b);
-      b = ecMod(b * b);
-      e >>= BigInt(1);
+  function fNorm(a) {
+    var t = ecarry(a.slice(), 16);
+    var guard = 0;
+    while (t[16] !== 0 && guard++ < 10) {
+      var h = t[16];
+      t[16] = 0;
+      t[0] += h; t[6] -= h; t[12] -= h; t[14] += h;
+      t = ecarry(t, 16);
+    }
+    var r = t.slice(0, 16);
+    guard = 0;
+    while (cmpP(r) >= 0 && guard++ < 10) {
+      var b = 0;
+      for (var i = 0; i < 16; i++) { r[i] -= FP[i] + b; b = 0; if (r[i] < 0) { r[i] += 65536; b = 1; } }
     }
     return r;
   }
-  function ecAddPt(P, Q) {
-    if (P === null) return Q;
-    if (Q === null) return P;
-    if (P[0] === Q[0]) {
-      if (ecMod(P[1] + Q[1]) === BigInt(0)) return null;
-      return ecDblPt(P);
+  function fAdd(a, b) { var o = []; for (var i = 0; i < 16; i++) o.push(a[i] + b[i]); return fNorm(o); }
+  function fSub(a, b) { var o = []; for (var i = 0; i < 16; i++) o.push(a[i] - b[i]); return fNorm(o); }
+  function fMul(a, b) {
+    var t = new Array(32).fill(0);
+    for (var i = 0; i < 16; i++) for (var j = 0; j < 16; j++) {
+      t[i + j] += a[i] * b[j];
+      if (t[i + j] >= 8796093022208) {
+        var c0 = Math.floor(t[i + j] / 65536);
+        t[i + j] -= c0 * 65536;
+        t[i + j + 1] += c0;
+      }
     }
-    var lam = ecMod((Q[1] - P[1]) * ecInv(Q[0] - P[0]));
-    var x3 = ecMod(lam * lam - P[0] - Q[0]);
-    var y3 = ecMod(lam * (P[0] - x3) - P[1]);
-    return [x3, y3];
-  }
-  function ecDblPt(P) {
-    var lam = ecMod((BigInt(3) * P[0] * P[0] - BigInt(3)) * ecInv(BigInt(2) * P[1]));
-    var x3 = ecMod(lam * lam - BigInt(2) * P[0]);
-    var y3 = ecMod(lam * (P[0] - x3) - P[1]);
-    return [x3, y3];
-  }
-  function ecMultPt(k, P) {
-    var R = null, bits = k.toString(2);
-    for (var j = 0; j < bits.length; j++) {
-      if (R !== null) R = ecDblPt(R);
-      if (bits.charAt(j) === "1") R = ecAddPt(R, P);
+    for (var k = 0; k < 31; k++) {
+      var c1 = Math.floor(t[k] / 65536);
+      t[k] -= c1 * 65536;
+      t[k + 1] += c1;
     }
-    return R;
+    var w = [];
+    for (var m = 0; m < 16; m++) w.push(t[2 * m] + t[2 * m + 1] * 65536);
+    var c = w;
+    var r = [
+      c[0] + c[8] + c[9] - c[11] - c[12] - c[13] - c[14],
+      c[1] + c[9] + c[10] - c[12] - c[13] - c[14] - c[15],
+      c[2] + c[10] + c[11] - c[13] - c[14] - c[15],
+      c[3] - c[8] - c[9] + 2 * c[11] + 2 * c[12] + c[13] - c[15],
+      c[4] - c[9] - c[10] + 2 * c[12] + 2 * c[13] + c[14],
+      c[5] - c[10] - c[11] + 2 * c[13] + 2 * c[14] + c[15],
+      c[6] - c[8] - c[9] + c[13] + 3 * c[14] + 2 * c[15],
+      c[7] + c[8] - c[10] - c[11] - c[12] - c[13] + 3 * c[15]
+    ];
+    var limbs = new Array(17).fill(0);
+    for (var q = 0; q < 8; q++) {
+      var lo = ((r[q] % 65536) + 65536) % 65536;
+      var hi = (r[q] - lo) / 65536;
+      limbs[2 * q] += lo;
+      limbs[2 * q + 1] += hi;
+    }
+    return fNorm(limbs);
   }
-  function ecPad64(x) {
-    var s = x.toString(16);
-    while (s.length < 64) s = "0" + s;
-    return s;
+  function fSqr(a) { return fMul(a, a); }
+  function fIsZero(a) { for (var i = 0; i < 16; i++) if (a[i] !== 0) return false; return true; }
+  function fEq(a, b) { for (var i = 0; i < 16; i++) if (a[i] !== b[i]) return false; return true; }
+  function fInv(a) {
+    var r = FONE.slice(), b = a.slice();
+    var exp = ecHexToF("FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFD");
+    var started = false;
+    for (var i = 15; i >= 0; i--) {
+      for (var bit = 15; bit >= 0; bit--) {
+        var one = (exp[i] >> bit) & 1;
+        if (!started) { if (one === 0) continue; started = true; }
+        r = fMul(r, r);
+        if (one) r = fMul(r, b);
+      }
+    }
+    return r;
+  }
+  function jDblPt(Pt) {
+    if (!Pt) return null;
+    var X = Pt.X, Y = Pt.Y, Z = Pt.Z;
+    if (fIsZero(Y)) return null;
+    var A = fMul(X, X);
+    var B = fMul(Y, Y);
+    var C = fMul(B, B);
+    var XpB = fAdd(X, B);
+    var Dm = fAdd(fSub(fSub(fMul(XpB, XpB), A), C), fSub(fSub(fMul(XpB, XpB), A), C));
+    var Z2 = fMul(Z, Z), Z4 = fMul(Z2, Z2);
+    var E = fMul(fSub(A, Z4), [3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    var F = fMul(E, E);
+    var X3 = fSub(fSub(F, Dm), Dm);
+    var Y3 = fSub(fMul(fSub(Dm, X3), E), fMul(C, [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
+    var Z3 = fMul(fMul(Y, Z), [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    return { X: X3, Y: Y3, Z: Z3 };
+  }
+  function jAddPt(P, Q) {
+    if (!P) return Q;
+    if (!Q) return P;
+    var X1 = P.X, Y1 = P.Y, Z1 = P.Z;
+    var X2 = Q.X, Y2 = Q.Y, Z2 = Q.Z;
+    var Z1Z1 = fMul(Z1, Z1), Z2Z2 = fMul(Z2, Z2);
+    var U1 = fMul(X1, Z2Z2), U2 = fMul(X2, Z1Z1);
+    var S1 = fMul(Y1, fMul(Z2Z2, Z2)), S2 = fMul(Y2, fMul(Z1Z1, Z1));
+    if (fEq(U1, U2)) {
+      if (!fEq(S1, S2)) return null;
+      return jDblPt(P);
+    }
+    var H = fSub(U2, U1);
+    var H2 = fAdd(H, H);
+    var I = fMul(H2, H2);
+    var J = fMul(H, I);
+    var V = fMul(U1, I);
+    var r2 = fSub(S2, S1);
+    var r = fAdd(r2, r2);
+    var X3 = fSub(fSub(fMul(r, r), J), fAdd(V, V));
+    var Y3 = fSub(fMul(fSub(V, X3), r), fMul(S1, fAdd(J, J)));
+    var Za = fAdd(Z1, Z2);
+    var Zb = fMul(Za, Za);
+    var Zc = fSub(fSub(Zb, Z1Z1), Z2Z2);
+    var Zd = fMul(Zc, H);
+    return { X: X3, Y: Y3, Z: Zd };
+  }
+  function jToAffine(Pt) {
+    if (!Pt) return null;
+    var Zi = fInv(Pt.Z);
+    var Zi2 = fMul(Zi, Zi), Zi3 = fMul(Zi2, Zi);
+    return [fMul(Pt.X, Zi2), fMul(Pt.Y, Zi3)];
+  }
+  function ptOnCurve(X, Y) {
+    var y2 = fMul(Y, Y);
+    var x2 = fMul(X, X), x3 = fMul(x2, X);
+    var ax = fMul(X, [3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    return fEq(y2, fAdd(fSub(fAdd(x3, FGB), ax), FZERO));
+  }
+  function ecMultLimb(privHex, pxHex, pyHex) {
+    var X = ecHexToF(pxHex), Y = ecHexToF(pyHex);
+    if (!ptOnCurve(X, Y)) return null;
+    var R = null;
+    var P = { X: X, Y: Y, Z: FONE.slice() };
+    var h = privHex.toLowerCase().replace(/^0x/, "");
+    var bin = "";
+    for (var ci = 0; ci < h.length; ci++) bin += parseInt(h.charAt(ci), 16).toString(2).padStart(4, "0");
+    bin = bin.replace(/^0+(?=[01])/, "");
+    for (var j = 0; j < bin.length; j++) {
+      R = jDblPt(R);
+      if (bin.charAt(j) === "1") R = jAddPt(R, P);
+    }
+    if (!R) return null;
+    var A = jToAffine(R);
+    if (!A) return null;
+    return [ecFToHex(A[0]), ecFToHex(A[1])];
+  }
+  function ecBaseLimb(privHex) {
+    return ecMultLimb(privHex, ecFToHex(FGX), ecFToHex(FGY));
+  }
+  function ecInit() {
+    return true;
   }
 
   function hxArr(h) {
@@ -413,8 +538,7 @@ function createSource(api, config) {
   }
 
   // ==================== PURE-JS XChaCha20-Poly1305 (envelope v16+, no app changes) ====================
-  // ChaCha20 block + HChaCha20 (32-bit ops only) + Poly1305 (BigInt constructor
-  // form only — never BigInt literals, which are a QuickJS parse-time SyntaxError).
+  // ChaCha20 block + HChaCha20 (32-bit ops only) + Poly1305 (26-bit limbs, zero BigInt — the app runtime lacks it entirely).
   // Verified against Node crypto vectors, noble/ciphers vectors, and live v16 envelopes.
   function xcRotl(v, n) {
     return ((v << n) | (v >>> (32 - n))) | 0;
@@ -474,27 +598,80 @@ function createSource(api, config) {
     return out;
   }
   function poly1305tag(key32, aad, ct) {
-    var B0 = BigInt(0);
-    function le(bytes) {
-      var v = B0;
-      for (var i = bytes.length - 1; i >= 0; i--) {
-        v = (v << BigInt(8)) + BigInt(bytes[i]);
-      }
-      return v;
+    var rb = key32.slice(0, 16);
+    rb[3] &= 15; rb[7] &= 15; rb[11] &= 15; rb[15] &= 15;
+    rb[4] &= 252; rb[8] &= 252; rb[12] &= 252;
+    var R = [0, 0, 0, 0, 0];
+    var i;
+    for (i = 0; i < 16; i++) {
+      var bit = i * 8, li = Math.floor(bit / 26), sh = bit % 26;
+      R[li] |= rb[i] << sh;
+      if (sh + 8 > 26 && li + 1 < 5) R[li + 1] |= rb[i] >>> (26 - sh);
     }
-    var P = (BigInt(1) << BigInt(130)) - BigInt(5);
-    var M128 = BigInt(1) << BigInt(128);
-    var r = le(key32.slice(0, 16)) & BigInt("0x0ffffffc0ffffffc0ffffffc0fffffff");
-    var s = le(key32.slice(16, 32));
-    var h = B0;
+    for (i = 0; i < 5; i++) R[i] &= 0x3ffffff;
+    var S = key32.slice(16, 32);
+    var h = [0, 0, 0, 0, 0];
+    function mulmod(a, b) {
+      var t = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+      var x, y;
+      for (x = 0; x < 5; x++) for (y = 0; y < 5; y++) {
+        t[x + y] += a[x] * b[y];
+        var k = x + y;
+        while (t[k] >= 67108864 && k < 9) {
+          var cc = Math.floor(t[k] / 67108864);
+          t[k] -= cc * 67108864;
+          t[k + 1] += cc;
+          k++;
+        }
+      }
+      for (x = 0; x < 9; x++) {
+        var c2 = Math.floor(t[x] / 67108864);
+        t[x] -= c2 * 67108864;
+        t[x + 1] = (t[x + 1] || 0) + c2;
+      }
+      for (x = 9; x >= 5; x--) {
+        if (t[x]) {
+          t[x - 5] += t[x] * 5;
+          t[x] = 0;
+        }
+      }
+      for (x = 0; x < 5; x++) {
+        var c3 = Math.floor(t[x] / 67108864);
+        t[x] -= c3 * 67108864;
+        t[x + 1] += c3;
+      }
+      if (t[5]) { t[0] += t[5] * 5; t[5] = 0; }
+      var c4 = Math.floor(t[0] / 67108864);
+      t[0] -= c4 * 67108864;
+      t[1] += c4;
+      return [t[0], t[1], t[2], t[3], t[4]];
+    }
+    function addmod(a, b) {
+      var o = [0, 0, 0, 0, 0], c = 0;
+      for (var m = 0; m < 5; m++) {
+        var v = a[m] + b[m] + c;
+        o[m] = v % 67108864;
+        c = Math.floor(v / 67108864);
+      }
+      o[0] += c * 5;
+      var c2 = Math.floor(o[0] / 67108864);
+      o[0] -= c2 * 67108864;
+      o[1] += c2;
+      return o;
+    }
     function absorb(msg) {
       for (var off = 0; off < msg.length; off += 16) {
         var blk = msg.slice(off, off + 16);
-        var padded = blk.slice();
-        while (padded.length < 16) padded.push(0);
-        padded.push(0);
-        padded[16] = 1;
-        h = ((h + le(padded.slice(0, 17))) * r) % P;
+        var t = [0, 0, 0, 0, 0];
+        for (var k = 0; k < blk.length; k++) {
+          var bit = k * 8, li = Math.floor(bit / 26), sh = bit % 26;
+          t[li] |= blk[k] << sh;
+          if (sh + 8 > 26 && li + 1 < 5) t[li + 1] |= blk[k] >>> (26 - sh);
+        }
+        for (var q = 0; q < 5; q++) t[q] &= 0x3ffffff;
+        t[4] |= (1 << 24);
+        h = addmod(h, t);
+        h = mulmod(h, R);
       }
     }
     absorb(aad);
@@ -503,17 +680,25 @@ function createSource(api, config) {
     var lens = [aad.length, ct.length];
     for (var li = 0; li < 2; li++) {
       var vv = lens[li];
-      for (var i = 0; i < 8; i++) {
+      for (var b = 0; b < 8; b++) {
         lb.push(vv % 256);
         vv = Math.floor(vv / 256);
       }
     }
     absorb(lb);
-    var tag = (h + s) % M128;
+    var hb = [];
+    for (var g = 0; g < 16; g++) {
+      var bit = g * 8, li = Math.floor(bit / 26), sh = bit % 26;
+      var byte = (h[li] >>> sh) & 255;
+      if (sh + 8 > 26 && li + 1 < 5) byte |= (h[li + 1] << (26 - sh)) & 255;
+      hb.push(byte);
+    }
     var out = [];
-    for (var k = 0; k < 16; k++) {
-      out.push(Number(tag & BigInt(255)));
-      tag = tag >> BigInt(8);
+    var cy = 0;
+    for (var o = 0; o < 16; o++) {
+      var s2 = hb[o] + S[o] + cy;
+      out.push(s2 & 255);
+      cy = s2 >= 256 ? 1 : 0;
     }
     return out;
   }
@@ -598,12 +783,9 @@ function createSource(api, config) {
     var epk = b64decArr(env.epk), ivb = b64decArr(env.iv);
     var ct = b64decArr(env.ct), tag = b64decArr(env.tag);
     var e = String(env.e);
-    var S = ecMultPt(BigInt("0x" + privHex), [
-      BigInt("0x" + arrHx(epk.slice(1, 33))),
-      BigInt("0x" + arrHx(epk.slice(33, 65)))
-    ]);
+    var S = ecMultLimb(privHex, arrHx(epk.slice(1, 33)), arrHx(epk.slice(33, 65)));
     if (!S) throw new Error("bad-shared");
-    var sharedHex = ecPad64(S[0]);
+    var sharedHex = S[0];
     var saltHex = await api.cryptoOp("hmacSha384",
       arrHx(concatArrs([u16beArr(epk.length), epk])),
       { key: arrHx(concatArrs([pubRaw, ivb])) });
@@ -636,9 +818,9 @@ function createSource(api, config) {
     var priv = [];
     for (var i = 0; i < 32; i++) priv.push(Math.floor(Math.random() * 256));
     var privHex = arrHx(priv);
-    var pubPt = ecMultPt(BigInt("0x" + privHex), [EC.GX, EC.GY]);
+    var pubPt = ecBaseLimb(privHex);
     if (!pubPt) throw new Error("bad-key");
-    var pubRaw = hxArr("04" + ecPad64(pubPt[0]) + ecPad64(pubPt[1]));
+    var pubRaw = hxArr("04" + pubPt[0] + pubPt[1]);
     var pubB64 = b64encArr(pubRaw);
     var token = await dilarUnlockToken(relId, false, pubB64);
     var H = chapterHeaders({
@@ -689,9 +871,9 @@ function createSource(api, config) {
     var priv = [];
     for (var i = 0; i < 32; i++) priv.push(Math.floor(Math.random() * 256));
     var privHex = arrHx(priv);
-    var pubPt = ecMultPt(BigInt("0x" + privHex), [EC.GX, EC.GY]);
+    var pubPt = ecBaseLimb(privHex);
     if (!pubPt) throw new Error("bad-key");
-    var pubRaw = hxArr("04" + ecPad64(pubPt[0]) + ecPad64(pubPt[1]));
+    var pubRaw = hxArr("04" + pubPt[0] + pubPt[1]);
     var pubB64 = b64encArr(pubRaw);
     var H = chapterHeaders({
       "X-Crypto-Caps": DH_CAPS,
@@ -723,12 +905,9 @@ function createSource(api, config) {
     var epk = b64decArr(env.epk), ivb = b64decArr(env.iv);
     var ct = b64decArr(env.ct), tag = b64decArr(env.tag);
     var e = String(env.e);
-    var S = ecMultPt(BigInt("0x" + privHex), [
-      BigInt("0x" + arrHx(epk.slice(1, 33))),
-      BigInt("0x" + arrHx(epk.slice(33, 65)))
-    ]);
+    var S = ecMultLimb(privHex, arrHx(epk.slice(1, 33)), arrHx(epk.slice(33, 65)));
     if (!S) throw new Error("bad-shared");
-    var sharedHex = ecPad64(S[0]);
+    var sharedHex = S[0];
     var saltHex = await api.cryptoOp("hmacSha512",
       arrHx(concatArrs([u16beArr(pubRaw.length), pubRaw, u16beArr(epk.length), epk])),
       { key: arrHx(ivb) });
