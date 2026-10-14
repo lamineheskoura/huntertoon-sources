@@ -10,7 +10,7 @@ function createSource(api, config) {
   // Proof salt baked into the CURRENT site viewer (ChapterImageViewer):
   // proof = SHA256(salt|token|chapterId). Rotated 2026-09 (old
   // 322c4e08... stopped unlocking); extracted live from the viewer bundle.
-  var unlockProofSalt = "80c55d2d1f1432551b82f5304b60e1aced87f823a6ed309d";
+  var unlockProofSalt = "69e44f7fbc755230d61d205ab9cdb0a6fff5f7bf9209ce25";
   var lastChapterUrl = baseUrl + "/";
 
   var defaultHeaders = mergeHeaders(
@@ -207,6 +207,535 @@ function createSource(api, config) {
     return await aesDecrypt(blob, overlayKeyHex);
   }
 
+  // ── Portable KDF (verbatim from kdfport_kdf_port.js: kdfUnwrapBytes + aesGcmDecryptPure + deps) ──
+  var __SBOX = [99,124,119,123,242,107,111,197,48,1,103,43,254,215,171,118,202,130,201,125,250,89,71,240,173,212,162,175,156,164,114,192,183,253,147,38,54,63,247,204,52,165,229,241,113,216,49,21,4,199,35,195,24,150,5,154,7,18,128,226,235,39,178,117,9,131,44,26,27,110,90,160,82,59,214,179,41,227,47,132,83,209,0,237,32,252,177,91,106,203,190,57,74,76,88,207,208,239,170,251,67,77,51,133,69,249,2,127,80,60,159,168,81,163,64,143,146,157,56,245,188,182,218,33,16,255,243,210,205,12,19,236,95,151,68,23,196,167,126,61,100,93,25,115,96,129,79,220,34,42,144,136,70,238,184,20,222,94,11,219,224,50,58,10,73,6,36,92,194,211,172,98,145,149,228,121,231,200,55,109,141,213,78,169,108,86,244,234,101,122,174,8,186,120,37,46,28,166,180,198,232,221,116,31,75,189,139,138,112,62,181,102,72,3,246,14,97,53,87,185,134,193,29,158,225,248,152,17,105,217,142,148,155,30,135,233,206,85,40,223,140,161,137,13,191,230,66,104,65,153,45,15,176,84,187,22];
+  function __rotr32(x, n) { return ((x >>> n) | (x << (32 - n))) >>> 0; }
+  function sha256Bytes(data) {
+    var K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+    var H0 = 0x6a09e667, H1 = 0xbb67ae85, H2 = 0x3c6ef372, H3 = 0xa54ff53a, H4 = 0x510e527f, H5 = 0x9b05688c, H6 = 0x1f83d9ab, H7 = 0x5be0cd19;
+    var l = data.length;
+    var bitLen = l * 8;
+    var newLen = (((l + 9 + 63) >> 6) << 6);
+    var msg = new Uint8Array(newLen);
+    var i;
+    for (i = 0; i < l; i++) msg[i] = data[i] & 255;
+    msg[l] = 128;
+    var hi = Math.floor(bitLen / 4294967296);
+    var lo = bitLen >>> 0;
+    msg[newLen - 8] = (hi >>> 24) & 255;
+    msg[newLen - 7] = (hi >>> 16) & 255;
+    msg[newLen - 6] = (hi >>> 8) & 255;
+    msg[newLen - 5] = hi & 255;
+    msg[newLen - 4] = (lo >>> 24) & 255;
+    msg[newLen - 3] = (lo >>> 16) & 255;
+    msg[newLen - 2] = (lo >>> 8) & 255;
+    msg[newLen - 1] = lo & 255;
+    var w = new Uint32Array(64);
+    var off, t, tt, k;
+    var a, b, c, d, e, f, g, h;
+    var S0, S1, ch, maj, t1, t2;
+    for (off = 0; off < newLen; off += 64) {
+      for (t = 0; t < 16; t++) w[t] = ((msg[off + t * 4] << 24) | (msg[off + t * 4 + 1] << 16) | (msg[off + t * 4 + 2] << 8) | msg[off + t * 4 + 3]) >>> 0;
+      for (tt = 16; tt < 64; tt++) {
+        S0 = (__rotr32(w[tt - 15], 7) ^ __rotr32(w[tt - 15], 18) ^ (w[tt - 15] >>> 3)) >>> 0;
+        S1 = (__rotr32(w[tt - 2], 17) ^ __rotr32(w[tt - 2], 19) ^ (w[tt - 2] >>> 10)) >>> 0;
+        w[tt] = (w[tt - 16] + S0 + w[tt - 7] + S1) >>> 0;
+      }
+      a = H0; b = H1; c = H2; d = H3; e = H4; f = H5; g = H6; h = H7;
+      for (k = 0; k < 64; k++) {
+        S1 = (__rotr32(e, 6) ^ __rotr32(e, 11) ^ __rotr32(e, 25)) >>> 0;
+        ch = ((e & f) ^ ((~e) & g)) >>> 0;
+        t1 = (h + S1 + ch + K[k] + w[k]) >>> 0;
+        S0 = (__rotr32(a, 2) ^ __rotr32(a, 13) ^ __rotr32(a, 22)) >>> 0;
+        maj = ((a & b) ^ (a & c) ^ (b & c)) >>> 0;
+        t2 = (S0 + maj) >>> 0;
+        h = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+      }
+      H0 = (H0 + a) >>> 0; H1 = (H1 + b) >>> 0; H2 = (H2 + c) >>> 0; H3 = (H3 + d) >>> 0;
+      H4 = (H4 + e) >>> 0; H5 = (H5 + f) >>> 0; H6 = (H6 + g) >>> 0; H7 = (H7 + h) >>> 0;
+    }
+    var out = new Uint8Array(32);
+    out[0] = (H0 >>> 24) & 255; out[1] = (H0 >>> 16) & 255; out[2] = (H0 >>> 8) & 255; out[3] = H0 & 255;
+    out[4] = (H1 >>> 24) & 255; out[5] = (H1 >>> 16) & 255; out[6] = (H1 >>> 8) & 255; out[7] = H1 & 255;
+    out[8] = (H2 >>> 24) & 255; out[9] = (H2 >>> 16) & 255; out[10] = (H2 >>> 8) & 255; out[11] = H2 & 255;
+    out[12] = (H3 >>> 24) & 255; out[13] = (H3 >>> 16) & 255; out[14] = (H3 >>> 8) & 255; out[15] = H3 & 255;
+    out[16] = (H4 >>> 24) & 255; out[17] = (H4 >>> 16) & 255; out[18] = (H4 >>> 8) & 255; out[19] = H4 & 255;
+    out[20] = (H5 >>> 24) & 255; out[21] = (H5 >>> 16) & 255; out[22] = (H5 >>> 8) & 255; out[23] = H5 & 255;
+    out[24] = (H6 >>> 24) & 255; out[25] = (H6 >>> 16) & 255; out[26] = (H6 >>> 8) & 255; out[27] = H6 & 255;
+    out[28] = (H7 >>> 24) & 255; out[29] = (H7 >>> 16) & 255; out[30] = (H7 >>> 8) & 255; out[31] = H7 & 255;
+    return out;
+  }
+  function __strToBytes(s) {
+    var n = s.length;
+    var out = new Uint8Array(n);
+    for (var i = 0; i < n; i++) out[i] = s.charCodeAt(i) & 255;
+    return out;
+  }
+  function __decStr(n) {
+    if (n === 0) return "0";
+    var s = "";
+    n = Math.floor(n);
+    while (n > 0) { s = String.fromCharCode(48 + (n % 10)) + s; n = Math.floor(n / 10); }
+    return s;
+  }
+  function __concat2(a, b) {
+    var out = new Uint8Array(a.length + b.length);
+    var i;
+    for (i = 0; i < a.length; i++) out[i] = a[i];
+    for (i = 0; i < b.length; i++) out[a.length + i] = b[i];
+    return out;
+  }
+  function __concatN(parts, n) {
+    var total = 0, i, j, o;
+    for (i = 0; i < n; i++) total += parts[i].length;
+    var out = new Uint8Array(total);
+    o = 0;
+    for (i = 0; i < n; i++) { for (j = 0; j < parts[i].length; j++) out[o++] = parts[i][j]; }
+    return out;
+  }
+  function __isB64(b) {
+    if (b >= 48 && b <= 57) return true;
+    if (b >= 65 && b <= 90) return true;
+    if (b >= 97 && b <= 122) return true;
+    if (b === 43 || b === 47 || b === 61 || b === 45 || b === 95) return true;
+    return false;
+  }
+  function __isDigit(b) { return b >= 48 && b <= 57; }
+  function __b64Val(ch) {
+    if (ch >= 65 && ch <= 90) return ch - 65;
+    if (ch >= 97 && ch <= 122) return ch - 97 + 26;
+    if (ch >= 48 && ch <= 57) return ch - 48 + 52;
+    if (ch === 43 || ch === 45) return 62;
+    if (ch === 47 || ch === 95) return 63;
+    return -1;
+  }
+  function __b64ToBytes(txt) {
+    var n = txt.length;
+    var vals = [];
+    var i, v;
+    for (i = 0; i < n; i++) {
+      var ch = txt[i];
+      if (ch === 61) break;
+      v = __b64Val(ch);
+      if (v < 0) return null;
+      vals.push(v);
+    }
+    var outLen = Math.floor(vals.length * 6 / 8);
+    var out = new Uint8Array(outLen);
+    var bits = 0, bitsN = 0, o = 0;
+    for (i = 0; i < vals.length; i++) {
+      bits = (bits << 6) | vals[i];
+      bitsN += 6;
+      if (bitsN >= 8) {
+        bitsN -= 8;
+        if (o < outLen) out[o++] = (bits >> bitsN) & 255;
+        bits = bits & ((1 << bitsN) - 1);
+      }
+    }
+    return out;
+  }
+  function __bytesToAscii(b) {
+    var s = "";
+    for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i] & 255);
+    return s;
+  }
+  function __decryptE(N0, KS, wStrBytes, eSlice) {
+    var elen = eSlice.length;
+    var eAfter = new Uint8Array(elen);
+    var i;
+    for (i = 0; i < elen; i++) eAfter[i] = eSlice[i];
+    var pipe = new Uint8Array(1); pipe[0] = 124;
+    var vb = new Uint8Array(1); vb[0] = 118;
+    var nBlocks = Math.floor((elen + 31) / 32);
+    var blk, j, lim, base;
+    for (blk = 0; blk < nBlocks; blk++) {
+      var ctrBytes = __strToBytes(__decStr(blk));
+      var p0 = __concat2(N0, pipe);
+      var p1 = __concat2(p0, vb);
+      var p2 = __concat2(p1, wStrBytes);
+      var p3 = __concat2(p2, pipe);
+      var p4 = __concat2(p3, KS);
+      var p5 = __concat2(p4, pipe);
+      var inp = __concat2(p5, ctrBytes);
+      var ks = sha256Bytes(inp);
+      base = blk * 32;
+      lim = 32;
+      if (base + lim > elen) lim = elen - base;
+      for (j = 0; j < lim; j++) eAfter[base + j] = (eAfter[base + j] ^ ks[j]) & 255;
+    }
+    return eAfter;
+  }
+  function kdfUnwrapBytes(asmBytes, w, optTokLen, optCidLen) {
+    if (!(asmBytes instanceof Uint8Array)) throw new Error("asmBytes must be Uint8Array");
+    if (w !== 3) throw new Error("only w==3 supported, got " + w);
+    var M = asmBytes.length;
+    if (M < 48 + 32 + 1 + 1 + 32) throw new Error("asm too short");
+    var N0 = asmBytes.slice(0, 48);
+    var KS = asmBytes.slice(48, 80);
+    var wStrBytes = __strToBytes(__decStr(w));
+    var c0 = -1, elen = -1, eAfter = null, H0 = -1, H1 = -1;
+    var hasExplicit = (typeof optTokLen === "number" && typeof optCidLen === "number");
+    if (hasExplicit) {
+      if (optTokLen < 1 || optCidLen < 1) throw new Error("bad explicit lens");
+      c0 = 80 + optTokLen + optCidLen;
+      if (c0 > M) throw new Error("explicit c0 beyond M");
+      elen = M - c0;
+      var eSlice0 = asmBytes.slice(c0, M);
+      eAfter = __decryptE(N0, KS, wStrBytes, eSlice0);
+      H0 = eAfter[0] * 256 + eAfter[1];
+      H1 = eAfter[2] * 256 + eAfter[3];
+    } else {
+      var guess = -1, k;
+      for (k = 80; k < M; k++) { if (!__isB64(asmBytes[k])) { guess = k; break; } }
+      if (guess < 0) throw new Error("cannot locate e (no non-b64)");
+      var lo = guess - 16;
+      if (lo < 82) lo = 82;
+      var found = false;
+      for (c0 = guess; c0 >= lo; c0--) {
+        elen = M - c0;
+        if (elen < 32) continue;
+        var eSlice = asmBytes.slice(c0, M);
+        var trial = __decryptE(N0, KS, wStrBytes, eSlice);
+        var tH0 = trial[0] * 256 + trial[1];
+        var tH1 = trial[2] * 256 + trial[3];
+        if (tH0 === 16 && tH1 === 12) { eAfter = trial; H0 = tH0; H1 = tH1; found = true; break; }
+      }
+      if (!found) throw new Error("header check failed (no c0 with 0010000c)");
+      elen = M - c0;
+    }
+    if (H0 !== 16 || H1 !== 12) throw new Error("unexpected header H0=" + H0 + " H1=" + H1);
+    var i0 = elen - (H0 + 4 + H1);
+    if (i0 <= 0) throw new Error("bad i0=" + i0);
+    var tag = eAfter.slice(4, 4 + H0);
+    var ct = eAfter.slice(4 + H0, 4 + H0 + i0);
+    var iv = eAfter.slice(4 + H0 + i0, 4 + H0 + i0 + H1);
+    var tokLen = -1, cidLen = -1, TOK = null, CID = null;
+    if (hasExplicit) {
+      tokLen = optTokLen; cidLen = optCidLen;
+      TOK = asmBytes.slice(80, 80 + tokLen);
+      CID = asmBytes.slice(80 + tokLen, c0);
+    } else {
+      var tokCidLen = c0 - 80;
+      var bestTok = -1, bestCid = -1;
+      var cidTry;
+      for (cidTry = 1; cidTry <= 10; cidTry++) {
+        if (cidTry > tokCidLen - 1) break;
+        var tLen = tokCidLen - cidTry;
+        var cStart = 80 + tLen;
+        var okD = true, q;
+        for (q = cStart; q < c0; q++) { if (!__isDigit(asmBytes[q])) { okD = false; break; } }
+        if (!okD) continue;
+        var okB = true;
+        for (q = 80; q < cStart; q++) { if (!__isB64(asmBytes[q])) { okB = false; break; } }
+        if (!okB) continue;
+        if ((tLen % 4) !== 0) continue;
+        var tokBytes = asmBytes.slice(80, cStart);
+        var cidBytes = asmBytes.slice(cStart, c0);
+        var dec = __b64ToBytes(tokBytes);
+        if (dec === null) continue;
+        var decStr = __bytesToAscii(dec);
+        var cidStr = __bytesToAscii(cidBytes);
+        if (decStr.length > cidStr.length && decStr.slice(0, cidStr.length) === cidStr && decStr.charCodeAt(cidStr.length) === 124) {
+          bestTok = tLen; bestCid = cidTry; break;
+        }
+      }
+      if (bestTok < 0) {
+        for (cidTry = 1; cidTry <= 10; cidTry++) {
+          if (cidTry > tokCidLen - 1) break;
+          var tLen2 = tokCidLen - cidTry;
+          var cS2 = 80 + tLen2;
+          var okD2 = true, qq;
+          for (qq = cS2; qq < c0; qq++) { if (!__isDigit(asmBytes[qq])) { okD2 = false; break; } }
+          if (!okD2) continue;
+          var okB2 = true;
+          for (qq = 80; qq < cS2; qq++) { if (!__isB64(asmBytes[qq])) { okB2 = false; break; } }
+          if (!okB2) continue;
+          if ((tLen2 % 4) !== 0) continue;
+          bestTok = tLen2; bestCid = cidTry; break;
+        }
+      }
+      if (bestTok < 0) throw new Error("cannot split TOK/CID (tokCidLen=" + tokCidLen + ")");
+      tokLen = bestTok; cidLen = bestCid;
+      TOK = asmBytes.slice(80, 80 + tokLen);
+      CID = asmBytes.slice(80 + tokLen, c0);
+    }
+    var a0 = __concat2(N0, new Uint8Array([124]));
+    var a1 = __concat2(a0, new Uint8Array([118]));
+    var a2 = __concat2(a1, wStrBytes);
+    var a3 = __concat2(a2, new Uint8Array([124]));
+    var a4 = __concat2(a3, KS);
+    var a5 = __concat2(a4, new Uint8Array([124]));
+    var a6 = __concat2(a5, TOK);
+    var a7 = __concat2(a6, new Uint8Array([124]));
+    var inp2 = __concat2(a7, CID);
+    var key = sha256Bytes(inp2);
+    return { iv: iv, key: key, ct: ct, tag: tag, d: H1, q: H0, i0: i0 };
+  }
+  function __xtime(a) { return ((a << 1) ^ ((a & 128) ? 27 : 0)) & 255; }
+  function __mul2(a) { return __xtime(a); }
+  function __mul3(a) { return (__xtime(a) ^ a) & 255; }
+  function __aesKeyExpand256(keyBytes) {
+    var w = [];
+    var i, k;
+    for (i = 0; i < 8; i++) w.push(((keyBytes[i * 4] << 24) | (keyBytes[i * 4 + 1] << 16) | (keyBytes[i * 4 + 2] << 8) | keyBytes[i * 4 + 3]) >>> 0);
+    var RCON = [1, 2, 4, 8, 16, 32, 64, 128, 27, 54];
+    for (k = 8; k < 60; k++) {
+      var temp = w[k - 1];
+      if ((k % 8) === 0) {
+        temp = (((__SBOX[(temp >>> 16) & 255] << 24) | (__SBOX[(temp >>> 8) & 255] << 16) | (__SBOX[temp & 255] << 8) | __SBOX[(temp >>> 24) & 255]) ^ (RCON[Math.floor(k / 8) - 1] << 24)) >>> 0;
+      } else {
+        if ((k % 8) === 4) temp = ((__SBOX[(temp >>> 24) & 255] << 24) | (__SBOX[(temp >>> 16) & 255] << 16) | (__SBOX[(temp >>> 8) & 255] << 8) | __SBOX[temp & 255]) >>> 0;
+      }
+      w.push((w[k - 8] ^ temp) >>> 0);
+    }
+    return w;
+  }
+  function __aesEncryptBlock(block16, w) {
+    var s = [], i, c, round, col, cc, k, kk, ccc;
+    for (i = 0; i < 16; i++) s.push(block16[i] & 255);
+    for (c = 0; c < 4; c++) {
+      var wd = w[c];
+      s[c * 4] ^= (wd >>> 24) & 255; s[c * 4 + 1] ^= (wd >>> 16) & 255; s[c * 4 + 2] ^= (wd >>> 8) & 255; s[c * 4 + 3] ^= wd & 255;
+    }
+    for (round = 1; round < 14; round++) {
+      for (k = 0; k < 16; k++) s[k] = __SBOX[s[k]];
+      var t = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+      t[0] = s[0]; t[4] = s[4]; t[8] = s[8]; t[12] = s[12];
+      t[1] = s[5]; t[5] = s[9]; t[9] = s[13]; t[13] = s[1];
+      t[2] = s[10]; t[6] = s[14]; t[10] = s[2]; t[14] = s[6];
+      t[3] = s[15]; t[7] = s[3]; t[11] = s[7]; t[15] = s[11];
+      s = t;
+      for (col = 0; col < 4; col++) {
+        var a0 = s[col * 4], a1 = s[col * 4 + 1], a2 = s[col * 4 + 2], a3 = s[col * 4 + 3];
+        s[col * 4] = (__mul2(a0) ^ __mul3(a1) ^ a2 ^ a3) & 255;
+        s[col * 4 + 1] = (a0 ^ __mul2(a1) ^ __mul3(a2) ^ a3) & 255;
+        s[col * 4 + 2] = (a0 ^ a1 ^ __mul2(a2) ^ __mul3(a3)) & 255;
+        s[col * 4 + 3] = (__mul3(a0) ^ a1 ^ a2 ^ __mul2(a3)) & 255;
+      }
+      var base = round * 4;
+      for (cc = 0; cc < 4; cc++) {
+        var ww = w[base + cc];
+        s[cc * 4] ^= (ww >>> 24) & 255; s[cc * 4 + 1] ^= (ww >>> 16) & 255; s[cc * 4 + 2] ^= (ww >>> 8) & 255; s[cc * 4 + 3] ^= ww & 255;
+      }
+    }
+    for (kk = 0; kk < 16; kk++) s[kk] = __SBOX[s[kk]];
+    var tt = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+    tt[0] = s[0]; tt[4] = s[4]; tt[8] = s[8]; tt[12] = s[12];
+    tt[1] = s[5]; tt[5] = s[9]; tt[9] = s[13]; tt[13] = s[1];
+    tt[2] = s[10]; tt[6] = s[14]; tt[10] = s[2]; tt[14] = s[6];
+    tt[3] = s[15]; tt[7] = s[3]; tt[11] = s[7]; tt[15] = s[11];
+    s = tt;
+    var fb = 56;
+    for (ccc = 0; ccc < 4; ccc++) {
+      var www = w[fb + ccc];
+      s[ccc * 4] ^= (www >>> 24) & 255; s[ccc * 4 + 1] ^= (www >>> 16) & 255; s[ccc * 4 + 2] ^= (www >>> 8) & 255; s[ccc * 4 + 3] ^= www & 255;
+    }
+    return s;
+  }
+  function __ghashMul(X, Y) {
+    var Z = new Uint8Array(16);
+    var V = new Uint8Array(16);
+    var i, b, j, k;
+    for (i = 0; i < 16; i++) V[i] = Y[i];
+    for (b = 0; b < 128; b++) {
+      var xb = X[b >> 3];
+      var bit = (xb >> (7 - (b & 7))) & 1;
+      if (bit === 1) { for (j = 0; j < 16; j++) Z[j] ^= V[j]; }
+      var lsb = V[15] & 1;
+      for (k = 15; k > 0; k--) V[k] = ((V[k] >>> 1) | (V[k - 1] << 7)) & 255;
+      V[0] = (V[0] >>> 1) & 255;
+      if (lsb === 1) V[0] ^= 225;
+    }
+    return Z;
+  }
+  function __ghash(H, aad, ct) {
+    var X = new Uint8Array(16);
+    var off, i, lim;
+    function procBlk(blk) {
+      var q;
+      for (q = 0; q < 16; q++) X[q] ^= blk[q];
+      X = __ghashMul(X, H);
+    }
+    for (off = 0; off < aad.length; off += 16) {
+      var b1 = new Uint8Array(16);
+      lim = 16;
+      if (off + lim > aad.length) lim = aad.length - off;
+      for (i = 0; i < lim; i++) b1[i] = aad[off + i];
+      procBlk(b1);
+    }
+    for (off = 0; off < ct.length; off += 16) {
+      var b2 = new Uint8Array(16);
+      lim = 16;
+      if (off + lim > ct.length) lim = ct.length - off;
+      for (i = 0; i < lim; i++) b2[i] = ct[off + i];
+      procBlk(b2);
+    }
+    var aBits = aad.length * 8, cBits = ct.length * 8;
+    var aHi = Math.floor(aBits / 4294967296), aLo = aBits >>> 0;
+    var cHi = Math.floor(cBits / 4294967296), cLo = cBits >>> 0;
+    var lb = new Uint8Array(16);
+    lb[0] = (aHi >>> 24) & 255; lb[1] = (aHi >>> 16) & 255; lb[2] = (aHi >>> 8) & 255; lb[3] = aHi & 255;
+    lb[4] = (aLo >>> 24) & 255; lb[5] = (aLo >>> 16) & 255; lb[6] = (aLo >>> 8) & 255; lb[7] = aLo & 255;
+    lb[8] = (cHi >>> 24) & 255; lb[9] = (cHi >>> 16) & 255; lb[10] = (cHi >>> 8) & 255; lb[11] = cHi & 255;
+    lb[12] = (cLo >>> 24) & 255; lb[13] = (cLo >>> 16) & 255; lb[14] = (cLo >>> 8) & 255; lb[15] = cLo & 255;
+    procBlk(lb);
+    return X;
+  }
+  function __inc32(b16) {
+    var out = new Uint8Array(16);
+    var i;
+    for (i = 0; i < 16; i++) out[i] = b16[i];
+    var c = ((out[12] << 24) | (out[13] << 16) | (out[14] << 8) | out[15]) >>> 0;
+    c = (c + 1) >>> 0;
+    out[12] = (c >>> 24) & 255; out[13] = (c >>> 16) & 255; out[14] = (c >>> 8) & 255; out[15] = c & 255;
+    return out;
+  }
+  function aesGcmDecryptPure(key, iv, ct, tag) {
+    if (!(key instanceof Uint8Array) || key.length !== 32) throw new Error("bad key len");
+    if (!(iv instanceof Uint8Array) || iv.length !== 12) throw new Error("bad iv len");
+    if (!(ct instanceof Uint8Array)) throw new Error("bad ct");
+    if (!(tag instanceof Uint8Array) || tag.length !== 16) throw new Error("bad tag len");
+    var w = __aesKeyExpand256(key);
+    var Harr = __aesEncryptBlock(new Uint8Array(16), w);
+    var H = new Uint8Array(16);
+    var i, off, j, k, t;
+    for (i = 0; i < 16; i++) H[i] = Harr[i] & 255;
+    var J0 = new Uint8Array(16);
+    for (i = 0; i < 12; i++) J0[i] = iv[i];
+    J0[12] = 0; J0[13] = 0; J0[14] = 0; J0[15] = 1;
+    var pt = new Uint8Array(ct.length);
+    var ctr = __inc32(J0);
+    for (off = 0; off < ct.length; off += 16) {
+      var ks = __aesEncryptBlock(ctr, w);
+      var lim = 16;
+      if (off + lim > ct.length) lim = ct.length - off;
+      for (j = 0; j < lim; j++) pt[off + j] = (ct[off + j] ^ ks[j]) & 255;
+      ctr = __inc32(ctr);
+    }
+    var S = __ghash(H, new Uint8Array(0), ct);
+    var EJ0arr = __aesEncryptBlock(J0, w);
+    var EJ0 = new Uint8Array(16);
+    for (k = 0; k < 16; k++) EJ0[k] = EJ0arr[k] & 255;
+    var calc = new Uint8Array(16);
+    for (k = 0; k < 16; k++) calc[k] = (S[k] ^ EJ0[k]) & 255;
+    var ok = 1;
+    for (t = 0; t < 16; t++) { if (calc[t] !== tag[t]) ok = 0; }
+    if (ok !== 1) { var e = new Error("GCM tag mismatch"); e.code = "TAG_MISMATCH"; throw e; }
+    return pt;
+  }
+  function __utf8DecodeBytes(b) {
+    var s = "", i = 0, c, c2, c3, c4, cp;
+    while (i < b.length) {
+      c = b[i];
+      if (c < 128) { s += String.fromCharCode(c); i++; }
+      else {
+        if ((c & 224) === 192) { c2 = b[i + 1]; s += String.fromCharCode(((c & 31) << 6) | (c2 & 63)); i += 2; }
+        else {
+          if ((c & 240) === 224) { c2 = b[i + 1]; c3 = b[i + 2]; s += String.fromCharCode(((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63)); i += 3; }
+          else { c2 = b[i + 1]; c3 = b[i + 2]; c4 = b[i + 3]; cp = ((c & 7) << 18) | ((c2 & 63) << 12) | ((c3 & 63) << 6) | (c4 & 63); cp -= 65536; s += String.fromCharCode(55296 + (cp >> 10), 56320 + (cp & 1023)); i += 4; }
+        }
+      }
+    }
+    return s;
+  }
+  function decodeUtf8(bytes) {
+    if (typeof TextDecoder !== "undefined") return new TextDecoder("utf-8").decode(bytes);
+    var s = "";
+    for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+    return decodeURIComponent(escape(s));
+  }
+  // ── Overlay KDF helpers (NEW shape ev==3, QuickJS-clean, fail-closed) ──
+  var overlayN0 = "6f5b8499c7a64f1b94022a4503c47cde0aa90505463fc9d9";
+  function ovMakeEsid() {
+    var chars = "0123456789abcdef";
+    var out = "";
+    try {
+      for (var i = 0; i < 8; i++) {
+        var r = Math.floor(Math.random() * 4294967296);
+        if (r < 0) r = 0 - r;
+        for (var j = 0; j < 8; j++) {
+          out += chars.charAt((r >> (j * 4)) & 15);
+        }
+      }
+    } catch (e) {}
+    while (out.length < 64) out += "0";
+    return out.substring(0, 64);
+  }
+  function ovAsciiToBytes(s) {
+    s = String(s || "");
+    var out = new Uint8Array(s.length);
+    for (var i = 0; i < s.length; i++) out[i] = s.charCodeAt(i) & 255;
+    return out;
+  }
+  function ovConcat2(a, b) {
+    var out = new Uint8Array(a.length + b.length);
+    var i;
+    for (i = 0; i < a.length; i++) out[i] = a[i];
+    for (i = 0; i < b.length; i++) out[a.length + i] = b[i];
+    return out;
+  }
+  function ovB64ToBytes(b64) {
+    try {
+      var s = String(b64 || "").replace(/\s+/g, "").replace(/-/g, "+").replace(/_/g, "/");
+      var vals = [];
+      var i, v;
+      for (i = 0; i < s.length; i++) {
+        var ch = s.charCodeAt(i);
+        if (ch === 61) break;
+        if (ch === 43) v = 62;
+        else if (ch === 47) v = 63;
+        else if (ch >= 65 && ch <= 90) v = ch - 65;
+        else if (ch >= 97 && ch <= 122) v = ch - 97 + 26;
+        else if (ch >= 48 && ch <= 57) v = ch - 48 + 52;
+        else return null;
+        vals.push(v);
+      }
+      var outLen = Math.floor(vals.length * 6 / 8);
+      var out = new Uint8Array(outLen);
+      var bits = 0, bitsN = 0, o = 0;
+      for (i = 0; i < vals.length; i++) {
+        bits = (bits << 6) | vals[i];
+        bitsN += 6;
+        if (bitsN >= 8) {
+          bitsN -= 8;
+          if (o < outLen) out[o++] = (bits >> bitsN) & 255;
+          bits = bits & ((1 << bitsN) - 1);
+        }
+      }
+      return out;
+    } catch (e) { return null; }
+  }
+  function ovDecryptNew(overlayB64, ksHex, token, chapterId) {
+    try {
+      if (!overlayB64 || !ksHex || !token || !chapterId) return null;
+      var blob = ovB64ToBytes(overlayB64);
+      if (!blob || blob.length < 2) return null;
+      var w = blob[0];
+      var e = blob.slice(1);
+      var n0b = ovAsciiToBytes(overlayN0);
+      var ksb = ovAsciiToBytes(String(ksHex));
+      var tokb = ovAsciiToBytes(String(token));
+      var cidb = ovAsciiToBytes(String(chapterId));
+      var asm1 = ovConcat2(n0b, ksb);
+      var asm2 = ovConcat2(asm1, tokb);
+      var asm3 = ovConcat2(asm2, cidb);
+      var asm = ovConcat2(asm3, e);
+      var unw = null;
+      try { unw = kdfUnwrapBytes(asm, w); } catch (eKdf) { return null; }
+      if (!unw) return null;
+      var pt = null;
+      try { pt = aesGcmDecryptPure(unw.key, unw.iv, unw.ct, unw.tag); } catch (eAes) { return null; }
+      if (!pt) return null;
+      var jsonStr = "";
+      try { jsonStr = decodeUtf8(pt); } catch (eDec) { return null; }
+      if (!jsonStr) return null;
+      var obj = null;
+      try { obj = JSON.parse(jsonStr); } catch (eJson) { return null; }
+      if (!obj || !Array.isArray(obj.pages)) return null;
+      return obj;
+    } catch (eOuter) { return null; }
+  }
+
   // ────────────────── SHA-256 (ASCII) → hex, pure JS (no WebCrypto in QuickJS) ──
   function sha256HexAscii(ascii) {
     var K = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -318,11 +847,31 @@ function createSource(api, config) {
     } catch (eJson) { return null; }
   }
 
-  async function claimOverlay(data) {
-    if (!data || !data.overlay || !data.key) return null;
-    var overlayData = await aesDecrypt(data.overlay, data.key);
-    if (!overlayData) return null;
-    return { overlayData: overlayData, pageOffset: Number(data.overlay_page_offset || 0) };
+  async function claimOverlay(data, token, chapterId) {
+    try {
+      if (!data) return null;
+      if (data.overlay && data.ks) {
+        try {
+          var ev = data.ev;
+          if (ev === undefined || ev === null || Number(ev) === 3) {
+            var newData = ovDecryptNew(data.overlay, data.ks, token, chapterId);
+            if (newData) {
+              var off = data.overlay_page_offset;
+              if (off === undefined || off === null) off = data.overlayPageOffset;
+              return { overlayData: newData, pageOffset: Number(off || 0) };
+            }
+          }
+        } catch (eNew) {}
+      }
+      if (data.overlay && data.key) {
+        var overlayData = await aesDecrypt(data.overlay, data.key);
+        if (!overlayData) return null;
+        var off2 = data.overlay_page_offset;
+        if (off2 === undefined || off2 === null) off2 = data.overlayPageOffset;
+        return { overlayData: overlayData, pageOffset: Number(off2 || 0) };
+      }
+    } catch (e) {}
+    return null;
   }
 
   async function unlockOverlayContent(chapterId, unlockToken) {
@@ -333,10 +882,11 @@ function createSource(api, config) {
       var step1 = await postUnlock({
         chapterId: cidNum || chapterId,
         token: unlockToken,
-        proof: proof
+        proof: proof,
+        esid: ovMakeEsid()
       });
       if (!step1) return null;
-      var direct = await claimOverlay(step1);
+      var direct = await claimOverlay(step1, unlockToken, chapterId);
       if (direct) return direct;
       // Challenge round: PoW solvable, Turnstile is not.
       if (!step1.needs_challenge) return null;
@@ -352,13 +902,14 @@ function createSource(api, config) {
       var step2payload = {
         chapterId: cidNum || chapterId,
         token: unlockToken,
-        proof: proof
+        proof: proof,
+        esid: ovMakeEsid()
       };
       if (nonce) step2payload.nonce = nonce;
       if (pow) step2payload.pow = pow;
       var step2 = await postUnlock(step2payload);
       if (!step2) return null;
-      return await claimOverlay(step2);
+      return await claimOverlay(step2, unlockToken, chapterId);
     } catch (e) {
       return null;
     }
@@ -649,9 +1200,11 @@ function createSource(api, config) {
     if (props) {
       var imageUrls = extractImageUrlsFromProps(props);
       if (imageUrls.length) {
-        var textMode = String(props.textMode || "");
+        var tmRaw = props.textMode;
+        if (tmRaw === undefined || tmRaw === null) tmRaw = props.text_mode;
+        var textMode = String(tmRaw || "");
         var overlayBlob = props.overlayBlob;
-        var overlayPageOffset = Number(props.overlayPageOffset || 0);
+        var overlayPageOffset = Number(props.overlayPageOffset || props.overlay_page_offset || 0);
 
         if (textMode === "overlay") {
           // Legacy path: blob embedded in SSR props (fixed key)
