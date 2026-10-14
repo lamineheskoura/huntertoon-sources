@@ -2,7 +2,7 @@
   "version": "1.55.0",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.10.12.11",
+  "manifest_version": "2026.10.12.12",
   "generated_at": "2026-09-04T14:30:00Z",
   "last_updated": "2026-10-06T12:00:00Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -2200,6 +2200,51 @@
         "author": "HunterToon Team",
         "description": "Anime Day - Arabic anime source reverse-engineered from com.anime.day v3.8 APK (native lib RE: firebase_id token forger + AES-CBC response decrypt, pure-JS crypto). Series, movies, episodes, multi-server.",
         "changelog": "v1.0.1: app-exact per-endpoint headers (details=firebase_id only, episodes=Cookie only, servers=firebase+cloudflare; home/search bare) + okhttp/4.10.0 UA, no Accept header. Fixes 0-chapter details (extra headers tripped the gate). v1.0.0: initial release with clean-roomed native crypto."
+      }
+    },
+    "animeify": {
+      "id": "animeify",
+      "sid": 148,
+      "name": "Animeify",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://animeify.net/animeify/apis_v4/",
+      "website_url": "https://animeify.net",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=animeify.net",
+      "requires_cf": false,
+      "image_referer": "https://animeify.net/",
+      "headers": {
+        "User-Agent": "okhttp/4.10.0",
+        "Accept": "*/*",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://animeify.net/"
+      },
+      "script": {
+        "url": "sources/animeify/source.js",
+        "sha256": "3eff04992a333e4a8e76700ad3313f60ed1c85d62559cb3579816b515d8c0d03",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "anime"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Animeify - Arabic anime source reverse-engineered from Animeify v3.2.0 APK (Xamarin C# DLL RE: static Token POST API, per-host embeds, MediaFire/SolidFiles extraction). Series, episodes, multi-server with qualities.",
+        "changelog": "v1.0.0: initial release. Static Token form-POST protocol, Arabic plots, eager MediaFire/SolidFiles direct-mp4 extraction with session cache, embed templates for OK/Mega/FileLions/SendVid/VanFem/Google-Drive. Verified live end-to-end."
       }
     }
   }
