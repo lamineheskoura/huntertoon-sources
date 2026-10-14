@@ -1339,7 +1339,7 @@
       "id": "asurascans",
       "sid": 102,
       "name": "Asura Scans",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "enabled": true,
       "status": "beta",
       "base_url": "https://asurascans.com",
@@ -1356,7 +1356,7 @@
       },
       "script": {
         "url": "sources/asurascans/source.js",
-        "sha256": "dda54433388a67a222aafd3ceed5414607aaab83856fa7c6d4024fbf4f41b662",
+        "sha256": "d2476d4c86eae0e28409b337e25f67c58453bae4e4b44aa85a5df15dc35c8647",
         "entry": "createSource"
       },
       "capabilities": {
@@ -1378,7 +1378,7 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Asura Scans English manga/manhwa source (Astro.js SSR). Homepage at /; browse at /browse?page=N; detail at /comics/{slug}; reader at /comics/{slug}/chapter/{num}; images on cdn.asurascans.com. Supports locked chapter detection.",
-        "changelog": "v1.1.0 (studied against live site): (1) FIX pagination/browse: the real server-rendered listing is /browse/comics?page=N (verified: 40 cards/page, page 1 != page 2); plain /browse?page=N returns an empty client-side shell, which is why the list never advanced. Homepage page>1 and filtered browse now use /browse/comics?page=N; genre/type filters try /browse/comics?genres=..&page=N first and fall back to the plain listing if the server returns no cards (filters are client-side/API only). (2) FIX search: /browse?search= is also a client-side shell; search now calls the site API api.asurascans.com/api/search?q= (returns {data:[{slug,title,cover|cover_url,type}]}), mapping slug to /comics/{slug}. (3) FIX intermittent chapter images: cdn.asurascans.com intermittently drops non-browser HTTP clients (verified: our IP was TCP-blocked while the site kept serving browsers and weserv fetched the CDN fine); chapter images now go through images.weserv.nl with output=jpeg (serves any client, no webp decode issues). List/detail/chapter-list logic unchanged."
+        "changelog": "v1.1.1: Fix chapter reader image extraction. Removed broken third-party weserv proxy to serve clean direct CDN URLs (cdn.asurascans.com). Implemented direct extraction from Astro Island props (exact ordered pages) with regex and HTML fallback to prevent corrupt HTML entity artifacts and bridge bottlenecks."
       }
     },
     "stellarsaber": {

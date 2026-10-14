@@ -5,7 +5,6 @@ function createSource(api, config) {
     configHeaders["User-Agent"] ||
     "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
   var lastChapterUrl = baseUrl + "/";
-  var weservBase = "https://images.weserv.nl/";
   var apiBase = "https://api.asurascans.com";
 
   var defaultGenres = [
@@ -77,13 +76,14 @@ function createSource(api, config) {
     return baseUrl + "/browse/comics?page=" + (page || 1);
   }
 
-  function proxyReaderImage(url) {
-    // cdn.asurascans.com intermittently drops non-browser HTTP clients (the
-    // app downloader). weserv fetches server-side and serves any client;
-    // JPEG output avoids webp decoding issues in the reader.
-    if (url.indexOf("cdn.asurascans.com") === -1) return url;
-    var target = url.replace(/^https?:\/\//, "");
-    return weservBase + "?url=" + encodeURIComponent(target) + "&output=jpeg&quality=85";
+  function cleanImageUrl(url) {
+    if (!url) return "";
+    url = String(url).trim();
+    url = url.replace(/&quot;/gi, "").replace(/&amp;/gi, "&").replace(/&#39;/gi, "'");
+    url = url.replace(/["'<>\\\]].*$/, "");
+    url = url.replace(/&quot.*$/i, "");
+    url = url.trim();
+    return makeAbsolute(url);
   }
 
   async function searchViaApi(query) {
@@ -207,28 +207,79 @@ function createSource(api, config) {
     var urls = [];
     var seen = {};
 
-    var images = await api.cssAll(html, "img.w-full.block");
-    if (!images || !images.length) {
-      images = await api.cssAll(html, "main img");
-      if (!images || !images.length) images = await api.cssAll(html, "img");
+    function addUrl(u) {
+      u = cleanImageUrl(u);
+      if (!u || u.indexOf("data:image") === 0) return;
+      if (u.indexOf("logo") !== -1 || u.indexOf("icon") !== -1 || u.indexOf("avatar") !== -1) return;
+      if (u.indexOf("/covers/") !== -1) return;
+      if (seen[u]) return;
+      seen[u] = true;
+      urls.push(u);
     }
 
-    for (var i = 0; i < images.length; i++) {
-      var attrs = (images[i] || {}).attrs || {};
-      var src = attrs["data-src"] || attrs["src"] || "";
-      if (!src || src.indexOf("data:image") === 0) continue;
-      src = makeAbsolute(src);
-      if (src.indexOf("logo") !== -1 || src.indexOf("icon") !== -1 || src.indexOf("avatar") !== -1) continue;
-      if (src.indexOf("/covers/") !== -1) continue;
+    // Strategy 1: Astro Island ChapterReader props (direct ordered JSON payload)
+    var islandMatch = html.match(/<astro-island\b[^>]*props="([^"]+)"/i);
+    if (islandMatch) {
+      try {
+        var raw = islandMatch[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&#39;/g, "'");
+        var data = JSON.parse(raw);
+        var pagesRaw = (data && data.pages) || null;
+        if (Array.isArray(pagesRaw)) {
+          var arr = Array.isArray(pagesRaw[1]) ? pagesRaw[1] : pagesRaw;
+          for (var i = 0; i < arr.length; i++) {
+            var item = arr[i];
+            var obj = (Array.isArray(item) && item[1]) ? item[1] : item;
+            if (!obj || typeof obj !== "object") continue;
+            var u = obj.url;
+            if (Array.isArray(u)) u = u[1] !== undefined ? u[1] : u[0];
+            if (typeof u === "string" && u.trim()) {
+              addUrl(u.trim());
+            }
+          }
+        }
+      } catch (e) {}
+    }
+    if (urls.length > 0) return urls;
+
+    // Strategy 2: Direct Regex for Chapter CDN Images
+    var cdnRegex = /https?:\/\/[^\s"'<>\\]+?\/(?:asura-images|cdn\.asurascans\.com)\/chapters\/[^\s"'<>\\]+?\.(?:webp|jpg|jpeg|png|avif|gif)(?:\?[^"'<>\s\\]+)?/gi;
+    var cdnMatches = html.match(cdnRegex) || [];
+    for (var c = 0; c < cdnMatches.length; c++) {
+      addUrl(cdnMatches[c]);
+    }
+    if (urls.length > 0) return urls;
+
+    // Strategy 3: HTML <img> tags regex
+    var imgRegex = /<img\b([^>]*)>/gi;
+    var m;
+    while ((m = imgRegex.exec(html)) !== null) {
+      var tagAttrs = m[1];
+      var srcM = tagAttrs.match(/(?:data-src|data-lazy-src|src)="([^"]*)"/i);
+      if (!srcM || !srcM[1]) continue;
+      var src = srcM[1];
       var isChapterImage = src.indexOf("/chapters/") !== -1 || src.indexOf("asura-images") !== -1;
       if (!isChapterImage) {
         var ext = src.split("?").shift().split(".").pop().toLowerCase();
         if (["jpg", "jpeg", "png", "webp", "gif", "avif"].indexOf(ext) === -1) continue;
       }
-      if (seen[src]) continue;
-      seen[src] = true;
-      urls.push(proxyReaderImage(src));
+      addUrl(src);
     }
+    if (urls.length > 0) return urls;
+
+    // Strategy 4: Fallback to api.cssAll
+    try {
+      var images = await api.cssAll(html, "img.w-full.block");
+      if (!images || !images.length) {
+        images = await api.cssAll(html, "main img");
+        if (!images || !images.length) images = await api.cssAll(html, "img");
+      }
+      for (var k = 0; k < images.length; k++) {
+        var attrs = (images[k] || {}).attrs || {};
+        var s = attrs["data-src"] || attrs["data-lazy-src"] || attrs["src"] || "";
+        addUrl(s);
+      }
+    } catch (e) {}
+
     return urls;
   }
 
