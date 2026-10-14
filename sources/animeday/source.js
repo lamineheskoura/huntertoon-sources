@@ -16,7 +16,7 @@ function createSource(api, config) {
     "https://backup-animeday.animegateshorts.workers.dev"
   ];
   var LANDING = "https://www.anime-day.com";
-  var OKHTTP_UA = "okhttp/4.9.3";
+  var OKHTTP_UA = "okhttp/4.10.0";
   var ALNUM = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   var HEXC = "0123456789abcdef";
 
@@ -514,14 +514,17 @@ function createSource(api, config) {
     apiBase = DEF_API;
     return apiBase;
   }
-  function reqHeaders(extra) {
-    var h = {
-      "User-Agent": OKHTTP_UA,
-      "Accept": "application/json",
-      "firebase_id": adForgeToken(deviceId),
-      "cloudflare-id": cloudflareId()
-    };
-    if (cookieJar) h["Cookie"] = cookieJar;
+  function reqHeaders(mode, extra) {
+    // App-exact header sets (verified per call-site in the APK):
+    // home/search/all/section/allcategories: NO custom headers.
+    // series+movie details (InfoActivity.p): firebase_id ONLY.
+    // series episodes (EpisodesActivity): Cookie ONLY.
+    // episode+movie servers (ServerActivity.z): firebase_id + cloudflare-id.
+    // (okhttp sends no Accept header; cookies are set manually, no jar.)
+    var h = { "User-Agent": OKHTTP_UA };
+    if (mode === "firebase" || mode === "full") h["firebase_id"] = adForgeToken(deviceId);
+    if (mode === "full") h["cloudflare-id"] = cloudflareId();
+    if (mode === "cookie" && cookieJar) h["Cookie"] = cookieJar;
     if (extra) for (var k in extra) {
       if (Object.prototype.hasOwnProperty.call(extra, k)) h[k] = extra[k];
     }
@@ -533,10 +536,10 @@ function createSource(api, config) {
     if (typeof res.text === "string") return res.text;
     return "";
   }
-  async function apiCall(method, path, formFields) {
+  async function apiCall(method, path, formFields, mode) {
     var base = await resolveBase();
     var url = base + "/v3.8/api/" + path;
-    var headers = reqHeaders(formFields ? { "Content-Type": "application/x-www-form-urlencoded" } : null);
+    var headers = reqHeaders(mode || "none", formFields ? { "Content-Type": "application/x-www-form-urlencoded" } : null);
     var body = null;
     if (formFields) {
       var parts = [];
@@ -568,8 +571,8 @@ function createSource(api, config) {
     if (!dec) throw new Error("unreadable response");
     return parseJsonLenient(dec);
   }
-  async function apiData(path, formFields, pick) {
-    var j = apiEnvelope(await apiCall(formFields ? "POST" : "GET", path, formFields));
+  async function apiData(path, formFields, pick, mode) {
+    var j = apiEnvelope(await apiCall(formFields ? "POST" : "GET", path, formFields, mode || "none"));
     if (j && j.blocked) return [];
     if (pick && j && Array.isArray(j[pick])) return j[pick];
     if (j && Array.isArray(j.data) && j.data.length) return j.data;
@@ -772,7 +775,7 @@ function createSource(api, config) {
       };
       try {
         if (d.kind === "movie") {
-          var mj = apiEnvelope(await apiCall("GET", "movie/" + enc(d.id)));
+          var mj = apiEnvelope(await apiCall("GET", "movie/" + enc(d.id), null, "firebase"));
           var mv = (mj && !Array.isArray(mj) && mj.data && !Array.isArray(mj.data)) ? mj.data : (mj || {});
           if (Array.isArray(mv)) mv = {};
           var mgenres = [];
@@ -799,7 +802,7 @@ function createSource(api, config) {
             originalUrl: url, hasMoreChapters: false, lastFetchedPage: 1, contentType: "anime"
           };
         }
-        var sj = apiEnvelope(await apiCall("GET", "series/" + enc(d.id)));
+        var sj = apiEnvelope(await apiCall("GET", "series/" + enc(d.id), null, "firebase"));
         var sv = (sj && !Array.isArray(sj) && sj.data && !Array.isArray(sj.data)) ? sj.data : (sj || {});
         if (Array.isArray(sv)) sv = {};
         var sgenres = [];
@@ -813,7 +816,7 @@ function createSource(api, config) {
         }
         var seasons = [];
         try {
-          var epj = apiEnvelope(await apiCall("GET", "series/" + enc(d.id) + "/episodes"));
+          var epj = apiEnvelope(await apiCall("GET", "series/" + enc(d.id) + "/episodes", null, "cookie"));
           if (epj && !epj.blocked) seasons = safeList(epj.seasons);
         } catch (e) { seasons = []; }
         var eps = [];
@@ -883,7 +886,7 @@ function createSource(api, config) {
       if (!ep) return [];
       try {
         var path = (ep.kind === "movie") ? ("movie/" + enc(ep.epId) + "/servers") : ("episode/" + enc(ep.epId) + "/servers");
-        return serversFromList(await apiData(path));
+        return serversFromList(await apiData(path, null, null, "full"));
       } catch (e) {
         return [];
       }
@@ -895,7 +898,7 @@ function createSource(api, config) {
       if (!ep) return { kind: "video", servers: [] };
       try {
         var path = (ep.kind === "movie") ? ("movie/" + enc(ep.epId) + "/servers") : ("episode/" + enc(ep.epId) + "/servers");
-        return { kind: "video", servers: serversFromList(await apiData(path)) };
+        return { kind: "video", servers: serversFromList(await apiData(path, null, null, "full")) };
       } catch (e) {
         return { kind: "video", servers: [] };
       }

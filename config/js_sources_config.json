@@ -2,7 +2,7 @@
   "version": "1.55.0",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.10.12.10",
+  "manifest_version": "2026.10.12.11",
   "generated_at": "2026-09-04T14:30:00Z",
   "last_updated": "2026-10-06T12:00:00Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -2161,7 +2161,7 @@
       "id": "animeday",
       "sid": 147,
       "name": "Anime Day (انمي داي)",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "enabled": true,
       "status": "beta",
       "base_url": "https://20042026.site",
@@ -2177,7 +2177,7 @@
       },
       "script": {
         "url": "sources/animeday/source.js",
-        "sha256": "3aae1768e1a0576cbf5e4aa6e832eca1a180b8fc9ab27e781f0904922aa0aa6b",
+        "sha256": "fb66ba92031ef8837b323a865fb25ae65756caa6b485ad979d6c12dda103e080",
         "entry": "createSource"
       },
       "capabilities": {
@@ -2199,7 +2199,7 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Anime Day - Arabic anime source reverse-engineered from com.anime.day v3.8 APK (native lib RE: firebase_id token forger + AES-CBC response decrypt, pure-JS crypto). Series, movies, episodes, multi-server.",
-        "changelog": "v1.0.0: initial release. NativeLib.buildSecure/decryptResponse clean-roomed to pure JS (forged firebase_id + cloudflare-id, config-mirror base resolution, encrypted-response fallback). Homepage verified live (61 items); gated endpoints (details/search/servers) need clean-network in-app verification."
+        "changelog": "v1.0.1: app-exact per-endpoint headers (details=firebase_id only, episodes=Cookie only, servers=firebase+cloudflare; home/search bare) + okhttp/4.10.0 UA, no Accept header. Fixes 0-chapter details (extra headers tripped the gate). v1.0.0: initial release with clean-roomed native crypto."
       }
     }
   }
