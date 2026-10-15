@@ -2,7 +2,7 @@
   "version": "1.55.0",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.10.12.12",
+  "manifest_version": "2026.10.12.13",
   "generated_at": "2026-09-04T14:30:00Z",
   "last_updated": "2026-10-06T12:00:00Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
@@ -2190,6 +2190,10 @@
         "supports_download": true,
         "requires_cloudflare": false
       },
+      "transport": {
+        "profile": "okhttp",
+        "mode": "auto"
+      },
       "compatibility": {
         "min_app_version": "1.4.0",
         "runtime_api_version": "1.0"
@@ -2199,7 +2203,7 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Anime Day - Arabic anime source reverse-engineered from com.anime.day v3.8 APK (native lib RE: firebase_id token forger + AES-CBC response decrypt, pure-JS crypto). Series, movies, episodes, multi-server.",
-        "changelog": "v1.0.1: app-exact per-endpoint headers (details=firebase_id only, episodes=Cookie only, servers=firebase+cloudflare; home/search bare) + okhttp/4.10.0 UA, no Accept header. Fixes 0-chapter details (extra headers tripped the gate). v1.0.0: initial release with clean-roomed native crypto."
+        "changelog": "v1.0.1+transport: declares transport {profile:okhttp, mode:auto} (coherent okhttp fingerprint, no behavior change yet). v1.0.1: app-exact per-endpoint headers + okhttp/4.10.0 UA. PARKED: gated endpoints blocked server-side, homepage works."
       }
     },
     "animeify": {
@@ -2235,6 +2239,10 @@
         "supports_download": true,
         "requires_cloudflare": false
       },
+      "transport": {
+        "profile": "okhttp",
+        "mode": "light"
+      },
       "compatibility": {
         "min_app_version": "1.4.0",
         "runtime_api_version": "1.0"
@@ -2244,7 +2252,7 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Animeify - Arabic anime source reverse-engineered from Animeify v3.2.0 APK (Xamarin C# DLL RE: static Token POST API, per-host embeds, MediaFire/SolidFiles extraction). Series, episodes, multi-server with qualities.",
-        "changelog": "v1.0.0: initial release. Static Token form-POST protocol, Arabic plots, eager MediaFire/SolidFiles direct-mp4 extraction with session cache, embed templates for OK/Mega/FileLions/SendVid/VanFem/Google-Drive. Verified live end-to-end."
+        "changelog": "v1.0.0+transport: declares transport {profile:okhttp, mode:light} (first light-path source: skips CF stack for the plain JSON API). v1.0.0: initial release, verified live end-to-end."
       }
     }
   }
