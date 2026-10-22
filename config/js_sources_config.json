@@ -586,7 +586,7 @@
       },
       "script": {
         "url": "sources/mangatime/source.js",
-        "sha256": "6459740BB3D47A9954190CC85BA59B88E3FE7600603D40E674FAB16970690396",
+        "sha256": "2BE6B9C671C7B47676244D86632A9D3B923D62BA7D4075CC9F470DD153308316",
         "entry": "createSource"
       },
       "capabilities": {
