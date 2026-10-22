@@ -298,7 +298,7 @@
       "id": "three_asq",
       "sid": 133,
       "name": "3asq (شهامة)",
-      "version": "1.4.0",
+      "version": "1.4.1",
       "enabled": true,
       "status": "stable",
       "base_url": "https://3asq.online",
@@ -314,7 +314,7 @@
       },
       "script": {
         "url": "sources/three_asq/source.js",
-        "sha256": "016EA61B7A25960099EE0E91F1D5BF21C8404DAFAE29333A4A5E5C8522764D8C",
+        "sha256": "13733759395DAB9729DCB006CED4586E1ACF53C73B73EE81342167F3632B164D",
         "entry": "createSource"
       },
       "capabilities": {
@@ -336,7 +336,7 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "3asq Madara HTML source migrated to installable JavaScript",
-        "changelog": "v1.4.0: Fix search (parse tab-thumb result blocks, was always empty) and fix genre filter (use /manga-genre/{slug}/ URLs, site ignores ?genre[]= params)."
+        "changelog": "v1.4.1: Fix empty/placeholder covers (prefer data-src/data-lazy-src, skip theme dflazy placeholder; detail page reads summary_image or og:image). v1.4.0: Fix search (parse tab-thumb result blocks, was always empty) and fix genre filter (use /manga-genre/{slug}/ URLs, site ignores ?genre[]= params)."
       }
     },
     "hijala": {

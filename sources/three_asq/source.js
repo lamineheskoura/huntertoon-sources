@@ -103,6 +103,18 @@ function createSource(api, config) {
     return String(title || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
   }
 
+  // Listing pages lazy-load covers (`data-src="real"` + `src="dflazy.jpg"`).
+  // Greedy `<img[^>]+src=` picked the placeholder; prefer data-src and never
+  // return the theme's lazy placeholder.
+  function pickImageSrc(block) {
+    var m = block.match(/<img[^>]*\bdata-src="([^"]+)"/i) ||
+            block.match(/<img[^>]*\bdata-lazy-src="([^"]+)"/i) ||
+            block.match(/<img[^>]*\bsrc="([^"]+)"/i);
+    var u = m ? m[1].trim() : "";
+    if (/dflazy|placeholder|blank\.(?:gif|png)|data:image/i.test(u)) return "";
+    return u;
+  }
+
   function extractNumber(url, title) {
     var path = String(url || "");
     var segments = path.split("?")[0].replace(/\/$/, "").split("/");
@@ -146,9 +158,7 @@ function createSource(api, config) {
       seen[detailUrl] = true;
 
       // Cover
-      var coverM = block.match(/<img[^>]+(?:data-src|data-lazy-src|src)="([^"]+)"/i);
-      var cover = coverM ? coverM[1].trim() : "";
-      if (cover.indexOf("data:image") === 0) cover = "";
+      var cover = pickImageSrc(block);
 
       results.push({
         title: title,
@@ -188,9 +198,7 @@ function createSource(api, config) {
         var tDetailUrl = makeAbsolute(tHref);
         if (!tTitle || !tDetailUrl || seen[tDetailUrl]) continue;
         seen[tDetailUrl] = true;
-        var tCoverM = tblock.match(/<img[^>]+(?:data-src|data-lazy-src|src)="([^"]+)"/i);
-        var tCover = tCoverM ? tCoverM[1].trim() : "";
-        if (tCover.indexOf("data:image") === 0) tCover = "";
+        var tCover = pickImageSrc(tblock);
         results.push({
           title: tTitle,
           detailUrl: tDetailUrl,
@@ -210,9 +218,14 @@ function createSource(api, config) {
     if (titleM) title = cleanTitle(titleM[1]);
 
     var cover = "";
-    var coverM = html.match(/<div[^>]*class="[^"]*summary_image[^"]*"[^>]*>[\s\S]*?<img[^>]+(?:data-src|data-lazy-src|src)="([^"]+)"/i) ||
-                 html.match(/<meta[^>]*property="og:image"[^>]*content="([^"]+)"/i);
-    if (coverM) cover = makeAbsolute(coverM[1]);
+    var summaryM = html.match(/<div[^>]*class="[^"]*summary_image[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+    var coverRaw = summaryM ? pickImageSrc(summaryM[1]) : "";
+    if (coverRaw) {
+      cover = makeAbsolute(coverRaw);
+    } else {
+      var ogM = html.match(/<meta[^>]*property="og:image"[^>]*content="([^"]+)"/i);
+      if (ogM) cover = makeAbsolute(ogM[1]);
+    }
 
     var desc = "";
     var descM = html.match(/<div[^>]*class="[^"]*(?:description-summary|summary__content|manga-excerpt)[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
