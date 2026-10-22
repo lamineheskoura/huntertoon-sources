@@ -586,7 +586,7 @@
       },
       "script": {
         "url": "sources/mangatime/source.js",
-        "sha256": "2BE6B9C671C7B47676244D86632A9D3B923D62BA7D4075CC9F470DD153308316",
+        "sha256": "6459740BB3D47A9954190CC85BA59B88E3FE7600603D40E674FAB16970690396",
         "entry": "createSource"
       },
       "capabilities": {
@@ -878,7 +878,7 @@
       "id": "manhasama",
       "sid": 119,
       "name": "مانها السماء (Manha Alsamaa)",
-      "version": "1.3.8",
+      "version": "1.4.0",
       "enabled": true,
       "status": "beta",
       "base_url": "https://realmnovel.com",
@@ -886,17 +886,18 @@
       "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=realmnovel.com",
       "requires_cf": false,
       "image_referer": "https://realmnovel.com/",
+      "transport": {
+        "mode": "light"
+      },
       "headers": {
-        "User-Agent": "Dart/3.6 (dart:io) Chrome/124",
+        "User-Agent": "Dart/3.9 (dart:io)",
         "Accept": "application/json, text/plain, */*",
         "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
-        "Authorization": "Bearer guest",
-        "x-app-version": "1.0.5",
         "Referer": ""
       },
       "script": {
         "url": "sources/manhasama/source.js",
-        "sha256": "7C9E85231BEDB8481BEF1863BEA3BB4D4161EDA54BFC09993CEAB5518CBB5FD6",
+        "sha256": "03FAD8F9A436CE7F6B3B1C36ED56D3702512E677205BE487DEC8081AAE92823F",
         "entry": "createSource"
       },
       "capabilities": {
@@ -918,8 +919,8 @@
         "language": "ar",
         "adult": false,
         "author": "HunterToon Team",
-        "description": "Manha Alsamaa - Arabic manga source using realmnovel.com manga API with guest auth and app version",
-        "changelog": "v1.3.8: Harden makeCdnUrl (trim, //-prefix, missing leading slash, http-to-https) so restored library covers reheal instead of 404; v1.3.7: Capitalized /api/Manga + /api/Chapters routes (origin nginx 403s lowercase paths only) plus x-app-version 1.0.5 like the official app"
+        "description": "Manha Alsamaa - Arabic manga source using realmnovel.com manga API with device attestation and signed requests",
+        "changelog": "v1.4.0: Device-attested sessions (register + attest -> X-Att) and HMAC-signed requests (X-Ts/X-Nonce/X-Sig, installId format ins_<base36>_<16 base36>), lowercase /api/manga + /api/chapters routes, light transport mode to keep the Dart UA (nginx 403s Chrome/empty UA and any Referer)"
       }
     },
     "kawaii": {

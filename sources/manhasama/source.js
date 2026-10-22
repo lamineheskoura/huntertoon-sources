@@ -1,56 +1,117 @@
-function createSource(api, config) {
+﻿function createSource(api, config) {
   var baseUrl = (config && config.base_url) || "https://realmnovel.com";
   var apiUrl = baseUrl + "/api";
-  // User-Agent must satisfy TWO gates at once (verified live):
-  // 1. origin nginx 403s full-Chrome / okhttp / Dalvik / empty UAs on
-  //    /api/manga* — "Dart/3.6 (dart:io) Chrome/124" returns 200;
-  // 2. the app's fetch orchestrator overwrites any caller UA that does NOT
-  //    contain "Chrome/" with its own full-Chrome UA (which gate 1 blocks).
-  // So the UA keeps the Dart prefix AND a Chrome/ token suffix.
-  // NOTE: manifest config headers User-Agent must carry the same value —
-  // the app injects it as config.user_agent, which takes precedence here.
-  var userAgent = (config && config.user_agent) || "Dart/3.6 (dart:io) Chrome/124";
+  // Gate facts verified live: any Referer header => 403, non-Dart UA => 403,
+  // and X-Sig must be HMAC-SHA256(hex) over "METHOD\nPATH(no query)\nTS\nNONCE\nDEVICE_ID".
+  var userAgent = "Dart/3.9 (dart:io)";
+  var HMAC_KEY_HEX = "61626338633034653235336232363134303435356666653565313066623161386335386363313161306165666461316530363862646562373764653766613231";
+  var ATTEST_PUB = "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEg0NTPT3n6AzL1YWFp5XQwYBE47KdSw40SDg9cs6wx53lRgOT3s1qPY4Z8l2sP874t+Dxm4wixvgw3YStrTon/g==";
+  var AL = "0123456789abcdefghijklmnopqrstuvwxyz";
 
-  // Device ID: the server nginx-filters the "manha-huntertoon-*" prefix
-  // (static AND per-session "js-" IDs both 403 on /api/manga*), while a
-  // bare random UUID returns 200 and stays reusable (verified live).
-  // (config.deviceId is never injected by Dart, so always generated here.)
-  function hexN(n) {
+  var session = { id: "", token: "", att: "" };
+  var bootP = null;
+
+  function b36(n) {
+    var s = "";
+    do { s = AL.charAt(n % 36) + s; n = Math.floor(n / 36); } while (n > 0);
+    return s;
+  }
+  function randHex(n) {
     var s = "";
     for (var i = 0; i < n; i++) s += "0123456789abcdef"[Math.floor(Math.random() * 16)];
     return s;
   }
-  function newDeviceId() {
-    // UUIDv4-shaped, no prefix.
-    return hexN(8) + "-" + hexN(4) + "-4" + hexN(3) + "-a" + hexN(3) + "-" + hexN(12);
+  function rand36(n) {
+    var s = "";
+    for (var i = 0; i < n; i++) s += AL.charAt(Math.floor(Math.random() * 36));
+    return s;
   }
-  var deviceId = (config && config.deviceId) ? String(config.deviceId) : newDeviceId();
-
-  function buildHeaders() {
-    return {
+  function h2b(c) { return (c < 16 ? "0" : "") + c.toString(16); }
+  function utf8Hex(str) {
+    var out = "";
+    for (var i = 0; i < str.length; i++) {
+      var c = str.charCodeAt(i);
+      if (c < 0x80) out += h2b(c);
+      else if (c < 0x800) out += h2b(0xc0 | (c >> 6)) + h2b(0x80 | (c & 63));
+      else if (c >= 0xd800 && c <= 0xdbff) {
+        var c2 = str.charCodeAt(++i);
+        var cp = 0x10000 + ((c - 0xd800) << 10) + (c2 - 0xdc00);
+        out += h2b(0xf0 | (cp >> 18)) + h2b(0x80 | ((cp >> 12) & 63)) + h2b(0x80 | ((cp >> 6) & 63)) + h2b(0x80 | (cp & 63));
+      } else out += h2b(0xe0 | (c >> 12)) + h2b(0x80 | ((c >> 6) & 63)) + h2b(0x80 | (c & 63));
+    }
+    return out;
+  }
+  function safeJson(text) {
+    try { return JSON.parse(text || "{}"); } catch (e) { return {}; }
+  }
+  function plainHeaders() {
+    var h = {
       "User-Agent": userAgent,
-      "Accept": "application/json",
-      "Authorization": "Bearer guest",
-      "X-Device-ID": deviceId,
-      // App version the official app (com.manhasama.app 1.0.5) reports.
-      "x-app-version": "1.0.5",
-      // Empty (not absent!): origin nginx 403s /api/* requests carrying ANY
-      // Referer (verified live), while the app's fetch orchestrator injects
-      // "Referer: <site>/" whenever the caller omits it — so an explicit
-      // empty value is required to reach the wire referer-less (200).
-      "Referer": ""
+      "Accept": "application/json, text/plain, */*",
+      "Referer": "",
+      "X-Device-ID": session.id
     };
+    if (session.token) h["Authorization"] = "Bearer " + session.token;
+    return h;
   }
-
-  // API route case: origin nginx blanket-403s lowercase /api/manga* and
-  // /api/chapters*, while capitalized /api/Manga* and /api/Chapters* reach
-  // the app router (verified live 200s). Backend itself is case-insensitive.
-  // NOTE: /manga/ and /chapters/ inside detailUrl/chapter page URLs below are
-  // opaque client-side identifiers (only the slug regexes read them).
-
-  var defaultHeaders = buildHeaders();
+  function post(path, payload) {
+    var headers = plainHeaders();
+    headers["Content-Type"] = "application/json";
+    return api.http(apiUrl + path, {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify(payload),
+      transport: "light"
+    }).then(function (res) { return safeJson(res && res.body); });
+  }
+  async function register() {
+    var u = "ht" + randHex(8);
+    var d = await post("/auth/register", {
+      username: u,
+      email: u + "@mailinator.com",
+      password: "T3st!" + randHex(16)
+    });
+    if (!d.token) throw new Error("register failed");
+    return d.token;
+  }
+  async function attest() {
+    var n = await post("/device/attest/nonce", {});
+    var d = await post("/device/attest", {
+      nonce: n.nonce || "",
+      token: null,
+      error: "NO_PROJECT",
+      platform: "android",
+      pub: ATTEST_PUB
+    });
+    if (!d.ok || !d.attToken) throw new Error("attest failed");
+    return d.attToken;
+  }
+  function bootstrap(forceAtt) {
+    if (!forceAtt && session.token && session.att) return Promise.resolve();
+    if (!bootP) {
+      bootP = (async function () {
+        if (!session.id) session.id = "ins_" + b36(Date.now()) + "_" + rand36(16);
+        if (!session.token) session.token = await register();
+        if (!session.att || forceAtt) session.att = await attest();
+      })().then(function (v) { bootP = null; return v; }, function (e) { bootP = null; throw e; });
+    }
+    return bootP;
+  }
+  async function signedHeaders(method, path) {
+    var ts = String(Math.floor(Date.now() / 1000));
+    var nonce = randHex(12);
+    var canon = method + "\n" + "/api" + path.split("?")[0] + "\n" + ts + "\n" + nonce + "\n" + session.id;
+    var sig = await api.cryptoOp("hmacSha256", utf8Hex(canon), { key: HMAC_KEY_HEX });
+    var h = plainHeaders();
+    h["X-Ts"] = ts;
+    h["X-Nonce"] = nonce;
+    h["X-Sig"] = sig;
+    h["X-Att"] = session.att;
+    return h;
+  }
 
   var defaultGenres = [];
+  var catSlugs = {};
   var defaultTypes = ["manga", "manhwa", "manhua"];
 
   function makeAbsolute(url) {
@@ -65,11 +126,11 @@ function createSource(api, config) {
     var u = String(url).trim();
     if (!u) return "";
     if (u.indexOf("http") === 0) {
-      // ترقية http إلى https (مثل بقية المصادر).
+      // ØªØ±Ù‚ÙŠØ© http Ø¥Ù„Ù‰ https (Ù…Ø«Ù„ Ø¨Ù‚ÙŠØ© Ø§Ù„Ù…ØµØ§Ø¯Ø±).
       if (u.indexOf("http://") === 0) return "https://" + u.substring(7);
       return u;
     }
-    // P0-4: معالجة // (كانت تُضاعف الهوست) والمسار بلا / بادئة.
+    // P0-4: Ù…Ø¹Ø§Ù„Ø¬Ø© // (ÙƒØ§Ù†Øª ØªÙØ¶Ø§Ø¹Ù Ø§Ù„Ù‡ÙˆØ³Øª) ÙˆØ§Ù„Ù…Ø³Ø§Ø± Ø¨Ù„Ø§ / Ø¨Ø§Ø¯Ø¦Ø©.
     if (u.indexOf("//") === 0) return "https:" + u;
     if (u.charAt(0) !== "/") u = "/" + u;
     return "https://cdn.realmnovel.com" + u;
@@ -101,18 +162,22 @@ function createSource(api, config) {
   }
 
   async function apiGet(path, retried) {
-    var url = apiUrl + path;
-    var res = await api.http(url, {
+    await bootstrap(false);
+    var res = await api.http(apiUrl + path, {
       method: "GET",
-      headers: buildHeaders()
+      headers: await signedHeaders("GET", path),
+      transport: "light"
     });
-    // One-shot recovery: rotate to a fresh random ID once and retry.
-    if (res && res.status === 429 && !retried && path.indexOf("/Chapters/") === 0) {
-      deviceId = newDeviceId();
-      defaultHeaders = buildHeaders();
+    if (res && res.status === 428 && !retried) {
+      await bootstrap(true);
       return apiGet(path, true);
     }
-    if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : 0) + " for " + url);
+    if (res && (res.status === 401 || res.status === 426) && !retried) {
+      session.token = "";
+      session.att = "";
+      return apiGet(path, true);
+    }
+    if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : 0) + " for " + apiUrl + path);
     return JSON.parse(res.body || "{}");
   }
 
@@ -132,7 +197,7 @@ function createSource(api, config) {
     async getHomepageManga(args) {
       try {
         var page = (args && args.page) || 1;
-        var data = await apiGet("/Manga?page=" + page + "&limit=20");
+        var data = await apiGet("/manga?page=" + page + "&limit=20");
         var items = data.items || [];
         return items.map(toManga);
       } catch (e) {
@@ -144,7 +209,7 @@ function createSource(api, config) {
       try {
         var query = (args && args.query) || "";
         if (!query.trim()) return [];
-        var data = await apiGet("/Manga?search=" + encodeURIComponent(query) + "&limit=20");
+        var data = await apiGet("/manga?search=" + encodeURIComponent(query) + "&limit=20");
         var items = data.items || [];
         return items.map(toManga);
       } catch (e) {
@@ -156,18 +221,20 @@ function createSource(api, config) {
       try {
         var page = (args && args.page) || 1;
         var params = ["page=" + page, "limit=20"];
-        if (args && args.genre) {
-          params.push("cat=" + encodeURIComponent(args.genre));
+        var genre = args && args.genre ? String(args.genre) : "";
+        var slug = "";
+        if (genre) {
+          if (!Object.keys(catSlugs).length) await this.getGenresAndTypes();
+          slug = catSlugs[genre.toLowerCase()] || catSlugs[genre] || "";
+          if (slug) params.push("category=" + encodeURIComponent(slug));
         }
         if (args && args.status) {
           params.push("status=" + encodeURIComponent(args.status));
         }
-        var data = await apiGet("/Manga?" + params.join("&"));
+        var data = await apiGet("/manga?" + params.join("&"));
         var items = data.items || [];
-        // Server honors ?status= but ignores ?cat=: apply the genre filter
-        // client-side on categories[].name/slug (verified live).
-        if (args && args.genre) {
-          var g = String(args.genre).toLowerCase();
+        if (genre) {
+          var g = genre.toLowerCase();
           items = items.filter(function (it) {
             var cats = (it && it.categories) || [];
             for (var i = 0; i < cats.length; i++) {
@@ -175,6 +242,7 @@ function createSource(api, config) {
               var sl = String((cats[i] && cats[i].slug) || "").toLowerCase();
               if (nm && (nm === g || nm.indexOf(g) !== -1 || g.indexOf(nm) !== -1)) return true;
               if (sl && sl === g) return true;
+              if (slug && sl && sl === slug.toLowerCase()) return true;
             }
             return false;
           });
@@ -187,9 +255,15 @@ function createSource(api, config) {
 
     async getGenresAndTypes() {
       try {
-        var data = await apiGet("/Categories");
+        var data = await apiGet("/categories");
         var items = data.items || [];
         defaultGenres = items.map(function (c) { return c.name || ""; }).filter(Boolean);
+        catSlugs = {};
+        items.forEach(function (c) {
+          if (!c || !c.slug) return;
+          if (c.name) catSlugs[String(c.name).toLowerCase()] = c.slug;
+          catSlugs[String(c.slug)] = c.slug;
+        });
       } catch (e) {}
       return { genres: defaultGenres, types: defaultTypes };
     },
@@ -200,24 +274,24 @@ function createSource(api, config) {
       var m = rawUrl.match(/\/manga\/([^/?#]+)/);
       if (m) slug = m[1];
 
-      var data = await apiGet("/Manga/" + slug);
+      var data = await apiGet("/manga/" + slug);
       var manga = data.manga || data;
       if (!manga || !manga._id) throw new Error("Manga not found: " + slug);
 
-      var title = manga.arabicTitle || manga.englishTitle || "بدون عنوان";
+      var title = manga.arabicTitle || manga.englishTitle || "Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†";
       var coverRaw = manga.cover || manga.coverThumb || "";
       var cover = makeCdnUrl(coverRaw);
       var desc = manga.description || "";
       var genres = (manga.categories || []).map(function (c) { return c.name || ""; }).filter(Boolean);
       var status = manga.status || "ongoing";
 
-      var chData = await apiGet("/Manga/" + slug + "/Chapters?limit=200&page=1");
+      var chData = await apiGet("/manga/" + slug + "/chapters?limit=200&page=1");
       var allItems = chData.items || [];
       var total = chData.total || 0;
       var limit = chData.limit || 200;
       var totalPages = Math.ceil(total / limit);
       for (var p = 2; p <= totalPages; p++) {
-        var more = await apiGet("/Manga/" + slug + "/Chapters?limit=200&page=" + p);
+        var more = await apiGet("/manga/" + slug + "/chapters?limit=200&page=" + p);
         var moreItems = more.items || [];
         allItems = allItems.concat(moreItems);
       }
@@ -238,7 +312,7 @@ function createSource(api, config) {
         description: strip(desc),
         genres: genres,
         chapters: chapters,
-        originalUrl: rawUrl || (baseUrl + "/Manga/" + slug),
+        originalUrl: rawUrl || (baseUrl + "/manga/" + slug),
         hasMoreChapters: false,
         lastFetchedPage: 1,
         contentType: "manga"
@@ -257,21 +331,40 @@ function createSource(api, config) {
       var m = rawUrl.match(/\/chapters\/([^/?#]+)/);
       var chapterId = m ? m[1] : "";
 
-      var data = await apiGet("/Chapters/" + chapterId);
+      var data = await apiGet("/chapters/" + chapterId);
       var chapter = data.chapter || data;
       if (!chapter || !chapter.pages) {
         return { kind: "image", imageUrls: [] };
       }
 
       var pages = chapter.pages || [];
-      var urls = pages.map(function (p) {
-        return validImage(p.image || p.url || "");
-      }).filter(Boolean);
+      // The page list and the per-page sizes come from the SAME array, so
+      // the aspect ratios stay parallel to the image list.
+      var urls = [];
+      var aspects = [];
+      for (var pi = 0; pi < pages.length; pi++) {
+        var u = validImage(pages[pi].image || pages[pi].url || "");
+        if (!u) continue;
+        urls.push(u);
+        var pw = Number(pages[pi].width) || 0;
+        var ph = Number(pages[pi].height) || 0;
+        aspects.push(pw > 0 && ph > 0 ? pw / ph : 0);
+      }
+      // The app commits every page's extent on its FIRST paint: the ratios
+      // are only sent when EVERY page has a size.
+      var imageAspects = (aspects.length === urls.length && urls.length) ? aspects : null;
+      if (imageAspects) {
+        for (var ai = 0; ai < imageAspects.length; ai++) {
+          if (!(imageAspects[ai] > 0)) { imageAspects = null; break; }
+        }
+      }
 
       var hasOverlay = pages.some(function (p) { return p.hasOverlay === true; });
 
       if (!hasOverlay) {
-        return { kind: "image", imageUrls: urls };
+        var plain = { kind: "image", imageUrls: urls };
+        if (imageAspects) plain.imageAspects = imageAspects;
+        return plain;
       }
 
       var pageOverlays = pages.map(function (p, idx) {
@@ -309,13 +402,15 @@ function createSource(api, config) {
         if (ph > naturalImageHeight) naturalImageHeight = ph;
       }
 
-      return {
+      var overlayOut = {
         kind: "overlay",
         imageUrls: urls,
         pageOverlays: pageOverlays,
         naturalImageWidth: naturalImageWidth,
         naturalImageHeight: naturalImageHeight
       };
+      if (imageAspects) overlayOut.imageAspects = imageAspects;
+      return overlayOut;
     },
 
     async fetchMoreChapters(args) {
@@ -331,7 +426,7 @@ function createSource(api, config) {
         nextPage = parseInt(nextPage, 10) || 2;
         if (nextPage < 2) nextPage = 2;
         if (nextPage > 100) return null;
-        var chData = await apiGet("/Manga/" + slug + "/Chapters?limit=200&page=" + nextPage);
+        var chData = await apiGet("/manga/" + slug + "/chapters?limit=200&page=" + nextPage);
         var chItems = chData.items || [];
         if (chItems.length === 0) return null;
 
