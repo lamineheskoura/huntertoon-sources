@@ -616,7 +616,7 @@
       "id": "mangatek",
       "sid": 117,
       "name": "مانجاتك (Mangatek)",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "enabled": true,
       "status": "beta",
       "base_url": "https://mangatek.com",
@@ -662,7 +662,7 @@
       },
       "script": {
         "url": "sources/mangatek/source.js",
-        "sha256": "4F4AE113EF09CD61EF272B4A5EE818D192EA8DFAC73E4D68744ADC0666AB5802",
+        "sha256": "EB2788FDDA07EA6039AB7BDDFDBEE1EE093DF474648062F90EBD44785A8B0EC5",
         "entry": "createSource"
       },
       "capabilities": {
@@ -685,14 +685,14 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Mangatek Astro/overlay-capable source migrated to JavaScript",
-        "changelog": "v1.3.0: overlay encryption rotated — new proof salt + esid field + {overlay,ks,ev} response with pure-JS WASM-KDF port (key/iv/ct/tag) + pure-JS AES-GCM; legacy {overlay,key} path kept; v1.2.0: rotated proof salt + 2-step challenge unlock"
+        "changelog": "v1.3.1: second encryption rotation — new proof salt (cc9544a3…) AND new N0 overlay-KDF constant in the WASM unwrap ABI; verified live end-to-end overlay decrypt on both sites. v1.3.0: overlay encryption rotated — new proof salt + esid field + {overlay,ks,ev} response with pure-JS WASM-KDF port (key/iv/ct/tag) + pure-JS AES-GCM; legacy {overlay,key} path kept; v1.2.0: rotated proof salt + 2-step challenge unlock"
       }
     },
     "mangasid": {
       "id": "mangasid",
       "sid": 115,
       "name": "مانجا سيد (Mangasid)",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "enabled": true,
       "status": "beta",
       "base_url": "https://mangasid.com",
@@ -708,7 +708,7 @@
       },
       "script": {
         "url": "sources/mangasid/source.js",
-        "sha256": "B8977A7EA76C2A47B1C25B6F5AFC5449D5145593F2EF055B27EAD70761621536",
+        "sha256": "4A8D600FC9F5AE4F6798E375A420D50999EA02EEA515F8546D901BEAB65FF5DB",
         "entry": "createSource"
       },
       "capabilities": {
@@ -731,7 +731,7 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Mangasid Astro/overlay-capable source migrated to JavaScript",
-        "changelog": "v1.3.0: overlay encryption rotated — new proof salt + esid field + {overlay,ks,ev} response with pure-JS WASM-KDF port (key/iv/ct/tag) + pure-JS AES-GCM; legacy {overlay,key} path kept; v1.2.0: rotated proof salt + 2-step challenge unlock"
+        "changelog": "v1.3.1: second encryption rotation — new proof salt (cc9544a3…) AND new N0 overlay-KDF constant in the WASM unwrap ABI; verified live end-to-end overlay decrypt on both sites. v1.3.0: overlay encryption rotated — new proof salt + esid field + {overlay,ks,ev} response with pure-JS WASM-KDF port (key/iv/ct/tag) + pure-JS AES-GCM; legacy {overlay,key} path kept; v1.2.0: rotated proof salt + 2-step challenge unlock"
       }
     },
     "hizo_manga": {

@@ -8,9 +8,9 @@ function createSource(api, config) {
   var overlayKeyHex = "ff453871399fe268588a0936b45376022d85ed0fd1292001d5102f6a30291dc1";
   var apiBase = ((config && config.api_base) || "https://api.mangatek.com").replace(/\/+$/, "");
   // Proof salt baked into the CURRENT site viewer (ChapterImageViewer):
-  // proof = SHA256(salt|token|chapterId). Rotated 2026-09 (old
-  // 322c4e08... stopped unlocking); extracted live from the viewer bundle.
-  var unlockProofSalt = "69e44f7fbc755230d61d205ab9cdb0a6fff5f7bf9209ce25";
+  // proof = SHA256(salt|token|chapterId). Rotated 2026-10 (old
+  // 69e44f7f... stopped unlocking); extracted live from the viewer bundle.
+  var unlockProofSalt = "cc9544a33ccbc953b9e7546c9b134524f3c3a06e81d392f0";
   var lastChapterUrl = baseUrl + "/";
 
   var defaultHeaders = mergeHeaders(
@@ -645,7 +645,7 @@ function createSource(api, config) {
     return decodeURIComponent(escape(s));
   }
   // ── Overlay KDF helpers (NEW shape ev==3, QuickJS-clean, fail-closed) ──
-  var overlayN0 = "6f5b8499c7a64f1b94022a4503c47cde0aa90505463fc9d9";
+  var overlayN0 = "2435eb747e78f582e781909ebbfc14826e4f3954b4268850";
   function ovMakeEsid() {
     var chars = "0123456789abcdef";
     var out = "";

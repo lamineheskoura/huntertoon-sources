@@ -6,11 +6,10 @@ function createSource(api, config) {
   var userAgent = (config && config.user_agent) || "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
   var overlayKeyHex = "ff453871399fe268588a0936b45376022d85ed0fd1292001d5102f6a30291dc1";
   // Proof salt baked into the CURRENT site viewer (ChapterImageViewer):
-  // proof = SHA256(salt|token|chapterId). Rotated 2026-09 (old
-  // 322c4e08... stopped unlocking); same operator/backend family as
-  // mangatek, whose live bundle carries this value (mangasid bundle
-  // not yet re-verified — fail-closed if it differs).
-  var unlockProofSalt = "69e44f7fbc755230d61d205ab9cdb0a6fff5f7bf9209ce25";
+  // proof = SHA256(salt|token|chapterId). Rotated 2026-10 (old
+  // 69e44f7f... stopped unlocking); extracted live from the mangasid
+  // viewer bundle (same value as mangatek, but verify each site).
+  var unlockProofSalt = "cc9544a33ccbc953b9e7546c9b134524f3c3a06e81d392f0";
   var lastChapterUrl = baseUrl + "/";
 
   var defaultHeaders = mergeHeaders({
@@ -669,7 +668,7 @@ function createSource(api, config) {
     return s;
   }
   // ── Overlay KDF helpers (NEW shape ev==3, QuickJS-clean, fail-closed) ──
-  var overlayN0 = "6f5b8499c7a64f1b94022a4503c47cde0aa90505463fc9d9";
+  var overlayN0 = "2435eb747e78f582e781909ebbfc14826e4f3954b4268850";
   function ovMakeEsid() {
     var chars = "0123456789abcdef";
     var out = "";
