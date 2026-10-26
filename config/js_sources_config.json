@@ -1,10 +1,10 @@
 {
-  "version": "1.55.0",
+  "version": "1.56.0",
   "schema_version": 3,
   "runtime_api_version": "1.0",
   "manifest_version": "2026.10.12.13",
   "generated_at": "2026-09-04T14:30:00Z",
-  "last_updated": "2026-10-06T12:00:00Z",
+  "last_updated": "2026-10-26T12:00:00Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
   "min_app_version": "1.4.0",
   "repository": {
@@ -62,7 +62,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Azora Manga source using the current azorafly.com API",
-        "changelog": "v1.3.0: Direct API-based fetching via api.azorafly.com; bypass broken frontend HTML entirely for instant chapter and image loading."
+        "changelog": "v1.3.0: Direct API-based fetching via api.azorafly.com; bypass broken frontend HTML entirely for instant chapter and image loading.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 3",
+        "icon": {
+          "seed": 103
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "brownmanga": {
@@ -110,7 +120,18 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Brown Manga - Next.js SSR Arabic manga/manhwa/novel source",
-        "changelog": "v2.0.0: Rewrite to Next.js RSC payload extraction — site uses CSR, not SSR"
+        "changelog": "v2.0.0: Rewrite to Next.js RSC payload extraction — site uses CSR, not SSR",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 4",
+        "icon": {
+          "seed": 104
+        },
+        "in_filters": [
+          "novels",
+          "manhwa"
+        ]
       }
     },
     "sunovels": {
@@ -155,7 +176,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Sunovels novel source with lazy chapter generation from JSON-LD page count",
-        "changelog": "Initial JS implementation with sequential chapter generation and anti-scrape text filtering"
+        "changelog": "Initial JS implementation with sequential chapter generation and anti-scrape text filtering",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 30",
+        "icon": {
+          "seed": 130
+        },
+        "in_filters": [
+          "novels"
+        ]
       }
     },
     "seanovel": {
@@ -200,7 +231,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "SeaNovel novel source using the seanovel.org REST API with lazy chapter generation and RSC paragraph extraction",
-        "changelog": "Initial JS implementation using /api/novels, /api/novel/{slug}, and RSC-based chapter content extraction"
+        "changelog": "Initial JS implementation using /api/novels, /api/novel/{slug}, and RSC-based chapter content extraction",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 27",
+        "icon": {
+          "seed": 127
+        },
+        "in_filters": [
+          "novels"
+        ]
       }
     },
     "swat": {
@@ -246,7 +287,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Swat API source migrated to JavaScript",
-        "changelog": "Initial JS migration for testing"
+        "changelog": "Initial JS migration for testing",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 31",
+        "icon": {
+          "seed": 131
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "team_x": {
@@ -291,7 +342,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Team-X (Madara CMS) source migrated to JavaScript",
-        "changelog": "Normalize canonical host to olympustaff.com so JS referer/image requests match the working built-in source"
+        "changelog": "Normalize canonical host to olympustaff.com so JS referer/image requests match the working built-in source",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 32",
+        "icon": {
+          "seed": 132
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "three_asq": {
@@ -336,7 +397,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "3asq Madara HTML source migrated to installable JavaScript",
-        "changelog": "v1.4.1: Fix empty/placeholder covers (prefer data-src/data-lazy-src, skip theme dflazy placeholder; detail page reads summary_image or og:image). v1.4.0: Fix search (parse tab-thumb result blocks, was always empty) and fix genre filter (use /manga-genre/{slug}/ URLs, site ignores ?genre[]= params)."
+        "changelog": "v1.4.1: Fix empty/placeholder covers (prefer data-src/data-lazy-src, skip theme dflazy placeholder; detail page reads summary_image or og:image). v1.4.0: Fix search (parse tab-thumb result blocks, was always empty) and fix genre filter (use /manga-genre/{slug}/ URLs, site ignores ?genre[]= params).",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 33",
+        "icon": {
+          "seed": 133
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "hijala": {
@@ -381,7 +452,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Hijala Tezuka-style HTML source migrated to installable JavaScript",
-        "changelog": "Initial JS implementation with repeated homepage-card filtering and resilient selector/noscript/regex/ts_reader extraction"
+        "changelog": "Initial JS implementation with repeated homepage-card filtering and resilient selector/noscript/regex/ts_reader extraction",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 8",
+        "icon": {
+          "seed": 108
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "dilar": {
@@ -427,7 +508,18 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Dilar API source with pure-JS v15 crypto (ECDH P-256 + AES-SIV, no app changes) for chapter content",
-        "changelog": "v1.7.4: zero-BigInt rewrite (limb P-256 ECDH + limb Poly1305) for bare QuickJS runtimes."
+        "changelog": "v1.7.4: zero-BigInt rewrite (limb P-256 ECDH + limb Poly1305) for bare QuickJS runtimes.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 6",
+        "icon": {
+          "seed": 106
+        },
+        "in_filters": [
+          "novels",
+          "manhwa"
+        ]
       }
     },
     "lekmanga": {
@@ -473,7 +565,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "LekManga Madara source migrated to JavaScript",
-        "changelog": "v1.5.0: Switch base to lekmanga.site (reachable edges; mangalik.net blackholed) + rewrite dead tempsolo image host to tempstorm (verified 200, reference-reader behavior)."
+        "changelog": "v1.5.0: Switch base to lekmanga.site (reachable edges; mangalik.net blackholed) + rewrite dead tempsolo image host to tempstorm (verified 200, reference-reader behavior).",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 12",
+        "icon": {
+          "seed": 112
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "mangastarz": {
@@ -518,7 +620,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "MangaStarz Madara source migrated to JavaScript",
-        "changelog": "v1.4.0: Fix search (parse c-tabs-item result blocks) and genre filter (use /manga-genre/{arabic-slug}/ URLs with homepage-redirect guard; site ignores ?genre[]= params)."
+        "changelog": "v1.4.0: Fix search (parse c-tabs-item result blocks) and genre filter (use /manga-genre/{arabic-slug}/ URLs with homepage-redirect guard; site ignores ?genre[]= params).",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 16",
+        "icon": {
+          "seed": 116
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "lava_scans": {
@@ -563,7 +675,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Canonical lava_scans installable JavaScript source matching the built-in LavaScans behavior",
-        "changelog": "v1.3.0: detect locked chapters via data-coin=yes attribute (fa-lock icon has no text)"
+        "changelog": "v1.3.0: detect locked chapters via data-coin=yes attribute (fa-lock icon has no text)",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 11",
+        "icon": {
+          "seed": 111
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "mangatime": {
@@ -609,7 +731,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "MangaTime source using homepage.getHomepage, search.searchSeries, content.getSeriesBySlug, content.getChapters, and content.getChapterPages tRPC APIs",
-        "changelog": "v1.3.0: Full chapter lists (limit:1000, lazy growth, flat {url,nextPage} contract) + REAL overlay text via getChapterOverlay/chunks (bbox/style mapping, Amiri fonts)."
+        "changelog": "v1.3.0: Full chapter lists (limit:1000, lazy growth, flat {url,nextPage} contract) + REAL overlay text via getChapterOverlay/chunks (bbox/style mapping, Amiri fonts).",
+        "ai_translation": true
+      },
+      "display": {
+        "alias": "Server 18",
+        "icon": {
+          "seed": 118
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "mangatek": {
@@ -685,7 +817,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Mangatek Astro/overlay-capable source migrated to JavaScript",
-        "changelog": "v1.3.1: second encryption rotation — new proof salt (cc9544a3…) AND new N0 overlay-KDF constant in the WASM unwrap ABI; verified live end-to-end overlay decrypt on both sites. v1.3.0: overlay encryption rotated — new proof salt + esid field + {overlay,ks,ev} response with pure-JS WASM-KDF port (key/iv/ct/tag) + pure-JS AES-GCM; legacy {overlay,key} path kept; v1.2.0: rotated proof salt + 2-step challenge unlock"
+        "changelog": "v1.3.1: second encryption rotation — new proof salt (cc9544a3…) AND new N0 overlay-KDF constant in the WASM unwrap ABI; verified live end-to-end overlay decrypt on both sites. v1.3.0: overlay encryption rotated — new proof salt + esid field + {overlay,ks,ev} response with pure-JS WASM-KDF port (key/iv/ct/tag) + pure-JS AES-GCM; legacy {overlay,key} path kept; v1.2.0: rotated proof salt + 2-step challenge unlock",
+        "ai_translation": true
+      },
+      "display": {
+        "alias": "Server 17",
+        "icon": {
+          "seed": 117
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "mangasid": {
@@ -731,7 +873,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Mangasid Astro/overlay-capable source migrated to JavaScript",
-        "changelog": "v1.3.1: second encryption rotation — new proof salt (cc9544a3…) AND new N0 overlay-KDF constant in the WASM unwrap ABI; verified live end-to-end overlay decrypt on both sites. v1.3.0: overlay encryption rotated — new proof salt + esid field + {overlay,ks,ev} response with pure-JS WASM-KDF port (key/iv/ct/tag) + pure-JS AES-GCM; legacy {overlay,key} path kept; v1.2.0: rotated proof salt + 2-step challenge unlock"
+        "changelog": "v1.3.1: second encryption rotation — new proof salt (cc9544a3…) AND new N0 overlay-KDF constant in the WASM unwrap ABI; verified live end-to-end overlay decrypt on both sites. v1.3.0: overlay encryption rotated — new proof salt + esid field + {overlay,ks,ev} response with pure-JS WASM-KDF port (key/iv/ct/tag) + pure-JS AES-GCM; legacy {overlay,key} path kept; v1.2.0: rotated proof salt + 2-step challenge unlock",
+        "ai_translation": true
+      },
+      "display": {
+        "alias": "Server 15",
+        "icon": {
+          "seed": 115
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "hizo_manga": {
@@ -777,7 +929,18 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Hizo Manga mixed manga/novel source migrated to JavaScript",
-        "changelog": "v1.2.0: Fix reader for live markup (chapter-type-text gate, entry-content fallback, h3.chapter-name title, h2 detail title, excerpt description, srcset/noscript image fallbacks, ajax POST headers)"
+        "changelog": "v1.2.0: Fix reader for live markup (chapter-type-text gate, entry-content fallback, h3.chapter-name title, h2 detail title, excerpt description, srcset/noscript image fallbacks, ajax POST headers)",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 9",
+        "icon": {
+          "seed": 109
+        },
+        "in_filters": [
+          "novels",
+          "manhwa"
+        ]
       }
     },
     "sparkmanga": {
@@ -824,7 +987,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Spark Manga - Madara-based Arabic manga source with Cloudflare protection on browse/detail/search pages",
-        "changelog": "v1.2.1: Added headless browser fallback for Cloudflare-protected paginated pages /page/N/, infinite scroll fixed."
+        "changelog": "v1.2.1: Added headless browser fallback for Cloudflare-protected paginated pages /page/N/, infinite scroll fixed.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 28",
+        "icon": {
+          "seed": 128
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "mangalionz": {
@@ -871,7 +1044,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Manga Lionz - Madara-based Arabic manga source with Cloudflare protection",
-        "changelog": "v1.1.0: Homepage via / + /page/N/ wp-pagenavi scheme with archive fallback; 3-tier fetch; widened reader selectors + srcset; search tab-thumb fallback."
+        "changelog": "v1.1.0: Homepage via / + /page/N/ wp-pagenavi scheme with archive fallback; 3-tier fetch; widened reader selectors + srcset; search tab-thumb fallback.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 14",
+        "icon": {
+          "seed": 114
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "manhasama": {
@@ -920,7 +1103,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Manha Alsamaa - Arabic manga source using realmnovel.com manga API with device attestation and signed requests",
-        "changelog": "v1.4.0: Device-attested sessions (register + attest -> X-Att) and HMAC-signed requests (X-Ts/X-Nonce/X-Sig, installId format ins_<base36>_<16 base36>), lowercase /api/manga + /api/chapters routes, light transport mode to keep the Dart UA (nginx 403s Chrome/empty UA and any Referer)"
+        "changelog": "v1.4.0: Device-attested sessions (register + attest -> X-Att) and HMAC-signed requests (X-Ts/X-Nonce/X-Sig, installId format ins_<base36>_<16 base36>), lowercase /api/manga + /api/chapters routes, light transport mode to keep the Dart UA (nginx 403s Chrome/empty UA and any Referer)",
+        "ai_translation": true
+      },
+      "display": {
+        "alias": "Server 19",
+        "icon": {
+          "seed": 119
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "kawaii": {
@@ -966,7 +1159,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Kawaii Manga source using the manga-api.kawaii-anime.com API for browse, search, details, and reader pages",
-        "changelog": "v1.0.1: guest-token auth (x-app-token + 401 retry) for token_required API. Full rewrite: uses the real browse/search/series/pages API with CDN fallback for reader images"
+        "changelog": "v1.0.1: guest-token auth (x-app-token + 401 retry) for token_required API. Full rewrite: uses the real browse/search/series/pages API with CDN fallback for reader images",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 10",
+        "icon": {
+          "seed": 110
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "fada_riwayat": {
@@ -1016,7 +1219,18 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Fada Riwayat novel-first source migrated to JavaScript",
-        "changelog": "v1.3.1: Fix pagination URL for pages 2+ (was /page/N/ which returns homepage, now /cont/page/N/); v1.3.0: Fix Referer/Sec-Fetch 403 on detail pages; fix entity decoding no-op; fix isNovelMarker case; harden nhvConfig regex"
+        "changelog": "v1.3.1: Fix pagination URL for pages 2+ (was /page/N/ which returns homepage, now /cont/page/N/); v1.3.0: Fix Referer/Sec-Fetch 403 on detail pages; fix entity decoding no-op; fix isNovelMarker case; harden nhvConfig regex",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 7",
+        "icon": {
+          "seed": 107
+        },
+        "in_filters": [
+          "novels",
+          "manhwa"
+        ]
       }
     },
     "nadi_al_riwayt": {
@@ -1061,7 +1275,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Nadi Al Riwayat novel-only source migrated to JavaScript",
-        "changelog": "v1.1.2: Send X-App-Version 1.2.0 like the operator app (harmless today, gate-proof); v1.1.1: hardened details, cover routing, cache guard"
+        "changelog": "v1.1.2: Send X-App-Version 1.2.0 like the operator app (harmless today, gate-proof); v1.1.1: hardened details, cover routing, cache guard",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 24",
+        "icon": {
+          "seed": 124
+        },
+        "in_filters": [
+          "novels"
+        ]
       }
     },
     "despair_manga": {
@@ -1106,7 +1330,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Despair Manga WordPress source - new JS-only source",
-        "changelog": "Initial JS implementation for despair-manga.net"
+        "changelog": "Initial JS implementation for despair-manga.net",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 5",
+        "icon": {
+          "seed": 105
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "mnga4all": {
@@ -1151,7 +1385,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Mnga4all WordPress Madara source - new JS-only source",
-        "changelog": "Initial JS implementation for mnga4all.com"
+        "changelog": "Initial JS implementation for mnga4all.com",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 23",
+        "icon": {
+          "seed": 123
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "area_manga": {
@@ -1196,7 +1440,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "AREA Manga source using MangaReader Premium WordPress theme with Cloudflare HTML parsing",
-        "changelog": "Fix reader image extraction: remove wrong fallback selectors; add AJAX POST to admin-ajax.php with get_secure_chapter_images action using ARYA_CHAPTER_ID; images are loaded dynamically, not embedded in HTML"
+        "changelog": "Fix reader image extraction: remove wrong fallback selectors; add AJAX POST to admin-ajax.php with get_secure_chapter_images action using ARYA_CHAPTER_ID; images are loaded dynamically, not embedded in HTML",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 1",
+        "icon": {
+          "seed": 101
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "rocks_manga": {
@@ -1241,7 +1495,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Rocks Manga source using wp-fire theme with Madara Core. Homepage at /manga/ with pagination; detail pages at /manga/{slug}/; reader images via direct img tags with data-src",
-        "changelog": "Initial JS implementation for rocksmanga.com"
+        "changelog": "Initial JS implementation for rocksmanga.com",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 26",
+        "icon": {
+          "seed": 126
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "mgeko": {
@@ -1287,7 +1551,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "MGeko English manga/manhwa source. Homepage and search use /browse-comics/data/ API returning JSON with results_html; reader images hosted on imgsrv4.com",
-        "changelog": "Initial JS implementation for mgeko.cc"
+        "changelog": "Initial JS implementation for mgeko.cc",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 21",
+        "icon": {
+          "seed": 121
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "manhuaus": {
@@ -1333,7 +1607,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "MANHUAUS.COM English manhua/manga source (WordPress Madara). Protected by Cloudflare Turnstile. Homepage at /; archive at /manga/?page=N; detail at /manga/{slug}/; reader images hosted on img.manhuaus.com",
-        "changelog": "Initial JS implementation for manhuaus.com with Cloudflare support"
+        "changelog": "Initial JS implementation for manhuaus.com with Cloudflare support",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 20",
+        "icon": {
+          "seed": 120
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "asurascans": {
@@ -1379,7 +1663,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Asura Scans English manga/manhwa source (Astro.js SSR). Homepage at /; browse at /browse?page=N; detail at /comics/{slug}; reader at /comics/{slug}/chapter/{num}; images on cdn.asurascans.com. Supports locked chapter detection.",
-        "changelog": "v1.1.1: Fix chapter reader image extraction. Removed broken third-party weserv proxy to serve clean direct CDN URLs (cdn.asurascans.com). Implemented direct extraction from Astro Island props (exact ordered pages) with regex and HTML fallback to prevent corrupt HTML entity artifacts and bridge bottlenecks."
+        "changelog": "v1.1.1: Fix chapter reader image extraction. Removed broken third-party weserv proxy to serve clean direct CDN URLs (cdn.asurascans.com). Implemented direct extraction from Astro Island props (exact ordered pages) with regex and HTML fallback to prevent corrupt HTML entity artifacts and bridge bottlenecks.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 2",
+        "icon": {
+          "seed": 102
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "stellarsaber": {
@@ -1427,7 +1721,19 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Stellar Saber (ستيلار سابير) - Arabic manga/manhwa/anime/novel WordPress source. Homepage at /manga/ and /manga/page/N/; search via ?s=; detail at /manga/{slug}/; reader extracts data-cdn-url from chapter page; images on cdn-stellarsaber.com.",
-        "changelog": "v1.0.0: Initial release - HTML scraping-based source supporting manga listing, search, detail, chapter images, and genre/type/status filtering."
+        "changelog": "v1.0.0: Initial release - HTML scraping-based source supporting manga listing, search, detail, chapter images, and genre/type/status filtering.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 29",
+        "icon": {
+          "seed": 129
+        },
+        "in_filters": [
+          "novels",
+          "anime",
+          "manhwa"
+        ]
       }
     },
     "realmnovel": {
@@ -1477,7 +1783,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "RealmNovel (عالم الروايات) Arabic novel source using the Novels Sky API with x-app-version bypass (no login).",
-        "changelog": "v4.0.2: Survive app orchestrator rewrites (dual-gate UA keeps Dart prefix + Chrome token; empty Referer/Sec-Fetch/UIR override injected defaults that the origin denies); v4.0.1: fetchMoreChapters flat args"
+        "changelog": "v4.0.2: Survive app orchestrator rewrites (dual-gate UA keeps Dart prefix + Chrome token; empty Referer/Sec-Fetch/UIR override injected defaults that the origin denies); v4.0.1: fetchMoreChapters flat args",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 25",
+        "icon": {
+          "seed": 125
+        },
+        "in_filters": [
+          "novels"
+        ]
       }
     },
     "mknov": {
@@ -1522,7 +1838,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "MK Novel (مملكة الروايات) - Next.js Arabic novel source. Homepage / ; search /library?q= ; detail /novel/{id} ; chapters via /api/works/{id}/chapters . Scrambled text is decoded with per-page protected-font substitution tables embedded in the source.",
-        "changelog": "v1.0.2: Homepage pagination fixed via /api/works?limit=30&offset=N (site ignores ?page=); v1.0.1: Homepage now uses /library (deep link) + donghuaList; sanitize control chars before JSON.parse"
+        "changelog": "v1.0.2: Homepage pagination fixed via /api/works?limit=30&offset=N (site ignores ?page=); v1.0.1: Homepage now uses /library (deep link) + donghuaList; sanitize control chars before JSON.parse",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 22",
+        "icon": {
+          "seed": 122
+        },
+        "in_filters": [
+          "novels"
+        ]
       }
     },
     "mangadar": {
@@ -1569,7 +1895,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "MangaDar - WordPress/Alpine manga source, no Cloudflare protection",
-        "changelog": "v1.0.1: no Cloudflare protection - direct HTTP verified live (homepage/detail/chapter/search)"
+        "changelog": "v1.0.1: no Cloudflare protection - direct HTTP verified live (homepage/detail/chapter/search)",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 13",
+        "icon": {
+          "seed": 113
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "witanime": {
@@ -1614,7 +1950,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "WitAnime - Arabic anime source on witanime.site (Laravel Livewire). Browse/movies cards, suggest search, anime+movie details, native direct-mp4 episode servers (4shared/mp4upload/videa).",
-        "changelog": "v1.4.0: REBUILD - browser-exact API POSTs (only Accept+X-CSRF-TOKEN+cookies, no XRW/Origin/body; old extras tripped the bot-gate) + stream-source handshake before gate fetch; honest filters (series/movies/ongoing/seasonal/schedule/year/search - 40 fake genres dropped, no GET genre route exists); Arabic search fixed (compact-row titles); servers carry qualities[]; cookie CRLF/proto hardening."
+        "changelog": "v1.4.0: REBUILD - browser-exact API POSTs (only Accept+X-CSRF-TOKEN+cookies, no XRW/Origin/body; old extras tripped the bot-gate) + stream-source handshake before gate fetch; honest filters (series/movies/ongoing/seasonal/schedule/year/search - 40 fake genres dropped, no GET genre route exists); Arabic search fixed (compact-row titles); servers carry qualities[]; cookie CRLF/proto hardening.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 34",
+        "icon": {
+          "seed": 134
+        },
+        "in_filters": [
+          "anime"
+        ]
       }
     },
     "anime4up": {
@@ -1659,7 +2005,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Anime4up - Arabic anime WordPress source (Anime4up v1.0 theme). Homepage cards, WP search, anime details with DOM episode list incl. load-more walk, direct data-watch servers (megamax/voe/videa/uqload/doodstream/mp4upload).",
-        "changelog": "v1.3.6: streamUrl quote-tolerant (double+single quotes; minified themes missed the master and nulled S1). v1.3.5: token/query survival (resolveUrl inherits base ?query for relative HLS variants; absolute keeps own) + S1 first-party in resolveServer allow-list (anime4up-s1/s2/s path match, rotation-proof). v1.3.4: vk tier zero-fetch honest embed (type=embed+reason vk-passthrough, no fetch/budget; resolveVk dormant-deprecated; ft 6 joins 8/10 honest path; costOrder/tierOf/sort untouched). v1.3.3: vk redirect-loop kill (resolveVk Referer now https://vkvideo.ru/ instead of baseUrl; Location resolves against request origin via resolveAgainst, no more baseUrl-joined 404 hop; makeAbsolute gains optional base, all 15 single-arg callers byte-identical). v1.3.2: resolveServer google/drive fix (drive passthrough, no blind dead) + tier99/s1tried/deadline/budget untried as embed+reason (no delete); bud(16)/deadline(12s) untouched. v1.3.1: honest embed broadcast (ok-no-resolver, vk-unresolved, tier-unresolved) + vk redirect fix + ok.ru in okHost; budgets/dead-lists untouched. v1.3.0: embed allow-list (drive/filemoon only), 4shared/drive/vidbem tiers, leak-proof emit filter."
+        "changelog": "v1.3.6: streamUrl quote-tolerant (double+single quotes; minified themes missed the master and nulled S1). v1.3.5: token/query survival (resolveUrl inherits base ?query for relative HLS variants; absolute keeps own) + S1 first-party in resolveServer allow-list (anime4up-s1/s2/s path match, rotation-proof). v1.3.4: vk tier zero-fetch honest embed (type=embed+reason vk-passthrough, no fetch/budget; resolveVk dormant-deprecated; ft 6 joins 8/10 honest path; costOrder/tierOf/sort untouched). v1.3.3: vk redirect-loop kill (resolveVk Referer now https://vkvideo.ru/ instead of baseUrl; Location resolves against request origin via resolveAgainst, no more baseUrl-joined 404 hop; makeAbsolute gains optional base, all 15 single-arg callers byte-identical). v1.3.2: resolveServer google/drive fix (drive passthrough, no blind dead) + tier99/s1tried/deadline/budget untried as embed+reason (no delete); bud(16)/deadline(12s) untouched. v1.3.1: honest embed broadcast (ok-no-resolver, vk-unresolved, tier-unresolved) + vk redirect fix + ok.ru in okHost; budgets/dead-lists untouched. v1.3.0: embed allow-list (drive/filemoon only), 4shared/drive/vidbem tiers, leak-proof emit filter.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 35",
+        "icon": {
+          "seed": 135
+        },
+        "in_filters": [
+          "anime"
+        ]
       }
     },
     "animeslayer": {
@@ -1704,7 +2060,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "AnimeSlayer - Arabic anime source on anslayer.com public JSON API. Lists, search, details, episodes, native direct-mp4 servers plus drive passthrough.",
-        "changelog": "v1.3.7: genre filter via anime_genre_ids string (verified live) + trailer/duration/source from more_info_result + official f2 mirror first + vinovo/playmate/firestream/qiwi passthrough + roberteachfinal dropped (DNS dead) + filemoon referer + fail stays video kind + إصلاح كوميديا. v1.3.6: soft deadline 12s->7s (app sheet times out at 10s; late answers render as empty sheets) + deadline-untried honest embeds instead of silent vanish + resolve-failed honest embeds for alive-but-unparseable mediafire/mixdrop/streamtape pages (lastPageAlive gate; unreachable hosts stay dropped). v1.3.5: homepage = latest updates first with REAL _offset pagination (30/page, infinite; plain limit/offset proven ignored live) + ok.ru zero-fetch honest embed (embed page hangs 20s+, blew the app 10s server budget -> empty sheet; app owns native ok.ru extractor) + filters/search paginate via _offset; mystream dropped (verified dead DNS). v1.3.4: ok last always (links stable partition) + ok single attempt + proactive skip on deadline/low bud (honest embed, no fetch) + ok HEAD-probe like mediafire/mixdrop/streamtape (probe-failed honest embed); bud(14)/deadline(12s)/drop-list untouched. v1.3.3: muilt fetch-failure fallback (live episode_urls honest embed muilt_fetch_failed, no deletion; gate preserved) + okHost completion (vk/voe/videa/dood/mp4upload/uqload) + drive/filemoon honest reasons + resolveServer directUrl preserve; budget/deadline/drop-list untouched. v1.3.2: non-muilt episode_urls fallback (first live http link, fail-closed; muilt gate preserved, early-return replaced) + unresolved-host honest embed passthrough (reason); budget/deadline/drop-list untouched. v1.3.1: vk passthrough + failed-ok honest embed (reason) instead of dropping; drop-list/budget/deadline untouched. v1.3.0: Kotatsu-faithful extractors (ok data-options, streamtape assembly, mediafire API), true pagination, mp4 HEAD-probe gate."
+        "changelog": "v1.3.7: genre filter via anime_genre_ids string (verified live) + trailer/duration/source from more_info_result + official f2 mirror first + vinovo/playmate/firestream/qiwi passthrough + roberteachfinal dropped (DNS dead) + filemoon referer + fail stays video kind + إصلاح كوميديا. v1.3.6: soft deadline 12s->7s (app sheet times out at 10s; late answers render as empty sheets) + deadline-untried honest embeds instead of silent vanish + resolve-failed honest embeds for alive-but-unparseable mediafire/mixdrop/streamtape pages (lastPageAlive gate; unreachable hosts stay dropped). v1.3.5: homepage = latest updates first with REAL _offset pagination (30/page, infinite; plain limit/offset proven ignored live) + ok.ru zero-fetch honest embed (embed page hangs 20s+, blew the app 10s server budget -> empty sheet; app owns native ok.ru extractor) + filters/search paginate via _offset; mystream dropped (verified dead DNS). v1.3.4: ok last always (links stable partition) + ok single attempt + proactive skip on deadline/low bud (honest embed, no fetch) + ok HEAD-probe like mediafire/mixdrop/streamtape (probe-failed honest embed); bud(14)/deadline(12s)/drop-list untouched. v1.3.3: muilt fetch-failure fallback (live episode_urls honest embed muilt_fetch_failed, no deletion; gate preserved) + okHost completion (vk/voe/videa/dood/mp4upload/uqload) + drive/filemoon honest reasons + resolveServer directUrl preserve; budget/deadline/drop-list untouched. v1.3.2: non-muilt episode_urls fallback (first live http link, fail-closed; muilt gate preserved, early-return replaced) + unresolved-host honest embed passthrough (reason); budget/deadline/drop-list untouched. v1.3.1: vk passthrough + failed-ok honest embed (reason) instead of dropping; drop-list/budget/deadline untouched. v1.3.0: Kotatsu-faithful extractors (ok data-options, streamtape assembly, mediafire API), true pagination, mp4 HEAD-probe gate.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 36",
+        "icon": {
+          "seed": 136
+        },
+        "in_filters": [
+          "anime"
+        ]
       }
     },
     "anime3rb": {
@@ -1749,7 +2115,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Anime3rb - Arabic anime source (Laravel). Title lists with pages, genre/type filters, anime details with full episodes, first-party vid3rb servers with qualities.",
-        "changelog": "v1.0.1: iframe multi (src/data-src) for vid3rb players + vid3rb_resolve_failed honest embed fallback (no deletion) + okHost completion (vk/voe/videa/dood/mp4upload/uqload) + resolveServer directUrl preserve. v1.0.0: initial JS source - lists, filters, details, vid3rb direct servers with qualities."
+        "changelog": "v1.0.1: iframe multi (src/data-src) for vid3rb players + vid3rb_resolve_failed honest embed fallback (no deletion) + okHost completion (vk/voe/videa/dood/mp4upload/uqload) + resolveServer directUrl preserve. v1.0.0: initial JS source - lists, filters, details, vid3rb direct servers with qualities.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 37",
+        "icon": {
+          "seed": 137
+        },
+        "in_filters": [
+          "anime"
+        ]
       }
     },
     "animephoenix": {
@@ -1794,7 +2170,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "AnimePhoenix - Arabic anime source (WordPress streamit). Signed JSON API lists/search/filters, full episode pills, first-party workers.dev direct servers.",
-        "changelog": "v1.0.1: security HMAC retry inside bud (n=2 fresh ts/sig) + iframe multi (src/data-src/data-lazy-src) + seasons completion (parse + signed API filter) + phoenix_no_direct honest fallback + resolveServer directUrl preserve + okHost completion. v1.0.0: initial JS source - API-first lists/search/filters with HTML fallbacks, details with FJ-EpPill episodes, inline data-server direct mirrors with #.mp4 suffix."
+        "changelog": "v1.0.1: security HMAC retry inside bud (n=2 fresh ts/sig) + iframe multi (src/data-src/data-lazy-src) + seasons completion (parse + signed API filter) + phoenix_no_direct honest fallback + resolveServer directUrl preserve + okHost completion. v1.0.0: initial JS source - API-first lists/search/filters with HTML fallbacks, details with FJ-EpPill episodes, inline data-server direct mirrors with #.mp4 suffix.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 38",
+        "icon": {
+          "seed": 138
+        },
+        "in_filters": [
+          "anime"
+        ]
       }
     },
     "animerco": {
@@ -1839,7 +2225,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Animerco - Arabic anime source (WordPress Animerco/MiraiThemes). Server-rendered lists/search/genre filters, two-level details (hub-season-episodes), player_ajax+jwplayer chain with videas/mp4upload/yourupload/vidmoly direct extractors plus honest embed passthrough.",
-        "changelog": "v1.0.2: ok last always (options+out stable partition) + ok single attempt (no security retry) + proactive skip on deadline/low bud + ok honest embed+reason (no deep resolve); bud(60)/deadline(20s) untouched. v1.0.1: security retry inside bud (fresh nonce single retry, 60/20s untouched) + iframe multi (src/data-src/data-lazy-src/data-url) + nine direct resolvers (videa/uqload/vk/voe/dood) where possible else host-passthrough reason + okHost voe/dood completion + seasons completion (all 12, no early break) + resolveServer directUrl preserve + embedUrl fix. v1.0.0: initial JS source - lists/search/filters, hub-season-episode details, player_ajax chain with 4 direct extractors and embed passthrough."
+        "changelog": "v1.0.2: ok last always (options+out stable partition) + ok single attempt (no security retry) + proactive skip on deadline/low bud + ok honest embed+reason (no deep resolve); bud(60)/deadline(20s) untouched. v1.0.1: security retry inside bud (fresh nonce single retry, 60/20s untouched) + iframe multi (src/data-src/data-lazy-src/data-url) + nine direct resolvers (videa/uqload/vk/voe/dood) where possible else host-passthrough reason + okHost voe/dood completion + seasons completion (all 12, no early break) + resolveServer directUrl preserve + embedUrl fix. v1.0.0: initial JS source - lists/search/filters, hub-season-episode details, player_ajax chain with 4 direct extractors and embed passthrough.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 39",
+        "icon": {
+          "seed": 139
+        },
+        "in_filters": [
+          "anime"
+        ]
       }
     },
     "galaxy_novels": {
@@ -1884,7 +2280,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Galaxy Novels - Arabic novels source (WordPress WOR-Reader). Server-rendered homepage/search (?s= server-side), details with SSR chapters (30) merged with manifest live_tail (50), text chapters via wor-reader-text-surface. Chapter path is Cloudflare-gated: requires browser stack.",
-        "changelog": "v1.0.4: library pagination (?library_page) + real genre/status filters (42 genres). v1.0.3: full chapter pack."
+        "changelog": "v1.0.4: library pagination (?library_page) + real genre/status filters (42 genres). v1.0.3: full chapter pack.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 40",
+        "icon": {
+          "seed": 140
+        },
+        "in_filters": [
+          "novels"
+        ]
       }
     },
     "atheer_toon": {
@@ -1930,7 +2336,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Atheer Toon - Arabic manhwa/manga source via official public JSON API (api.atheertoon.com). Server paginated lists/search/genre filter, full chapter lists, CDN page images. No auth, no Cloudflare.",
-        "changelog": "v1.0.0: initial JS source - JSON API lists/search/filters/details/chapters/CDN pages, reverse-engineered from AtheerToon 1.0.5 APK."
+        "changelog": "v1.0.0: initial JS source - JSON API lists/search/filters/details/chapters/CDN pages, reverse-engineered from AtheerToon 1.0.5 APK.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 41",
+        "icon": {
+          "seed": 141
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "kolnovel": {
@@ -1975,7 +2391,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "KolNovel - Arabic novels source (WordPress + app/v2 REST). Cursor-paginated discover lists/search, SSR eplister chapters with gap-fill, text chapters via reader API.",
-        "changelog": "v1.0.0: initial JS source - discover lists/search/filters, eplister chapters desc, text reader."
+        "changelog": "v1.0.0: initial JS source - discover lists/search/filters, eplister chapters desc, text reader.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 42",
+        "icon": {
+          "seed": 142
+        },
+        "in_filters": [
+          "novels"
+        ]
       }
     },
     "arno": {
@@ -2020,7 +2446,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Ar-No - Arabic novels source (Madara). Paginated novels lists/search/genre filters, AJAX chapter lists desc, text chapters.",
-        "changelog": "v1.0.0: initial JS source - novels lists/search/filters, ajax chapters desc, text reader."
+        "changelog": "v1.0.0: initial JS source - novels lists/search/filters, ajax chapters desc, text reader.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 43",
+        "icon": {
+          "seed": 143
+        },
+        "in_filters": [
+          "novels"
+        ]
       }
     },
     "onma": {
@@ -2065,7 +2501,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "مانجا اون لاين - manga source (MangaStream-style SSR). /manga-list library pagination, search, 13 genre filters, chapters via ul.chapters, reader pages via data-src/src.",
-        "changelog": "v1.1.0: app-contract fix - plain arrays from lists, {kind:\"image\", imageUrls} reader, getChapterPages fallback, single-fetch details, host guard, entity decode. v1.0.0: initial."
+        "changelog": "v1.1.0: app-contract fix - plain arrays from lists, {kind:\"image\", imageUrls} reader, getChapterPages fallback, single-fetch details, host guard, entity decode. v1.0.0: initial.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 44",
+        "icon": {
+          "seed": 144
+        },
+        "in_filters": [
+          "manhwa"
+        ]
       }
     },
     "carateen": {
@@ -2110,7 +2556,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "كراتين - Arabic cartoon/anime source (Vue SPA + encrypted JSON API). SP+TG catalogs, episodes, direct HLS via pure-JS AES-256-CBC.",
-        "changelog": "v1.0.3: homepage = full All-Works grid with load-more (recent fallback), all episodes unlocked. v1.0.2/1.0.1: crash fixes."
+        "changelog": "v1.0.3: homepage = full All-Works grid with load-more (recent fallback), all episodes unlocked. v1.0.2/1.0.1: crash fixes.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 45",
+        "icon": {
+          "seed": 145
+        },
+        "in_filters": [
+          "anime"
+        ]
       }
     },
     "goanime": {
@@ -2155,7 +2611,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Go Anime - Arabic anime/cartoons source reverse-engineered from the official Go Anime v1.3 APK (PHP JSON API + Basic auth, Google Photos extraction). Series, movies, playlists, episodes, direct mp4.",
-        "changelog": "v1.0.2: #.mp4 fragment on extensionless google URLs (app verifier/extractor/player all key off literal .mp4), session extraction cache (repeat opens instant, kills re-fetch lag), empty headers on google direct (official-app-like). v1.0.1: no-duplicate episodes, eager mp4 extraction with retry."
+        "changelog": "v1.0.2: #.mp4 fragment on extensionless google URLs (app verifier/extractor/player all key off literal .mp4), session extraction cache (repeat opens instant, kills re-fetch lag), empty headers on google direct (official-app-like). v1.0.1: no-duplicate episodes, eager mp4 extraction with retry.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 46",
+        "icon": {
+          "seed": 146
+        },
+        "in_filters": [
+          "anime"
+        ]
       }
     },
     "animeday": {
@@ -2204,7 +2670,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Anime Day - Arabic anime source reverse-engineered from com.anime.day v3.8 APK (native lib RE: firebase_id token forger + AES-CBC response decrypt, pure-JS crypto). Series, movies, episodes, multi-server.",
-        "changelog": "v1.0.1+transport: declares transport {profile:okhttp, mode:auto} (coherent okhttp fingerprint, no behavior change yet). v1.0.1: app-exact per-endpoint headers + okhttp/4.10.0 UA. PARKED: gated endpoints blocked server-side, homepage works."
+        "changelog": "v1.0.1+transport: declares transport {profile:okhttp, mode:auto} (coherent okhttp fingerprint, no behavior change yet). v1.0.1: app-exact per-endpoint headers + okhttp/4.10.0 UA. PARKED: gated endpoints blocked server-side, homepage works.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 47",
+        "icon": {
+          "seed": 147
+        },
+        "in_filters": [
+          "anime"
+        ]
       }
     },
     "animeify": {
@@ -2253,7 +2729,17 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Animeify - Arabic anime source reverse-engineered from Animeify v3.2.0 APK (Xamarin C# DLL RE: static Token POST API, per-host embeds, MediaFire/SolidFiles extraction). Series, episodes, multi-server with qualities.",
-        "changelog": "v1.0.0+transport: declares transport {profile:okhttp, mode:light} (first light-path source: skips CF stack for the plain JSON API). v1.0.0: initial release, verified live end-to-end."
+        "changelog": "v1.0.0+transport: declares transport {profile:okhttp, mode:light} (first light-path source: skips CF stack for the plain JSON API). v1.0.0: initial release, verified live end-to-end.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "Server 48",
+        "icon": {
+          "seed": 148
+        },
+        "in_filters": [
+          "anime"
+        ]
       }
     }
   }
