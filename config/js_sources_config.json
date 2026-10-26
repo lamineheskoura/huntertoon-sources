@@ -1,5 +1,5 @@
 {
-  "version": "1.56.1",
+  "version": "1.56.3",
   "schema_version": 3,
   "runtime_api_version": "1.0",
   "manifest_version": "2026.10.12.13",
@@ -45,7 +45,8 @@
       },
       "capabilities": {
         "content_types": [
-          "manga"
+          "manhwa",
+          "novel"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -66,12 +67,14 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 3",
+        "alias": "سيرفر 14",
         "icon": {
-          "seed": 103
+          "seed": 103,
+          "icon_name": "library_books"
         },
         "in_filters": [
-          "مانهوا"
+          "مانهوا",
+          "روايات"
         ]
       }
     },
@@ -100,9 +103,6 @@
       },
       "capabilities": {
         "content_types": [
-          "manga",
-          "manhwa",
-          "manhua",
           "novel"
         ],
         "supports_search": true,
@@ -124,12 +124,12 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 4",
+        "alias": "سيرفر 65",
         "icon": {
-          "seed": 104
+          "seed": 104,
+          "icon_name": "menu_book"
         },
         "in_filters": [
-          "مانهوا",
           "روايات"
         ]
       }
@@ -180,9 +180,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 30",
+        "alias": "سيرفر 39",
         "icon": {
-          "seed": 130
+          "seed": 130,
+          "icon_name": "menu_book"
         },
         "in_filters": [
           "روايات"
@@ -235,9 +236,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 27",
+        "alias": "سيرفر 91",
         "icon": {
-          "seed": 127
+          "seed": 127,
+          "icon_name": "menu_book"
         },
         "in_filters": [
           "روايات"
@@ -270,7 +272,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -291,9 +293,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 31",
+        "alias": "سيرفر 85",
         "icon": {
-          "seed": 131
+          "seed": 131,
+          "icon_name": "auto_stories"
         },
         "in_filters": [
           "مانهوا"
@@ -325,7 +328,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -346,9 +349,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 32",
+        "alias": "سيرفر 17",
         "icon": {
-          "seed": 132
+          "seed": 132,
+          "icon_name": "auto_stories"
         },
         "in_filters": [
           "مانهوا"
@@ -380,7 +384,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -401,9 +405,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 33",
+        "alias": "سيرفر 61",
         "icon": {
-          "seed": 133
+          "seed": 133,
+          "icon_name": "auto_stories"
         },
         "in_filters": [
           "مانهوا"
@@ -435,7 +440,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -456,9 +461,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 8",
+        "alias": "سيرفر 41",
         "icon": {
-          "seed": 108
+          "seed": 108,
+          "icon_name": "auto_stories"
         },
         "in_filters": [
           "مانهوا"
@@ -490,7 +496,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga",
+          "manhwa",
           "novel"
         ],
         "supports_search": true,
@@ -512,9 +518,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 6",
+        "alias": "سيرفر 26",
         "icon": {
-          "seed": 106
+          "seed": 106,
+          "icon_name": "library_books"
         },
         "in_filters": [
           "مانهوا",
@@ -548,7 +555,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -569,9 +576,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 12",
+        "alias": "سيرفر 88",
         "icon": {
-          "seed": 112
+          "seed": 112,
+          "icon_name": "auto_stories"
         },
         "in_filters": [
           "مانهوا"
@@ -603,7 +611,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -624,9 +632,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 16",
+        "alias": "سيرفر 24",
         "icon": {
-          "seed": 116
+          "seed": 116,
+          "icon_name": "auto_stories"
         },
         "in_filters": [
           "مانهوا"
@@ -658,7 +667,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -679,9 +688,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 11",
+        "alias": "سيرفر 63",
         "icon": {
-          "seed": 111
+          "seed": 111,
+          "icon_name": "auto_stories"
         },
         "in_filters": [
           "مانهوا"
@@ -713,8 +723,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga",
-          "overlay"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -735,9 +744,10 @@
         "ai_translation": true
       },
       "display": {
-        "alias": "Server 18",
+        "alias": "سيرفر 45",
         "icon": {
-          "seed": 118
+          "seed": 118,
+          "icon_name": "auto_stories"
         },
         "in_filters": [
           "مانهوا"
@@ -799,8 +809,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga",
-          "overlay"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -821,9 +830,10 @@
         "ai_translation": true
       },
       "display": {
-        "alias": "Server 17",
+        "alias": "سيرفر 96",
         "icon": {
-          "seed": 117
+          "seed": 117,
+          "icon_name": "auto_stories"
         },
         "in_filters": [
           "مانهوا"
@@ -855,8 +865,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga",
-          "overlay"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -877,9 +886,10 @@
         "ai_translation": true
       },
       "display": {
-        "alias": "Server 15",
+        "alias": "سيرفر 71",
         "icon": {
-          "seed": 115
+          "seed": 115,
+          "icon_name": "auto_stories"
         },
         "in_filters": [
           "مانهوا"
@@ -911,7 +921,6 @@
       },
       "capabilities": {
         "content_types": [
-          "manga",
           "novel"
         ],
         "supports_search": true,
@@ -933,12 +942,12 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 9",
+        "alias": "سيرفر 77",
         "icon": {
-          "seed": 109
+          "seed": 109,
+          "icon_name": "menu_book"
         },
         "in_filters": [
-          "مانهوا",
           "روايات"
         ]
       }
@@ -968,9 +977,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga",
-          "manhwa",
-          "manhua"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -1025,9 +1032,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga",
-          "manhwa",
-          "manhua"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -1048,9 +1053,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 14",
+        "alias": "سيرفر 49",
         "icon": {
-          "seed": 114
+          "seed": 114,
+          "icon_name": "auto_stories"
         },
         "in_filters": [
           "مانهوا"
@@ -1085,8 +1091,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga",
-          "overlay"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -1107,9 +1112,10 @@
         "ai_translation": true
       },
       "display": {
-        "alias": "Server 19",
+        "alias": "سيرفر 68",
         "icon": {
-          "seed": 119
+          "seed": 119,
+          "icon_name": "auto_stories"
         },
         "in_filters": [
           "مانهوا"
@@ -1142,7 +1148,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -1163,9 +1169,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 10",
+        "alias": "سيرفر 19",
         "icon": {
-          "seed": 110
+          "seed": 110,
+          "icon_name": "auto_stories"
         },
         "in_filters": [
           "مانهوا"
@@ -1201,7 +1208,6 @@
       },
       "capabilities": {
         "content_types": [
-          "manga",
           "novel"
         ],
         "supports_search": true,
@@ -1223,12 +1229,12 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 7",
+        "alias": "سيرفر 58",
         "icon": {
-          "seed": 107
+          "seed": 107,
+          "icon_name": "menu_book"
         },
         "in_filters": [
-          "مانهوا",
           "روايات"
         ]
       }
@@ -1313,7 +1319,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -1334,9 +1340,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 5",
+        "alias": "سيرفر 93",
         "icon": {
-          "seed": 105
+          "seed": 105,
+          "icon_name": "auto_stories"
         },
         "in_filters": [
           "مانهوا"
@@ -1368,7 +1375,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -1389,9 +1396,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 23",
+        "alias": "سيرفر 76",
         "icon": {
-          "seed": 123
+          "seed": 123,
+          "icon_name": "auto_stories"
         },
         "in_filters": [
           "مانهوا"
@@ -1423,7 +1431,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -1444,9 +1452,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 1",
+        "alias": "سيرفر 37",
         "icon": {
-          "seed": 101
+          "seed": 101,
+          "icon_name": "auto_stories"
         },
         "in_filters": [
           "مانهوا"
@@ -1478,7 +1487,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -1499,9 +1508,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 26",
+        "alias": "سيرفر 43",
         "icon": {
-          "seed": 126
+          "seed": 126,
+          "icon_name": "auto_stories"
         },
         "in_filters": [
           "مانهوا"
@@ -1534,7 +1544,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -1555,9 +1565,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 21",
+        "alias": "سيرفر 87",
         "icon": {
-          "seed": 121
+          "seed": 121,
+          "icon_name": "auto_stories"
         },
         "in_filters": [
           "مانهوا"
@@ -1590,7 +1601,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -1611,9 +1622,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 20",
+        "alias": "سيرفر 53",
         "icon": {
-          "seed": 120
+          "seed": 120,
+          "icon_name": "auto_stories"
         },
         "in_filters": [
           "مانهوا"
@@ -1646,7 +1658,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -1667,9 +1679,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 2",
+        "alias": "سيرفر 82",
         "icon": {
-          "seed": 102
+          "seed": 102,
+          "icon_name": "auto_stories"
         },
         "in_filters": [
           "مانهوا"
@@ -1701,10 +1714,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga",
-          "manhua",
-          "anime",
-          "novel"
+          "anime"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -1725,13 +1735,12 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 29",
+        "alias": "سيرفر 74",
         "icon": {
-          "seed": 129
+          "seed": 129,
+          "icon_name": "movie"
         },
         "in_filters": [
-          "مانهوا",
-          "روايات",
           "أنمي"
         ]
       }
@@ -1787,9 +1796,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 25",
+        "alias": "سيرفر 59",
         "icon": {
-          "seed": 125
+          "seed": 125,
+          "icon_name": "menu_book"
         },
         "in_filters": [
           "روايات"
@@ -1842,9 +1852,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 22",
+        "alias": "سيرفر 31",
         "icon": {
-          "seed": 122
+          "seed": 122,
+          "icon_name": "menu_book"
         },
         "in_filters": [
           "روايات"
@@ -1876,9 +1887,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga",
-          "manhwa",
-          "manhua"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": false,
@@ -1899,9 +1908,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 13",
+        "alias": "سيرفر 32",
         "icon": {
-          "seed": 113
+          "seed": 113,
+          "icon_name": "auto_stories"
         },
         "in_filters": [
           "مانهوا"
@@ -1954,9 +1964,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 34",
+        "alias": "سيرفر 34",
         "icon": {
-          "seed": 134
+          "seed": 134,
+          "icon_name": "movie"
         },
         "in_filters": [
           "أنمي"
@@ -2009,9 +2020,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 35",
+        "alias": "سيرفر 79",
         "icon": {
-          "seed": 135
+          "seed": 135,
+          "icon_name": "movie"
         },
         "in_filters": [
           "أنمي"
@@ -2064,9 +2076,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 36",
+        "alias": "سيرفر 25",
         "icon": {
-          "seed": 136
+          "seed": 136,
+          "icon_name": "movie"
         },
         "in_filters": [
           "أنمي"
@@ -2119,9 +2132,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 37",
+        "alias": "سيرفر 92",
         "icon": {
-          "seed": 137
+          "seed": 137,
+          "icon_name": "movie"
         },
         "in_filters": [
           "أنمي"
@@ -2174,9 +2188,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 38",
+        "alias": "سيرفر 46",
         "icon": {
-          "seed": 138
+          "seed": 138,
+          "icon_name": "movie"
         },
         "in_filters": [
           "أنمي"
@@ -2229,9 +2244,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 39",
+        "alias": "سيرفر 66",
         "icon": {
-          "seed": 139
+          "seed": 139,
+          "icon_name": "movie"
         },
         "in_filters": [
           "أنمي"
@@ -2284,9 +2300,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 40",
+        "alias": "سيرفر 38",
         "icon": {
-          "seed": 140
+          "seed": 140,
+          "icon_name": "menu_book"
         },
         "in_filters": [
           "روايات"
@@ -2318,8 +2335,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manhwa",
-          "manga"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -2340,9 +2356,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 41",
+        "alias": "سيرفر 84",
         "icon": {
-          "seed": 141
+          "seed": 141,
+          "icon_name": "auto_stories"
         },
         "in_filters": [
           "مانهوا"
@@ -2395,9 +2412,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 42",
+        "alias": "سيرفر 21",
         "icon": {
-          "seed": 142
+          "seed": 142,
+          "icon_name": "menu_book"
         },
         "in_filters": [
           "روايات"
@@ -2450,9 +2468,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 43",
+        "alias": "سيرفر 73",
         "icon": {
-          "seed": 143
+          "seed": 143,
+          "icon_name": "menu_book"
         },
         "in_filters": [
           "روايات"
@@ -2484,7 +2503,7 @@
       },
       "capabilities": {
         "content_types": [
-          "manga"
+          "manhwa"
         ],
         "supports_search": true,
         "supports_filters": true,
@@ -2505,9 +2524,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 44",
+        "alias": "سيرفر 16",
         "icon": {
-          "seed": 144
+          "seed": 144,
+          "icon_name": "auto_stories"
         },
         "in_filters": [
           "مانهوا"
@@ -2560,9 +2580,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 45",
+        "alias": "سيرفر 97",
         "icon": {
-          "seed": 145
+          "seed": 145,
+          "icon_name": "movie"
         },
         "in_filters": [
           "أنمي"
@@ -2615,9 +2636,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 46",
+        "alias": "سيرفر 52",
         "icon": {
-          "seed": 146
+          "seed": 146,
+          "icon_name": "movie"
         },
         "in_filters": [
           "أنمي"
@@ -2674,9 +2696,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 47",
+        "alias": "سيرفر 67",
         "icon": {
-          "seed": 147
+          "seed": 147,
+          "icon_name": "movie"
         },
         "in_filters": [
           "أنمي"
@@ -2733,9 +2756,10 @@
         "ai_translation": false
       },
       "display": {
-        "alias": "Server 48",
+        "alias": "سيرفر 44",
         "icon": {
-          "seed": 148
+          "seed": 148,
+          "icon_name": "movie"
         },
         "in_filters": [
           "أنمي"
