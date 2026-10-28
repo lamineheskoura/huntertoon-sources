@@ -6,17 +6,18 @@ function createSource(api, config) {
     "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
   var lastChapterUrl = baseUrl + "/";
 
+  // Site taxonomy (manhuaus.com/manga nav, verified 2026-10-28); zero-count genres dropped
   var defaultGenres = [
-    "Action", "Adventure", "Comedy", "Drama", "Fantasy", "Romance",
-    "Horror", "Mystery", "Psychological", "Sci-Fi", "Slice of Life",
-    "Sports", "Supernatural", "Thriller", "Tragedy", "Martial Arts",
-    "Manhwa", "Manhua", "Manga", "Isekai", "Magic", "Harem",
-    "School Life", "Shounen", "Shoujo", "Seinen", "Josei",
-    "Historical", "Mecha", "Video Games", "Ecchi", "Smut",
-    "Gender Bender", "Webtoons", "Long Strip", "Full Color",
-    "Cultivation", "System", "Apocalypse", "Dungeon", "Monster"
+    "Action", "Adult", "Adventure", "Cartoon", "Comedy", "Comic",
+    "Doujinshi", "Drama", "Ecchi", "Fantasy", "Gender Bender", "Harem",
+    "Historical", "Horror", "Josei", "Live action", "Manga", "Manhua",
+    "Manhwa", "Martial Arts", "Mature", "Mecha", "Mystery",
+    "Psychological", "Romance", "School Life", "Sci-fi", "Seinen",
+    "Shoujo", "Shounen", "Shounen Ai", "Slice of Life", "Smut",
+    "Sports", "Supernatural", "Tragedy", "Webtoon"
   ];
-  var defaultTypes = ["manga", "manhwa", "manhua", "comic", "one-shot"];
+  // The site exposes no type taxonomy: these are real genres, so type filters use /manga-genre/
+  var defaultTypes = ["manga", "manhwa", "manhua", "comic"];
 
   var defaultHeaders = {
     "User-Agent": userAgent,
@@ -82,18 +83,21 @@ function createSource(api, config) {
 
   async function parseCards(html) {
     var items = await api.cssAll(html, ".page-item-detail");
+    if (!items || !items.length) items = await api.cssAll(html, ".c-tabs-item__content");
     if (!items || !items.length) items = await api.cssAll(html, ".col-6 .page-item-detail, .listupd .bs");
     var out = [];
     var seen = {};
     for (var i = 0; i < items.length; i++) {
       var itemHtml = (items[i] || {}).html || "";
-      var detailUrl = makeAbsolute(await api.cssAttr(itemHtml, ".item-thumb a", "href") || "");
+      // archive cards use .item-thumb, search/tab cards use .tab-thumb
+      var detailUrl = makeAbsolute(await api.cssAttr(itemHtml, ".item-thumb a, .tab-thumb a", "href") || "");
       if (!detailUrl || seen[detailUrl]) continue;
       seen[detailUrl] = true;
       var title = await api.cssText(itemHtml, ".post-title h3 a") || "";
       if (!title || !title.trim()) title = await api.cssText(itemHtml, ".post-title a") || "";
+      if (!title || !title.trim()) title = await api.cssText(itemHtml, ".item-title") || "";
       if (!title || !title.trim()) continue;
-      var cover = await extractCover(itemHtml, ".item-thumb img");
+      var cover = await extractCover(itemHtml, ".item-thumb img, .tab-thumb img");
       out.push({
         title: cleanTitle(title),
         coverUrl: cover,
@@ -204,8 +208,8 @@ function createSource(api, config) {
     async getHomepageManga(args) {
       try {
         var page = (args && args.page) || 1;
-        var url = baseUrl + "/";
-        if (page > 1) url = baseUrl + "/manga/?page=" + page;
+        var url = baseUrl + "/manga/";
+        if (page > 1) url += "?page=" + page;
         return await parseCards(await fetchHtml(url));
       } catch (e) {
         return [];
@@ -241,8 +245,13 @@ function createSource(api, config) {
       }
       var description = await api.cssText(html, ".summary__content, .description-summary, .manga-description, .entry-content") || "";
       description = cleanTitle(description);
-      var genres = await api.cssList(html, "a[href*='genre'], .genres a, .mgen a") || [];
-      genres = genres.map(cleanTitle).filter(Boolean);
+      var genres = await api.cssList(html, ".genres-content a[href*='/manga-genre/']") || [];
+      var uniqueGenres = [];
+      for (var gi = 0; gi < genres.length; gi++) {
+        var g = cleanTitle(genres[gi]);
+        if (g && uniqueGenres.indexOf(g) === -1) uniqueGenres.push(g);
+      }
+      genres = uniqueGenres;
       var chapters = await extractChapters(html);
       return {
         title: cleanTitle(title) || "Unknown",
@@ -274,12 +283,11 @@ function createSource(api, config) {
         var genre = (args && args.genre) || "";
         var type = (args && args.type) || "";
         var url;
-        if (genre) {
-          var slug = genre.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+        if (genre || type) {
+          // types are genres on this site, so both filter through /manga-genre/
+          var slug = String(genre || type).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
           url = baseUrl + "/manga-genre/" + slug + "/";
           if (page > 1) url += "?page=" + page;
-        } else if (type) {
-          url = baseUrl + "/manga/?type=" + encodeURIComponent(type.toLowerCase()) + "&page=" + page;
         } else {
           url = baseUrl + "/manga/";
           if (page > 1) url += "?page=" + page;
@@ -291,6 +299,22 @@ function createSource(api, config) {
     },
 
     async getGenresAndTypes() {
+      try {
+        var html = await fetchHtml(baseUrl + "/manga/");
+        var raw = (await api.cssList(html, "a[href*='/manga-genre/']")) || [];
+        var out = [];
+        var seen = {};
+        for (var i = 0; i < raw.length; i++) {
+          var text = cleanTitle(raw[i]);
+          var count = text.match(/\((\d+)\)\s*$/);
+          var name = text.replace(/\s*\(\d+\)\s*$/, "");
+          if (!name || seen[name]) continue;
+          if (count && parseInt(count[1], 10) === 0) continue;
+          seen[name] = true;
+          out.push(name);
+        }
+        if (out.length) return { genres: out, types: defaultTypes };
+      } catch (e) {}
       return { genres: defaultGenres, types: defaultTypes };
     },
 

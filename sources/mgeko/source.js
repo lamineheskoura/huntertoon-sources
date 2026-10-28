@@ -6,16 +6,17 @@ function createSource(api, config) {
     "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
   var lastChapterUrl = baseUrl + "/";
 
+  // Site taxonomy (mgeko.cc/browse-comics chips, verified 2026-10-28)
   var defaultGenres = [
-    "Action", "Adventure", "Comedy", "Drama", "Fantasy", "Romance",
-    "Horror", "Mystery", "Psychological", "Sci-Fi", "Slice of Life",
-    "Sports", "Supernatural", "Thriller", "Tragedy", "Martial Arts",
-    "Manhwa", "Manhua", "Manga", "Isekai", "Magic", "Harem",
-    "School Life", "Shounen", "Shoujo", "Seinen", "Josei",
-    "Historical", "Mecha", "Video Games", "Ecchi", "Smut",
-    "Gender Bender", "Webtoons", "Long Strip", "Full Color"
+    "Action", "Adventure", "Comedy", "Cooking", "Manga", "Drama",
+    "Fantasy", "Gender Bender", "Harem", "Historical", "Horror",
+    "Isekai", "Josei", "Manhua", "Manhwa", "Martial Arts", "Mature",
+    "Mecha", "Medical", "Mystery", "One Shot", "Psychological",
+    "Romance", "School Life", "Sci Fi", "Seinen", "Shoujo", "Shounen",
+    "Slice of Life", "Sports", "Supernatural", "Tragedy", "Webtoons",
+    "ladies"
   ];
-  var defaultTypes = ["manga", "manhwa", "manhua", "comic", "one-shot"];
+  var defaultTypes = ["manga", "manhwa", "manhua", "webtoon"];
 
   var defaultHeaders = {
     "User-Agent": userAgent,
@@ -160,7 +161,7 @@ function createSource(api, config) {
 
   async function extractReaderImages(html) {
     var urls = [];
-    var images = await api.cssAll(html, "#reader img, .reading-content img, .chapter-content img, img[src*='imgsrv4']");
+    var images = await api.cssAll(html, "img.mgr-page, #reader img, .reading-content img, .chapter-content img");
     for (var i = 0; i < images.length; i++) {
       var attrs = (images[i] || {}).attrs || {};
       var src = attrs["data-src"] || attrs["data-lazy-src"] || attrs["src"] || "";
@@ -174,6 +175,8 @@ function createSource(api, config) {
         var attrs = (allImages[i] || {}).attrs || {};
         var src = attrs["data-src"] || attrs["data-lazy-src"] || attrs["src"] || "";
         if (!src || src.indexOf("data:image") === 0) continue;
+        // the reader page carries ad/tracker pixels, keep only the manga image CDN
+        if (!/imgsrv\d*\.com\//i.test(src)) continue;
         src = makeAbsolute(src);
         if (src && urls.indexOf(src) === -1) urls.push(src);
       }
@@ -182,7 +185,7 @@ function createSource(api, config) {
   }
 
   return {
-    requiresCloudflare: false,
+    requiresCloudflare: true,
 
     async getHomepageManga(args) {
       try {
@@ -252,7 +255,8 @@ function createSource(api, config) {
         var type = (args && args.type) || "";
         var url;
         if (genre) {
-          url = baseUrl + "/browse-comics/data/?genre_included=" + encodeURIComponent(genre.toLowerCase()) + "&page=" + page;
+          // the site filters via include_genres (genre_included is ignored by /data/)
+          url = baseUrl + "/browse-comics/data/?include_genres=" + encodeURIComponent(genre) + "&page=" + page;
         } else if (type) {
           url = baseUrl + "/browse-comics/data/?type=" + encodeURIComponent(type.toLowerCase()) + "&page=" + page;
         } else {
@@ -265,6 +269,16 @@ function createSource(api, config) {
     },
 
     async getGenresAndTypes() {
+      try {
+        var html = await fetchHtml(baseUrl + "/browse-comics/", { "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" });
+        var chips = (await api.cssList(html, ".chip[data-group='include_genres']")) || [];
+        var out = [];
+        for (var i = 0; i < chips.length; i++) {
+          var name = cleanTitle(chips[i]);
+          if (name && out.indexOf(name) === -1) out.push(name);
+        }
+        if (out.length) return { genres: out, types: defaultTypes };
+      } catch (e) {}
       return { genres: defaultGenres, types: defaultTypes };
     },
 

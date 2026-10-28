@@ -7,18 +7,17 @@ function createSource(api, config) {
   var lastChapterUrl = baseUrl + "/";
   var apiBase = "https://api.asurascans.com";
 
+  // Mirrors /api/genres exactly - a genre outside this list returns zero rows.
   var defaultGenres = [
-    "Action", "Adventure", "Comedy", "Drama", "Fantasy", "Romance",
-    "Horror", "Mystery", "Psychological", "Sci-Fi", "Slice of Life",
-    "Sports", "Supernatural", "Thriller", "Tragedy", "Martial Arts",
-    "Manhwa", "Manhua", "Manga", "Isekai", "Magic", "Harem",
-    "School Life", "Shounen", "Shoujo", "Seinen", "Josei",
-    "Historical", "Mecha", "Video Games", "Ecchi", "Smut",
-    "Gender Bender", "Webtoons", "Long Strip", "Full Color",
-    "Cultivation", "System", "Apocalypse", "Dungeon", "Monster",
-    "Hentai"
+    "Action", "Adventure", "Comedy", "Crazy MC", "Dark Fantasy", "Demon",
+    "Drama", "Dungeons", "Fantasy", "Game", "Genius MC", "Isekai", "Magic",
+    "Martial Arts", "Murim", "Mystery", "Necromancer", "Overpowered",
+    "Psychological", "Regression", "Reincarnation", "Revenge", "Romance",
+    "School Life", "Sci-fi", "Shoujo", "Shounen", "Slice of Life",
+    "Supernatural", "System", "Tower", "Tragedy", "Transmigration",
+    "Villain", "Violence"
   ];
-  var defaultTypes = ["manga", "manhwa", "manhua", "comic", "one-shot"];
+  var defaultTypes = ["manhwa", "manga", "manhua"];
 
   var defaultHeaders = {
     "User-Agent": userAgent,
@@ -71,9 +70,20 @@ function createSource(api, config) {
   }
 
   // The server-rendered listing lives at /browse/comics (plain /browse?page=N
-  // returns an empty client-side shell with no cards).
+  // returns an empty client-side shell with no cards). The same route also
+  // serves search (q) and filters (genres/type), so every list path uses it.
+  function browseUrl(params) {
+    var qs = [];
+    for (var k in params) {
+      var v = params[k];
+      if (v === undefined || v === null || v === "") continue;
+      qs.push(encodeURIComponent(k) + "=" + encodeURIComponent(v));
+    }
+    return baseUrl + "/browse/comics" + (qs.length ? "?" + qs.join("&") : "");
+  }
+
   function browseListUrl(page) {
-    return baseUrl + "/browse/comics?page=" + (page || 1);
+    return browseUrl({ page: page || 1 });
   }
 
   function cleanImageUrl(url) {
@@ -84,40 +94,6 @@ function createSource(api, config) {
     url = url.replace(/&quot.*$/i, "");
     url = url.trim();
     return makeAbsolute(url);
-  }
-
-  async function searchViaApi(query) {
-    var url = apiBase + "/api/search?q=" + encodeURIComponent(query);
-    var headers = mergeHeaders(defaultHeaders, { "Accept": "application/json" });
-    var res = api.http ? await api.http(url, { method: "GET", headers: headers }) : null;
-    if (!res || !res.ok) return null;
-    var data = null;
-    try {
-      data = JSON.parse(res.body || "null");
-    } catch (e) {
-      return null;
-    }
-    var items = (data && data.data) || [];
-    if (!items.length) return [];
-    var out = [];
-    var seen = {};
-    for (var i = 0; i < items.length; i++) {
-      var it = items[i] || {};
-      var slug = String(it.slug || "").trim();
-      if (!slug) continue;
-      var title = cleanTitle(it.title || "");
-      if (!title) continue;
-      var detailUrl = baseUrl + "/comics/" + slug;
-      if (seen[detailUrl]) continue;
-      seen[detailUrl] = true;
-      out.push({
-        title: title,
-        coverUrl: makeAbsolute(it.cover || it.cover_url || ""),
-        detailUrl: detailUrl,
-        contentType: "manga"
-      });
-    }
-    return out;
   }
 
   async function parseCards(html) {
@@ -289,8 +265,7 @@ function createSource(api, config) {
     async getHomepageManga(args) {
       try {
         var page = (args && args.page) || 1;
-        if (page > 1) return await parseCards(await fetchHtml(browseListUrl(page)));
-        return await parseCards(await fetchHtml(baseUrl + "/"));
+        return await parseCards(await fetchHtml(browseListUrl(page)));
       } catch (e) {
         return [];
       }
@@ -300,12 +275,7 @@ function createSource(api, config) {
       var query = (args && args.query) || "";
       if (!query.trim()) return [];
       try {
-        var viaApi = await searchViaApi(query);
-        if (viaApi && viaApi.length) return viaApi;
-        if (viaApi !== null) return [];
-        var url = browseListUrl(1);
-        var result = await parseCards(await fetchHtml(url));
-        return result;
+        return await parseCards(await fetchHtml(browseUrl({ q: query.trim(), page: 1 })));
       } catch (e) {
         return [];
       }
@@ -358,29 +328,37 @@ function createSource(api, config) {
         var page = (args && args.page) || 1;
         var genre = (args && args.genre) || "";
         var type = (args && args.type) || "";
-        var result = null;
+        var params = { page: page };
         if (genre) {
-          var slug = genre.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-          result = await parseCards(await fetchHtml(baseUrl + "/browse/comics?genres=" + slug + "&page=" + page));
-          if (!result || !result.length) {
-            result = await parseCards(await fetchHtml(browseListUrl(page)));
-          }
+          params.genres = genre.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
         } else if (type) {
-          result = await parseCards(await fetchHtml(baseUrl + "/browse/comics?type=" + encodeURIComponent(type.toLowerCase()) + "&page=" + page));
-          if (!result || !result.length) {
-            result = await parseCards(await fetchHtml(browseListUrl(page)));
-          }
-        } else {
-          result = await parseCards(await fetchHtml(browseListUrl(page)));
+          params.type = type.toLowerCase();
         }
-        return result || [];
+        return await parseCards(await fetchHtml(browseUrl(params)));
       } catch (e) {
         return [];
       }
     },
 
     async getGenresAndTypes() {
-      return { genres: defaultGenres, types: defaultTypes };
+      var genres = defaultGenres;
+      if (api.http) {
+        try {
+          var res = await api.http(apiBase + "/api/genres", {
+            method: "GET",
+            headers: mergeHeaders(defaultHeaders, { "Accept": "application/json" })
+          });
+          var data = res && res.ok ? JSON.parse(res.body || "null") : null;
+          var list = (data && data.data) || [];
+          var names = [];
+          for (var i = 0; i < list.length; i++) {
+            var name = list[i] && list[i].name;
+            if (name) names.push(String(name));
+          }
+          if (names.length) genres = names;
+        } catch (e) {}
+      }
+      return { genres: genres, types: defaultTypes };
     },
 
     async fetchMoreChapters() {
