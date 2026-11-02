@@ -10,7 +10,7 @@ function createSource(api, config) {
   // Proof salt baked into the CURRENT site viewer (ChapterImageViewer):
   // proof = SHA256(salt|token|chapterId). Rotated 2026-10 (old
   // 69e44f7f... stopped unlocking); extracted live from the viewer bundle.
-  var unlockProofSalt = "cc9544a33ccbc953b9e7546c9b134524f3c3a06e81d392f0";
+  var unlockProofSalt = "ef771d5a42fb528b6dfde4b3948d465008fa971aa81bee44";
   var lastChapterUrl = baseUrl + "/";
 
   var defaultHeaders = mergeHeaders(
@@ -645,7 +645,7 @@ function createSource(api, config) {
     return decodeURIComponent(escape(s));
   }
   // ── Overlay KDF helpers (NEW shape ev==3, QuickJS-clean, fail-closed) ──
-  var overlayN0 = "2435eb747e78f582e781909ebbfc14826e4f3954b4268850";
+  var overlayN0 = "1235018d44c15445b1741805c8de4a35a17338bd04cc565d";
   function ovMakeEsid() {
     var chars = "0123456789abcdef";
     var out = "";
@@ -847,6 +847,84 @@ function createSource(api, config) {
     } catch (eJson) { return null; }
   }
 
+  // Gate-mode full page list: POST /api/reader/pages with the same proof
+  // {chapterId, mangaSlug, chapterNumber, token, proof, shadow} -> {success, data:[url,...]}
+  async function fetchGatePageUrls(props) {
+    try {
+      if (!props || !props.chapterId || !props.unlockToken || !api.http) return [];
+      var cidNum = Number(props.chapterId);
+      var gProof = sha256HexAscii(unlockProofSalt + "|" + props.unlockToken + "|" + props.chapterId);
+      var gRes2 = await api.http(apiBase + "/api/reader/pages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json, text/plain, */*",
+          "Referer": baseUrl + "/",
+          "Origin": baseUrl
+        },
+        body: JSON.stringify({
+          chapterId: cidNum || props.chapterId,
+          mangaSlug: props.mangaSlug || "",
+          chapterNumber: String(props.chapterNumber || ""),
+          token: props.unlockToken,
+          proof: gProof,
+          shadow: 1
+        })
+      });
+      if (!gRes2 || !gRes2.ok) return [];
+      var gParsed = null;
+      try { gParsed = JSON.parse(gRes2.body || "{}"); } catch (eGJson) { return []; }
+      if (!gParsed || !gParsed.success || !Array.isArray(gParsed.data)) return [];
+      var gUrls = [];
+      for (var gi = 0; gi < gParsed.data.length; gi++) {
+        var gu = processImageUrl(String(gParsed.data[gi] || ""));
+        if (gu) gUrls.push(gu);
+      }
+      return gUrls;
+    } catch (eGate) { return []; }
+  }
+
+  function ovBytesToB64(bytes) {
+    var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    var out = "";
+    var i;
+    for (i = 0; i + 2 < bytes.length; i += 3) {
+      var n = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2];
+      out += chars.charAt((n >> 18) & 63) + chars.charAt((n >> 12) & 63) + chars.charAt((n >> 6) & 63) + chars.charAt(n & 63);
+    }
+    var rem = bytes.length - i;
+    if (rem === 1) {
+      var n1 = bytes[i] << 16;
+      out += chars.charAt((n1 >> 18) & 63) + chars.charAt((n1 >> 12) & 63) + "==";
+    } else if (rem === 2) {
+      var n2 = (bytes[i] << 16) | (bytes[i + 1] << 8);
+      out += chars.charAt((n2 >> 18) & 63) + chars.charAt((n2 >> 12) & 63) + chars.charAt((n2 >> 6) & 63) + "=";
+    }
+    return out;
+  }
+
+  // Gate-mode unlock shape: {success, imageUrls:"iv:ct:tag" (hex), key} —
+  // mirrors viewer Lx/nx (AES-GCM over ct||tag, key = raw bytes of hex key).
+  async function decryptPagesBlob(imageUrlsStr, keyHex) {
+    try {
+      if (!imageUrlsStr || !keyHex) return null;
+      var parts = String(imageUrlsStr).split(":");
+      if (parts.length !== 3) return null;
+      var iv = hexToBytes(parts[0]);
+      var ct = hexToBytes(parts[1]);
+      var tag = hexToBytes(parts[2]);
+      if (!iv.length || !ct.length || !tag.length) return null;
+      var blob = ovBytesToB64(joinBytes(ct, tag));
+      var parsed = await aesDecrypt(blob, String(keyHex));
+      if (!parsed) return null;
+      if (typeof parsed === "string") {
+        try { parsed = JSON.parse(parsed); } catch (eParse) { return null; }
+      }
+      if (parsed && Array.isArray(parsed.pages)) return parsed.pages;
+      return null;
+    } catch (e) { return null; }
+  }
+
   async function claimOverlay(data, token, chapterId) {
     try {
       if (!data) return null;
@@ -869,6 +947,11 @@ function createSource(api, config) {
         var off2 = data.overlay_page_offset;
         if (off2 === undefined || off2 === null) off2 = data.overlayPageOffset;
         return { overlayData: overlayData, pageOffset: Number(off2 || 0) };
+      }
+      // Gate-mode (baked pages behind unlock): full page list is encrypted.
+      if (data.imageUrls && data.key) {
+        var pagesList = await decryptPagesBlob(data.imageUrls, data.key);
+        if (pagesList && pagesList.length) return { pagesList: pagesList };
       }
     } catch (e) {}
     return null;
@@ -1206,6 +1289,12 @@ function createSource(api, config) {
         var overlayBlob = props.overlayBlob;
         var overlayPageOffset = Number(props.overlayPageOffset || props.overlay_page_offset || 0);
 
+        // Gate-mode: SSR props only carry the first visible pages; the full
+        // page list comes from /api/reader/pages (pending placeholders are decoys).
+        if (String(props.gateMode || props.gate_mode || "") === "on" || textMode === "overlay") {
+          var gateUrls = await fetchGatePageUrls(props);
+          if (gateUrls.length > imageUrls.length) imageUrls = gateUrls;
+        }
         if (textMode === "overlay") {
           // Legacy path: blob embedded in SSR props (fixed key)
           if (overlayBlob) {
