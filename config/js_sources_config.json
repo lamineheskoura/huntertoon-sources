@@ -758,7 +758,7 @@
       "id": "mangatek",
       "sid": 117,
       "name": "مانجاتك (Mangatek)",
-      "version": "1.3.1",
+      "version": "1.4.0",
       "enabled": true,
       "status": "beta",
       "base_url": "https://mangatek.com",
@@ -804,7 +804,7 @@
       },
       "script": {
         "url": "sources/mangatek/source.js",
-        "sha256": "EB2788FDDA07EA6039AB7BDDFDBEE1EE093DF474648062F90EBD44785A8B0EC5",
+        "sha256": "2CF37119FD5A099FFB669121C667D1524323655E3FB2EB68D2494A655E969B56",
         "entry": "createSource"
       },
       "capabilities": {
@@ -844,7 +844,7 @@
       "id": "mangasid",
       "sid": 115,
       "name": "مانجا سيد (Mangasid)",
-      "version": "1.3.1",
+      "version": "1.4.0",
       "enabled": true,
       "status": "beta",
       "base_url": "https://mangasid.com",
@@ -860,7 +860,7 @@
       },
       "script": {
         "url": "sources/mangasid/source.js",
-        "sha256": "4A8D600FC9F5AE4F6798E375A420D50999EA02EEA515F8546D901BEAB65FF5DB",
+        "sha256": "0436FE00C0420BCF3F4D00B83B98BFBE12C1435760B9457192F8EA24D473A2DE",
         "entry": "createSource"
       },
       "capabilities": {
