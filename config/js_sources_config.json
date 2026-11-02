@@ -1,10 +1,10 @@
 {
-  "version": "1.57.0",
+  "version": "1.58.0",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.10.28.1",
+  "manifest_version": "2026.11.01.1",
   "generated_at": "2026-09-04T14:30:00Z",
-  "last_updated": "2026-10-28T06:25:04Z",
+  "last_updated": "2026-11-01T18:23:16Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
   "min_app_version": "1.4.0",
   "repository": {
@@ -2763,6 +2763,63 @@
         },
         "in_filters": [
           "أنمي"
+        ]
+      }
+    },
+    "flame_comics": {
+      "id": "flame_comics",
+      "sid": 149,
+      "name": "Flame Comics",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://flamecomics.xyz",
+      "website_url": "https://flamecomics.xyz",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=flamecomics.xyz",
+      "requires_cf": false,
+      "image_referer": "https://flamecomics.xyz/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://flamecomics.xyz/",
+        "Origin": "https://flamecomics.xyz"
+      },
+      "script": {
+        "url": "sources/flame_comics/source.js",
+        "sha256": "C5CD279DBE9103DD5982790428032624AF3A5C7021BFA3B0A728DA23D42AA280",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manhwa"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "en",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Flame Comics - Korean scanlation group (manhwa/manga/manhua) on flamecomics.xyz. Next.js data route for catalog, details and chapters; pages served from cdn.flamecomics.xyz.",
+        "changelog": "v1.0.0: initial release. Verified live end-to-end: 167-series catalog, title search, genre/type filters, chapter lists and webp page images.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "سيرفر 1",
+        "icon": {
+          "seed": 149,
+          "icon_name": "auto_stories"
+        },
+        "in_filters": [
+          "مانهوا"
         ]
       }
     }
