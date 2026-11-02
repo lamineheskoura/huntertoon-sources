@@ -1,10 +1,10 @@
 {
-  "version": "1.60.0",
+  "version": "1.61.0",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.11.02.2",
+  "manifest_version": "2026.11.02.3",
   "generated_at": "2026-09-04T14:30:00Z",
-  "last_updated": "2026-11-02T06:14:08Z",
+  "last_updated": "2026-11-02T07:24:17Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
   "min_app_version": "1.4.0",
   "repository": {
@@ -2928,6 +2928,64 @@
         "alias": "سيرفر 3",
         "icon": {
           "seed": 151,
+          "icon_name": "auto_stories"
+        },
+        "in_filters": [
+          "مانهوا"
+        ]
+      }
+    },
+    "luacomic": {
+      "id": "luacomic",
+      "sid": 152,
+      "name": "Lua Comic",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://luacomic.org",
+      "api_base": "https://api.luacomic.org",
+      "website_url": "https://luacomic.org",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=luacomic.org",
+      "requires_cf": false,
+      "image_referer": "https://luacomic.org/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://luacomic.org/",
+        "Origin": "https://luacomic.org"
+      },
+      "script": {
+        "url": "sources/luacomic/source.js",
+        "sha256": "93D3484C949CBD300CE491E90206ED716B684DFAF009EF4CA30FEC28EB90337D",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manhwa"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "en",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Lua Comic - English comic/manhwa site (luacomic.org). Next.js app with API backend: /query browse/search (adult=false excludes sexual content), /series/{slug} details, /chapter/all/{slug} chapter list, page images from media.luacomic.org rendered server-side in chapter HTML.",
+        "changelog": "v1.0.0: initial release. Verified live end-to-end: 690-series browse (58 pages), client-side title search, series details with raw genre tags, 50-chapter lists via API, page images from chapter HTML.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "سيرفر 4",
+        "icon": {
+          "seed": 152,
           "icon_name": "auto_stories"
         },
         "in_filters": [
