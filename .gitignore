@@ -21,3 +21,6 @@ package-lock.json
 
 # Agent skill (local-only, NOT pushed to GitHub)
 .agents/
+
+# Local planning docs (NOT pushed to GitHub)
+docs-local/
