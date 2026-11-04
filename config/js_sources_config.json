@@ -1067,7 +1067,7 @@
       "id": "manhasama",
       "sid": 119,
       "name": "مانها السماء (Manha Alsamaa)",
-      "version": "1.4.0",
+      "version": "1.5.0",
       "enabled": true,
       "status": "beta",
       "base_url": "https://realmnovel.com",
@@ -1086,7 +1086,7 @@
       },
       "script": {
         "url": "sources/manhasama/source.js",
-        "sha256": "03FAD8F9A436CE7F6B3B1C36ED56D3702512E677205BE487DEC8081AAE92823F",
+        "sha256": "6A3F249250428BDEDC4233885101BCB74262DF7700BA63FBB500BD274F1410D3",
         "entry": "createSource"
       },
       "capabilities": {
@@ -1107,8 +1107,8 @@
         "language": "ar",
         "adult": false,
         "author": "HunterToon Team",
-        "description": "Manha Alsamaa - Arabic manga source using realmnovel.com manga API with device attestation and signed requests",
-        "changelog": "v1.4.0: Device-attested sessions (register + attest -> X-Att) and HMAC-signed requests (X-Ts/X-Nonce/X-Sig, installId format ins_<base36>_<16 base36>), lowercase /api/manga + /api/chapters routes, light transport mode to keep the Dart UA (nginx 403s Chrome/empty UA and any Referer)",
+        "description": "Manha Alsamaa - Arabic manga source on realmnovel.com: guest reads need no account, every request is HMAC-signed, app-build headers are mandatory, ad-gated chapters (number % 3 == 0) open with account points",
+        "changelog": "v1.5.0: fixed the source being completely dead (\"no results\"): reads now work as a guest (no register - the 3/day/IP limit was killing every request), Play Integrity attestation is non-fatal (server answers no_gms_blocked and does not require it), POST requests are signed, X-App-Build/X-Platform are sent (minBuild:8, otherwise 426), chapter numbers keep their raw label (\"3-1\" no longer duplicates \"3\"), ad-gated chapters are flagged with isLocked and can be opened by paying points when an account is configured (config.auth_identifier + config.auth_password -> /auth/login -> /me/chapter-unlock/spend)",
         "ai_translation": true
       },
       "display": {

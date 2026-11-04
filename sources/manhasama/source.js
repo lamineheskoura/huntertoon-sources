@@ -1,12 +1,26 @@
 ﻿function createSource(api, config) {
   var baseUrl = (config && config.base_url) || "https://realmnovel.com";
   var apiUrl = baseUrl + "/api";
-  // Gate facts verified live: any Referer header => 403, non-Dart UA => 403,
-  // and X-Sig must be HMAC-SHA256(hex) over "METHOD\nPATH(no query)\nTS\nNONCE\nDEVICE_ID".
+  // Gate facts verified live against realmnovel.com (Nov 2026):
+  //  - every read works WITHOUT an account (guest): /categories, /manga,
+  //    /manga/:slug, /manga/:slug/chapters, /chapters/:id all answer 200.
+  //    Registering is therefore unnecessary and harmful: the register limit is
+  //    3 accounts/day/IP, and a failed register used to break every request.
+  //  - nginx 403s any request without X-Sig (HMAC-SHA256 hex over
+  //    "METHOD\n/api{PATH-no-query}\nTS\nNONCE\nDEVICE_ID"), any non-Dart UA
+  //    and any Referer.
+  //  - X-App-Build must be >= minBuild (/device/hello reports minBuild:8),
+  //    otherwise gated chapters answer 426 {"code":"update"}.
+  //  - Play Integrity attestation is optional (attest.mode:"monitor") and the
+  //    server refuses it without Play Services, so it must never be fatal.
   var userAgent = "Dart/3.9 (dart:io)";
+  var APP_BUILD = "120";
   var HMAC_KEY_HEX = "61626338633034653235336232363134303435356666653565313066623161386335386363313161306165666461316530363862646562373764653766613231";
   var ATTEST_PUB = "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEg0NTPT3n6AzL1YWFp5XQwYBE47KdSw40SDg9cs6wx53lRgOT3s1qPY4Z8l2sP874t+Dxm4wixvgw3YStrTon/g==";
   var AL = "0123456789abcdefghijklmnopqrstuvwxyz";
+  // Every chapter whose number starts with a multiple of 3 is ad-gated
+  // (3, 3-1, 3-2 ... 6, 9 ...). Verified on 3 titles x 24 chapters each.
+  var AD_LOCK_EVERY = 3;
 
   var session = { id: "", token: "", att: "" };
   var bootP = null;
@@ -49,13 +63,15 @@
       "User-Agent": userAgent,
       "Accept": "application/json, text/plain, */*",
       "Referer": "",
-      "X-Device-ID": session.id
+      "X-Device-ID": session.id,
+      "X-App-Build": APP_BUILD,
+      "X-Platform": "android"
     };
     if (session.token) h["Authorization"] = "Bearer " + session.token;
     return h;
   }
-  function post(path, payload) {
-    var headers = plainHeaders();
+  async function post(path, payload) {
+    var headers = await signedHeaders("POST", path);
     headers["Content-Type"] = "application/json";
     return api.http(apiUrl + path, {
       method: "POST",
@@ -64,38 +80,62 @@
       transport: "light"
     }).then(function (res) { return safeJson(res && res.body); });
   }
-  async function register() {
-    var u = "ht" + randHex(8);
-    var d = await post("/auth/register", {
-      username: u,
-      email: u + "@mailinator.com",
-      password: "T3st!" + randHex(16)
-    });
-    if (!d.token) throw new Error("register failed");
-    return d.token;
+  // Account login. The API accepts {identifier, password} where identifier is
+  // the e-mail OR the username, and answers {token, user}. Only an account
+  // that owns points can open ad-gated chapters, so this is the one path that
+  // can actually unlock them; without credentials the source stays a guest.
+  async function login() {
+    var id = (config && (config.auth_identifier || config.authIdentifier)) || "";
+    var pw = (config && (config.auth_password || config.authPassword)) || "";
+    var fixed = (config && (config.auth_token || config.authToken)) || "";
+    if (fixed) return fixed;
+    if (!id || !pw) return "";
+    var d;
+    try {
+      d = await post("/auth/login", { identifier: id, password: pw });
+    } catch (e) {
+      // A failed login must never break the guest read path.
+      return "";
+    }
+    return d.token || "";
   }
   async function attest() {
-    var n = await post("/device/attest/nonce", {});
-    var d = await post("/device/attest", {
-      nonce: n.nonce || "",
-      token: null,
-      error: "NO_PROJECT",
-      platform: "android",
-      pub: ATTEST_PUB
-    });
-    if (!d.ok || !d.attToken) throw new Error("attest failed");
-    return d.attToken;
+    try {
+      var n = await post("/device/attest/nonce", {});
+      var d = await post("/device/attest", {
+        nonce: n.nonce || "",
+        token: null,
+        error: "NO_PROJECT",
+        platform: "android",
+        pub: ATTEST_PUB
+      });
+      // The server refuses when Play Integrity is unavailable; requests still
+      // succeed without X-Att, so an empty token is not a fatal error.
+      return d.attToken || "";
+    } catch (e) {
+      return "";
+    }
   }
   function bootstrap(forceAtt) {
-    if (!forceAtt && session.token && session.att) return Promise.resolve();
-    if (!bootP) {
-      bootP = (async function () {
-        if (!session.id) session.id = "ins_" + b36(Date.now()) + "_" + rand36(16);
-        if (!session.token) session.token = await register();
-        if (!session.att || forceAtt) session.att = await attest();
-      })().then(function (v) { bootP = null; return v; }, function (e) { bootP = null; throw e; });
+    if (forceAtt) {
+      if (!bootP) {
+        bootP = (async function () {
+          session.att = await attest();
+        })().then(function (v) { bootP = null; return v; }, function (e) { bootP = null; throw e; });
+      }
+      return bootP;
     }
-    return bootP;
+    if (!session.id) session.id = "ins_" + b36(Date.now()) + "_" + rand36(16);
+    if (!session.token && !session.loginTried) {
+      session.loginTried = true;
+      if (!bootP) {
+        bootP = login().then(function (t) {
+          session.token = t || "";
+        }).then(function (v) { bootP = null; return v; }, function (e) { bootP = null; throw e; });
+      }
+      return bootP;
+    }
+    return Promise.resolve();
   }
   async function signedHeaders(method, path) {
     var ts = String(Math.floor(Date.now() / 1000));
@@ -106,7 +146,7 @@
     h["X-Ts"] = ts;
     h["X-Nonce"] = nonce;
     h["X-Sig"] = sig;
-    h["X-Att"] = session.att;
+    if (session.att) h["X-Att"] = session.att;
     return h;
   }
 
@@ -141,6 +181,11 @@
     return m ? m[1] : "0";
   }
 
+  function uuid() {
+    var h = randHex(32);
+    return h.slice(0, 8) + "-" + h.slice(8, 12) + "-" + h.slice(12, 16) + "-" + h.slice(16, 20) + "-" + h.slice(20);
+  }
+
   function validImage(src) {
     src = makeAbsolute(src);
     if (!src || src.indexOf("data:image") === 0) return "";
@@ -173,12 +218,56 @@
       return apiGet(path, true);
     }
     if (res && (res.status === 401 || res.status === 426) && !retried) {
+      // A dead/expired account token: log in again once. Guests get 401 on
+      // account-only routes (/me/*) and must not retry forever.
       session.token = "";
       session.att = "";
+      session.loginTried = false;
       return apiGet(path, true);
     }
     if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : 0) + " for " + apiUrl + path);
     return JSON.parse(res.body || "{}");
+  }
+
+  // Ad-gated chapters are withheld by the server (adLocked:true, pages:[]).
+  // The only server-side way to open one is paying points:
+  // /me/chapter-unlock/cost gives the price (6) and /me/chapter-unlock/spend
+  // pays it. Points arrive only from watched ads (verified by Google), so this
+  // works for an account that already holds them.
+  async function unlockAdChapter(chapterId) {
+    try {
+      if (!session.token) return false;
+      var cost = await apiGet("/me/chapter-unlock/cost");
+      var need = Number(cost.costPerChapter) || 0;
+      if (!need) return false;
+      var bal = await apiGet("/me/points");
+      if ((Number(bal.points) || 0) < need) return false;
+      var spent = await post("/me/chapter-unlock/spend", { chapterId: chapterId, spendId: uuid() });
+      return !!(spent && spent.ok);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Points the signed-in account holds, minus the price of one chapter.
+  // null = unknown (no account / request failed).
+  async function unlockablePoints() {
+    try {
+      if (!session.token) return 0;
+      var cost = await apiGet("/me/chapter-unlock/cost");
+      var need = Number(cost.costPerChapter) || 0;
+      var bal = await apiGet("/me/points");
+      var have = Number(bal.points) || 0;
+      return need && have >= need ? have : 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  function isAdGated(number) {
+    var m = String(number || "").match(/\d+/);
+    if (!m) return false;
+    return (parseInt(m[0], 10) % AD_LOCK_EVERY) === 0;
   }
 
   function toManga(item) {
@@ -287,6 +376,7 @@
 
       var chData = await apiGet("/manga/" + slug + "/chapters?limit=200&page=1");
       var allItems = chData.items || [];
+      var unlockable = await unlockablePoints();
       var total = chData.total || 0;
       var limit = chData.limit || 200;
       var totalPages = Math.ceil(total / limit);
@@ -297,11 +387,17 @@
       }
       var chapters = allItems.map(function (c) {
         return {
-          number: extractNumber(c.number),
+          // Keep the raw label ("3", "3-1"): extractNumber() collapses them
+          // and the list then shows the same number twice.
+          number: c.number != null ? String(c.number) : extractNumber(c.number),
           title: c.title || c.number || "",
           views: 0,
           url: baseUrl + "/chapters/" + c._id,
-          isLocked: false,
+          // The app blocks a locked chapter and points the reader at the
+          // original site. Only advertise it as locked while the account
+          // cannot pay for it - otherwise the reader must be allowed in so
+          // the source can spend the points and serve the pages.
+          isLocked: isAdGated(c.number) && !unlockable,
           date: (c.createdAt || "").split("T")[0]
         };
       });
@@ -333,6 +429,12 @@
 
       var data = await apiGet("/chapters/" + chapterId);
       var chapter = data.chapter || data;
+      if (chapter && chapter.adLocked === true) {
+        if (await unlockAdChapter(chapterId)) {
+          data = await apiGet("/chapters/" + chapterId);
+          chapter = data.chapter || data;
+        }
+      }
       if (!chapter || !chapter.pages) {
         return { kind: "image", imageUrls: [] };
       }
@@ -429,14 +531,15 @@
         var chData = await apiGet("/manga/" + slug + "/chapters?limit=200&page=" + nextPage);
         var chItems = chData.items || [];
         if (chItems.length === 0) return null;
+        var unlockable = await unlockablePoints();
 
         var chapters = chItems.map(function (c) {
           return {
-            number: extractNumber(c.number),
+            number: c.number != null ? String(c.number) : extractNumber(c.number),
             title: c.title || c.number || "",
             views: 0,
             url: baseUrl + "/chapters/" + c._id,
-            isLocked: false,
+            isLocked: isAdGated(c.number) && !unlockable,
             date: (c.createdAt || "").split("T")[0]
           };
         });
