@@ -1,10 +1,10 @@
 {
-  "version": "1.62.0",
+  "version": "1.63.0",
   "schema_version": 3,
   "runtime_api_version": "1.0",
   "manifest_version": "2026.11.02.4",
   "generated_at": "2026-09-04T14:30:00Z",
-  "last_updated": "2026-11-06T18:43:08Z",
+  "last_updated": "2026-11-06T22:00:20Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
   "min_app_version": "1.4.0",
   "repository": {
@@ -3043,6 +3043,63 @@
         "alias": "سيرفر 4",
         "icon": {
           "seed": 153,
+          "icon_name": "auto_stories"
+        },
+        "in_filters": [
+          "مانهوا"
+        ]
+      }
+    },
+    "en-thunderscans": {
+      "id": "en-thunderscans",
+      "sid": 154,
+      "name": "Thunderscans EN",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://en-thunderscans.com",
+      "website_url": "https://en-thunderscans.com",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=en-thunderscans.com",
+      "requires_cf": false,
+      "image_referer": "https://en-thunderscans.com/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://en-thunderscans.com/",
+        "Origin": "https://en-thunderscans.com"
+      },
+      "script": {
+        "url": "sources/en-thunderscans/source.js",
+        "sha256": "37C92567C6BB0B0C23F036C97D1F45F4F05330FD2867969D3AE3C0FFF0CA7A48",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manhwa"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": true,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "en",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Thunderscans EN - English manhwa site (en-thunderscans.com). WordPress Madara theme with advanced search, genre filters, and chapter reader. Adult content excluded via site filter cookies and client-side filtering.",
+        "changelog": "v1.0.0: initial release. Verified live end-to-end: 60+ series per page via /manga/ archive, search via /?s= query, genre filters via /manga-genre/{slug}/, details with raw genre labels, chapter lists from detail page, page images from chapter HTML.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "سيرفر 5",
+        "icon": {
+          "seed": 154,
           "icon_name": "auto_stories"
         },
         "in_filters": [
