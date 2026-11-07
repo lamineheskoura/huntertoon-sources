@@ -7,10 +7,14 @@ function createSource(api, config) {
     "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
   var overlayKeyHex = "ff453871399fe268588a0936b45376022d85ed0fd1292001d5102f6a30291dc1";
   var apiBase = ((config && config.api_base) || "https://api.mangatek.com").replace(/\/+$/, "");
-  // Proof salt baked into the CURRENT site viewer (ChapterImageViewer):
-  // proof = SHA256(salt|token|chapterId). Rotated 2026-10 (old
-  // 69e44f7f... stopped unlocking); extracted live from the viewer bundle.
-  var unlockProofSalt = "ef771d5a42fb528b6dfde4b3948d465008fa971aa81bee44";
+  // Salt+N0 pairs rotate together — extracted from live ChapterImageViewer bundle.
+  // When unlock returns 403, add the new (salt, N0) pair here and bump version.
+  var saltN0Pairs = [
+    { salt: "cc9544a33ccbc953b9e7546c9b134524f3c3a06e81d392f0", n0: "2435eb747e78f582e781909ebbfc14826e4f3954b4268850" }, // 2026-10
+    { salt: "ef771d5a42fb528b6dfde4b3948d465008fa971aa81bee44", n0: "1235018d44c15445b1741805c8de4a35a17338bd04cc565d" }, // prior
+  ];
+  var unlockProofSalt = saltN0Pairs[0].salt;
+  var overlayN0 = saltN0Pairs[0].n0;
   var lastChapterUrl = baseUrl + "/";
 
   var defaultHeaders = mergeHeaders(
@@ -645,7 +649,7 @@ function createSource(api, config) {
     return decodeURIComponent(escape(s));
   }
   // ── Overlay KDF helpers (NEW shape ev==3, QuickJS-clean, fail-closed) ──
-  var overlayN0 = "1235018d44c15445b1741805c8de4a35a17338bd04cc565d";
+  var overlayN0 = "2435eb747e78f582e781909ebbfc14826e4f3954b4268850";
   function ovMakeEsid() {
     var chars = "0123456789abcdef";
     var out = "";
@@ -849,38 +853,43 @@ function createSource(api, config) {
 
   // Gate-mode full page list: POST /api/reader/pages with the same proof
   // {chapterId, mangaSlug, chapterNumber, token, proof, shadow} -> {success, data:[url,...]}
+  // Tries each saltN0 pair until one works (salt rotates periodically).
   async function fetchGatePageUrls(props) {
     try {
       if (!props || !props.chapterId || !props.unlockToken || !api.http) return [];
       var cidNum = Number(props.chapterId);
-      var gProof = sha256HexAscii(unlockProofSalt + "|" + props.unlockToken + "|" + props.chapterId);
-      var gRes2 = await api.http(apiBase + "/api/reader/pages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json, text/plain, */*",
-          "Referer": baseUrl + "/",
-          "Origin": baseUrl
-        },
-        body: JSON.stringify({
-          chapterId: cidNum || props.chapterId,
-          mangaSlug: props.mangaSlug || "",
-          chapterNumber: String(props.chapterNumber || ""),
-          token: props.unlockToken,
-          proof: gProof,
-          shadow: 1
-        })
-      });
-      if (!gRes2 || !gRes2.ok) return [];
-      var gParsed = null;
-      try { gParsed = JSON.parse(gRes2.body || "{}"); } catch (eGJson) { return []; }
-      if (!gParsed || !gParsed.success || !Array.isArray(gParsed.data)) return [];
-      var gUrls = [];
-      for (var gi = 0; gi < gParsed.data.length; gi++) {
-        var gu = processImageUrl(String(gParsed.data[gi] || ""));
-        if (gu) gUrls.push(gu);
+      for (var si = 0; si < saltN0Pairs.length; si++) {
+        var salt = saltN0Pairs[si].salt;
+        var gProof = sha256HexAscii(salt + "|" + props.unlockToken + "|" + props.chapterId);
+        var gRes2 = await api.http(apiBase + "/api/reader/pages", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/plain, */*",
+            "Referer": baseUrl + "/",
+            "Origin": baseUrl
+          },
+          body: JSON.stringify({
+            chapterId: cidNum || props.chapterId,
+            mangaSlug: props.mangaSlug || "",
+            chapterNumber: String(props.chapterNumber || ""),
+            token: props.unlockToken,
+            proof: gProof,
+            shadow: 1
+          })
+        });
+        if (!gRes2 || !gRes2.ok) continue;
+        var gParsed = null;
+        try { gParsed = JSON.parse(gRes2.body || "{}"); } catch (eGJson) { continue; }
+        if (!gParsed || !gParsed.success || !Array.isArray(gParsed.data)) continue;
+        var gUrls = [];
+        for (var gi = 0; gi < gParsed.data.length; gi++) {
+          var gu = processImageUrl(String(gParsed.data[gi] || ""));
+          if (gu) gUrls.push(gu);
+        }
+        if (gUrls.length) return gUrls;
       }
-      return gUrls;
+      return [];
     } catch (eGate) { return []; }
   }
 
@@ -925,14 +934,15 @@ function createSource(api, config) {
     } catch (e) { return null; }
   }
 
-  async function claimOverlay(data, token, chapterId) {
+  async function claimOverlay(data, token, chapterId, n0) {
     try {
       if (!data) return null;
       if (data.overlay && data.ks) {
         try {
           var ev = data.ev;
           if (ev === undefined || ev === null || Number(ev) === 3) {
-            var newData = ovDecryptNew(data.overlay, data.ks, token, chapterId);
+            var pairN0 = n0 || overlayN0;
+            var newData = ovDecryptNewWithN0(data.overlay, data.ks, token, chapterId, pairN0);
             if (newData) {
               var off = data.overlay_page_offset;
               if (off === undefined || off === null) off = data.overlayPageOffset;
@@ -957,42 +967,78 @@ function createSource(api, config) {
     return null;
   }
 
+  // ovDecryptNew with explicit N0 (allows trying multiple salt/N0 pairs)
+  function ovDecryptNewWithN0(overlayB64, ksHex, token, chapterId, n0) {
+    try {
+      if (!overlayB64 || !ksHex || !token || !chapterId || !n0) return null;
+      var blob = ovB64ToBytes(overlayB64);
+      if (!blob || blob.length < 2) return null;
+      var w = blob[0];
+      var e = blob.slice(1);
+      var n0b = ovAsciiToBytes(String(n0));
+      var ksb = ovAsciiToBytes(String(ksHex));
+      var tokb = ovAsciiToBytes(String(token));
+      var cidb = ovAsciiToBytes(String(chapterId));
+      var asm1 = ovConcat2(n0b, ksb);
+      var asm2 = ovConcat2(asm1, tokb);
+      var asm3 = ovConcat2(asm2, cidb);
+      var asm = ovConcat2(asm3, e);
+      var unw = null;
+      try { unw = kdfUnwrapBytes(asm, w); } catch (eKdf) { return null; }
+      if (!unw) return null;
+      var pt = null;
+      try { pt = aesGcmDecryptPure(unw.key, unw.iv, unw.ct, unw.tag); } catch (eAes) { return null; }
+      if (!pt) return null;
+      var jsonStr = "";
+      try { jsonStr = decodeUtf8(pt); } catch (eDec) { return null; }
+      if (!jsonStr) return null;
+      var obj = null;
+      try { obj = JSON.parse(jsonStr); } catch (eJson) { return null; }
+      if (!obj || !Array.isArray(obj.pages)) return null;
+      return obj;
+    } catch (eOuter) { return null; }
+  }
+
   async function unlockOverlayContent(chapterId, unlockToken) {
     try {
       if (!chapterId || !unlockToken || !api.http) return null;
       var cidNum = Number(chapterId);
-      var proof = sha256HexAscii(unlockProofSalt + "|" + unlockToken + "|" + chapterId);
-      var step1 = await postUnlock({
-        chapterId: cidNum || chapterId,
-        token: unlockToken,
-        proof: proof,
-        esid: ovMakeEsid()
-      });
-      if (!step1) return null;
-      var direct = await claimOverlay(step1, unlockToken, chapterId);
-      if (direct) return direct;
-      // Challenge round: PoW solvable, Turnstile is not.
-      if (!step1.needs_challenge) return null;
-      if (step1.turnstile_required || step1.turnstileRequired) return null;
-      var powBits = Number(step1.pow_bits || step1.powBits || 0);
-      var nonce = step1.nonce || "";
-      var pow = "";
-      if (powBits > 0) {
-        if (!nonce) return null;
-        pow = solvePow(String(nonce), powBits);
-        if (!pow) return null;
+      for (var si = 0; si < saltN0Pairs.length; si++) {
+        var salt = saltN0Pairs[si].salt;
+        var proof = sha256HexAscii(salt + "|" + unlockToken + "|" + chapterId);
+        var step1 = await postUnlock({
+          chapterId: cidNum || chapterId,
+          token: unlockToken,
+          proof: proof,
+          esid: ovMakeEsid()
+        });
+        if (!step1) continue;
+        var direct = await claimOverlay(step1, unlockToken, chapterId, saltN0Pairs[si].n0);
+        if (direct) return direct;
+        // Challenge round: PoW solvable, Turnstile is not.
+        if (!step1.needs_challenge) continue;
+        if (step1.turnstile_required || step1.turnstileRequired) continue;
+        var powBits = Number(step1.pow_bits || step1.powBits || 0);
+        var nonce = step1.nonce || "";
+        var pow = "";
+        if (powBits > 0) {
+          if (!nonce) continue;
+          pow = solvePow(String(nonce), powBits);
+          if (!pow) continue;
+        }
+        var step2payload = {
+          chapterId: cidNum || chapterId,
+          token: unlockToken,
+          proof: proof,
+          esid: ovMakeEsid()
+        };
+        if (nonce) step2payload.nonce = nonce;
+        if (pow) step2payload.pow = pow;
+        var step2 = await postUnlock(step2payload);
+        if (!step2) continue;
+        return await claimOverlay(step2, unlockToken, chapterId, saltN0Pairs[si].n0);
       }
-      var step2payload = {
-        chapterId: cidNum || chapterId,
-        token: unlockToken,
-        proof: proof,
-        esid: ovMakeEsid()
-      };
-      if (nonce) step2payload.nonce = nonce;
-      if (pow) step2payload.pow = pow;
-      var step2 = await postUnlock(step2payload);
-      if (!step2) return null;
-      return await claimOverlay(step2, unlockToken, chapterId);
+      return null;
     } catch (e) {
       return null;
     }
