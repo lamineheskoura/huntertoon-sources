@@ -2,9 +2,9 @@
   "version": "1.64.0",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.11.07.2",
+  "manifest_version": "2026.11.07.3",
   "generated_at": "2026-09-04T14:30:00Z",
-  "last_updated": "2026-11-07T16:02:58Z",
+  "last_updated": "2026-11-07T20:30:48Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
   "min_app_version": "1.4.0",
   "repository": {
@@ -758,7 +758,7 @@
       "id": "mangatek",
       "sid": 117,
       "name": "مانجاتك (Mangatek)",
-      "version": "1.4.1",
+      "version": "1.4.2",
       "enabled": true,
       "status": "beta",
       "base_url": "https://mangatek.com",
@@ -804,7 +804,7 @@
       },
       "script": {
         "url": "sources/mangatek/source.js",
-        "sha256": "93358050CFDC3078F9C8E7EF68752730231C2C61A14822ADC728ACFDB8CBDABE",
+        "sha256": "98C0CF9442FD246970B2505657FDD47AACD33EC063C8A19367B9086D949DD677",
         "entry": "createSource"
       },
       "capabilities": {
@@ -826,7 +826,7 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Mangatek Astro/overlay-capable source migrated to JavaScript",
-        "changelog": "v1.4.1: Multi-salt fallback for unlock API — salt+N0 rotate periodically; try each (salt, N0) pair until /api/reader/unlock and /api/reader/pages succeed. Fixes missing overlay text (unlock 403) and 'only first 2 pages' (pages API 403). Applies to both mangatek and mangasid (same backend family). v1.3.1: second encryption rotation — new proof salt (cc9544a3…) AND new N0 overlay-KDF constant in the WASM unwrap ABI; verified live end-to-end overlay decrypt on both sites. v1.3.0: overlay encryption rotated — new proof salt + esid field + {overlay,ks,ev} response with pure-JS WASM-KDF port (key/iv/ct/tag) + pure-JS AES-GCM; legacy {overlay,key} path kept; v1.2.0: rotated proof salt + 2-step challenge unlock",
+        "changelog": "v1.4.2: Salt+N0 rotation #3 (Nov 2026) — new proof salt 56f651f0…f747 and new overlay KDF N0 36943654…660b, extracted from the live ChapterImageViewer bundle via the string-table decoder; also removed the stale duplicate overlayN0 that shadowed the rotating pair (it pinned the old N0). Restores overlay text and the full page list (mangatek 23 pages, mangasid 40 pages, verified live). v1.4.1: Multi-salt fallback for unlock API — salt+N0 rotate periodically; try each (salt, N0) pair until /api/reader/unlock and /api/reader/pages succeed. Fixes missing overlay text (unlock 403) and 'only first 2 pages' (pages API 403). Applies to both mangatek and mangasid (same backend family). v1.3.1: second encryption rotation — new proof salt (cc9544a3…) AND new N0 overlay-KDF constant in the WASM unwrap ABI; verified live end-to-end overlay decrypt on both sites. v1.3.0: overlay encryption rotated — new proof salt + esid field + {overlay,ks,ev} response with pure-JS WASM-KDF port (key/iv/ct/tag) + pure-JS AES-GCM; legacy {overlay,key} path kept; v1.2.0: rotated proof salt + 2-step challenge unlock",
         "ai_translation": true
       },
       "display": {
@@ -844,7 +844,7 @@
       "id": "mangasid",
       "sid": 115,
       "name": "مانجا سيد (Mangasid)",
-      "version": "1.4.1",
+      "version": "1.4.2",
       "enabled": true,
       "status": "beta",
       "base_url": "https://mangasid.com",
@@ -860,7 +860,7 @@
       },
       "script": {
         "url": "sources/mangasid/source.js",
-        "sha256": "8DC7836E136E6C555218344B2C8F8B4A7AB631572A0C79C98C1CCB953D8E3AFA",
+        "sha256": "BC78FA77844763154956126EEB6C4CC6F1EAE3F633D6CEC7D0715D739B8A3B94",
         "entry": "createSource"
       },
       "capabilities": {
@@ -882,7 +882,7 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Mangasid Astro/overlay-capable source migrated to JavaScript",
-        "changelog": "v1.4.1: Multi-salt fallback for unlock API — salt+N0 rotate periodically; try each (salt, N0) pair until /api/reader/unlock and /api/reader/pages succeed. Fixes missing overlay text (unlock 403) and 'only first 2 pages' (pages API 403). Applies to both mangatek and mangasid (same backend family). v1.3.1: second encryption rotation — new proof salt (cc9544a3…) AND new N0 overlay-KDF constant in the WASM unwrap ABI; verified live end-to-end overlay decrypt on both sites. v1.3.0: overlay encryption rotated — new proof salt + esid field + {overlay,ks,ev} response with pure-JS WASM-KDF port (key/iv/ct/tag) + pure-JS AES-GCM; legacy {overlay,key} path kept; v1.2.0: rotated proof salt + 2-step challenge unlock",
+        "changelog": "v1.4.2: Salt+N0 rotation #3 (Nov 2026) — new proof salt 56f651f0…f747 and new overlay KDF N0 36943654…660b, extracted from the live ChapterImageViewer bundle via the string-table decoder; also removed the stale duplicate overlayN0 that shadowed the rotating pair (it pinned the old N0). Restores overlay text and the full page list (mangatek 23 pages, mangasid 40 pages, verified live). v1.4.1: Multi-salt fallback for unlock API — salt+N0 rotate periodically; try each (salt, N0) pair until /api/reader/unlock and /api/reader/pages succeed. Fixes missing overlay text (unlock 403) and 'only first 2 pages' (pages API 403). Applies to both mangatek and mangasid (same backend family). v1.3.1: second encryption rotation — new proof salt (cc9544a3…) AND new N0 overlay-KDF constant in the WASM unwrap ABI; verified live end-to-end overlay decrypt on both sites. v1.3.0: overlay encryption rotated — new proof salt + esid field + {overlay,ks,ev} response with pure-JS WASM-KDF port (key/iv/ct/tag) + pure-JS AES-GCM; legacy {overlay,key} path kept; v1.2.0: rotated proof salt + 2-step challenge unlock",
         "ai_translation": true
       },
       "display": {

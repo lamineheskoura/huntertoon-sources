@@ -10,6 +10,7 @@ function createSource(api, config) {
   // Salt+N0 pairs rotate together — extracted from live ChapterImageViewer bundle.
   // When unlock returns 403, add the new (salt, N0) pair here and bump version.
   var saltN0Pairs = [
+    { salt: "56f651f0d98c2732253f6a94b29cf0091ffb1c5b4f3bf747", n0: "369436543a9ef136e903055581da0a952d946a694968660b" }, // 2026-11
     { salt: "cc9544a33ccbc953b9e7546c9b134524f3c3a06e81d392f0", n0: "2435eb747e78f582e781909ebbfc14826e4f3954b4268850" }, // 2026-10
     { salt: "ef771d5a42fb528b6dfde4b3948d465008fa971aa81bee44", n0: "1235018d44c15445b1741805c8de4a35a17338bd04cc565d" }, // prior
   ];
@@ -649,7 +650,6 @@ function createSource(api, config) {
     return decodeURIComponent(escape(s));
   }
   // ── Overlay KDF helpers (NEW shape ev==3, QuickJS-clean, fail-closed) ──
-  var overlayN0 = "2435eb747e78f582e781909ebbfc14826e4f3954b4268850";
   function ovMakeEsid() {
     var chars = "0123456789abcdef";
     var out = "";
@@ -1015,8 +1015,8 @@ function createSource(api, config) {
         if (!step1) continue;
         var direct = await claimOverlay(step1, unlockToken, chapterId, saltN0Pairs[si].n0);
         if (direct) return direct;
-        // Challenge round: PoW solvable, Turnstile is not.
-        if (!step1.needs_challenge) continue;
+        // Proof accepted but no overlay payload (baked chapter) → salt is right, stop.
+        if (!step1.needs_challenge) break;
         if (step1.turnstile_required || step1.turnstileRequired) continue;
         var powBits = Number(step1.pow_bits || step1.powBits || 0);
         var nonce = step1.nonce || "";
