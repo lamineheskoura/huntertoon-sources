@@ -1,10 +1,10 @@
 {
-  "version": "1.63.0",
+  "version": "1.64.0",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.11.02.4",
+  "manifest_version": "2026.11.07.1",
   "generated_at": "2026-09-04T14:30:00Z",
-  "last_updated": "2026-11-06T22:00:20Z",
+  "last_updated": "2026-11-07T00:00:00Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
   "min_app_version": "1.4.0",
   "repository": {
@@ -3054,7 +3054,7 @@
       "id": "en-thunderscans",
       "sid": 154,
       "name": "Thunderscans EN",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "enabled": true,
       "status": "beta",
       "base_url": "https://en-thunderscans.com",
@@ -3071,7 +3071,7 @@
       },
       "script": {
         "url": "sources/en-thunderscans/source.js",
-        "sha256": "37C92567C6BB0B0C23F036C97D1F45F4F05330FD2867969D3AE3C0FFF0CA7A48",
+        "sha256": "5837D1D80E72B5130DBDE446FC146D5C2E0CFD2E5B26DFFD1D09276566FFEF8F",
         "entry": "createSource"
       },
       "capabilities": {
@@ -3093,7 +3093,7 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Thunderscans EN - English manhwa site (en-thunderscans.com). WordPress Madara theme with advanced search, genre filters, and chapter reader. Adult content excluded via site filter cookies and client-side filtering.",
-        "changelog": "v1.0.0: initial release. Verified live end-to-end: 60+ series per page via /manga/ archive, search via /?s= query, genre filters via /manga-genre/{slug}/, details with raw genre labels, chapter lists from detail page, page images from chapter HTML.",
+        "changelog": "v1.0.1: fixed cover images and manga detail page. Cards are parsed from /comics/ (title from title attribute, cover from the in-card img). Details extracted from /comics/{slug}/ (h1 title, thumb cover, entry-content synopsis, rel=tag genres, Status/Type/Released/Author from h1<i> pairs, chapter list from li[data-num] with chapterdate). Chapter pages served via the inline ts_reader.run(...) images JSON. Adult/sexual genres (Adult, Ecchi, Mature, Manhwa Hot, Yuri, Shoujo Ai, Monster girls, Harem, Gender Bender) are excluded from the taxonomy and from listings using the site's own genre[] filter.",
         "ai_translation": false
       },
       "display": {
