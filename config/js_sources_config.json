@@ -1,10 +1,10 @@
 {
-  "version": "1.65.0",
+  "version": "1.64.0",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.11.08.1",
+  "manifest_version": "2026.11.07.3",
   "generated_at": "2026-09-04T14:30:00Z",
-  "last_updated": "2026-11-08T00:00:00Z",
+  "last_updated": "2026-11-07T20:30:48Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
   "min_app_version": "1.4.0",
   "repository": {
@@ -1067,7 +1067,7 @@
       "id": "manhasama",
       "sid": 119,
       "name": "مانها السماء (Manha Alsamaa)",
-      "version": "1.6.0",
+      "version": "1.5.0",
       "enabled": true,
       "status": "beta",
       "base_url": "https://realmnovel.com",
@@ -1086,7 +1086,7 @@
       },
       "script": {
         "url": "sources/manhasama/source.js",
-        "sha256": "E19018346F017728066036291657E310579E4752C205CE0B863FAB79E7ED52C3",
+        "sha256": "6A3F249250428BDEDC4233885101BCB74262DF7700BA63FBB500BD274F1410D3",
         "entry": "createSource"
       },
       "capabilities": {
@@ -1107,8 +1107,8 @@
         "language": "ar",
         "adult": false,
         "author": "HunterToon Team",
-        "description": "Manha Alsamaa - Arabic manga source on realmnovel.com: every request is HMAC-signed, app-build headers are mandatory, and the server now enforces Play Integrity on the content routes (HTTP 428) - inject config.att_token to open chapters, otherwise the source falls back to the gate-free catalogue",
-        "changelog": "v1.6.0: the server flipped to attest.mode=enforce, so every content route (/manga, /manga/:slug, /manga/:slug/chapters, /chapters/:id) answers 428 {attest:true} until the request carries an attToken minted by the official Play app (an account does NOT replace it). v1.6.0 adds config.att_token (+ optional config.att_device_id) to inject that token and, while no token is available, falls back to the gate-free surface (/links/feed catalogue with signed covers, /mylist/chapters-meta for chapter numbers, /categories) so the source lists instead of showing \"no results\". | v1.5.0: fixed the source being completely dead (\"no results\"): reads now work as a guest (no register - the 3/day/IP limit was killing every request), Play Integrity attestation is non-fatal (server answers no_gms_blocked and does not require it), POST requests are signed, X-App-Build/X-Platform are sent (minBuild:8, otherwise 426), chapter numbers keep their raw label (\"3-1\" no longer duplicates \"3\"), ad-gated chapters are flagged with isLocked and can be opened by paying points when an account is configured (config.auth_identifier + config.auth_password -> /auth/login -> /me/chapter-unlock/spend)",
+        "description": "Manha Alsamaa - Arabic manga source on realmnovel.com: guest reads need no account, every request is HMAC-signed, app-build headers are mandatory, ad-gated chapters (number % 3 == 0) open with account points",
+        "changelog": "v1.5.0: fixed the source being completely dead (\"no results\"): reads now work as a guest (no register - the 3/day/IP limit was killing every request), Play Integrity attestation is non-fatal (server answers no_gms_blocked and does not require it), POST requests are signed, X-App-Build/X-Platform are sent (minBuild:8, otherwise 426), chapter numbers keep their raw label (\"3-1\" no longer duplicates \"3\"), ad-gated chapters are flagged with isLocked and can be opened by paying points when an account is configured (config.auth_identifier + config.auth_password -> /auth/login -> /me/chapter-unlock/spend)",
         "ai_translation": true
       },
       "display": {
@@ -3104,63 +3104,6 @@
         },
         "in_filters": [
           "مانهوا"
-        ]
-      }
-    },
-    "rawkuma": {
-      "id": "rawkuma",
-      "sid": 155,
-      "name": "Rawkuma",
-      "version": "1.0.0",
-      "enabled": true,
-      "status": "beta",
-      "base_url": "https://rawkuma.net",
-      "website_url": "https://rawkuma.net",
-      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=rawkuma.net",
-      "requires_cf": false,
-      "image_referer": "https://rawkuma.net/",
-      "headers": {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8",
-        "Accept-Language": "ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Referer": "https://rawkuma.net/",
-        "Origin": "https://rawkuma.net"
-      },
-      "script": {
-        "url": "sources/rawkuma/source.js",
-        "sha256": "D55D674AA02507062CB5375B9A960C1F103D2F02817C13A6AF89DFB84CE47B76",
-        "entry": "createSource"
-      },
-      "capabilities": {
-        "content_types": [
-          "manga"
-        ],
-        "supports_search": true,
-        "supports_filters": true,
-        "supports_lazy_chapters": false,
-        "supports_download": true,
-        "requires_cloudflare": false
-      },
-      "compatibility": {
-        "min_app_version": "1.4.0",
-        "runtime_api_version": "1.0"
-      },
-      "metadata": {
-        "language": "ja",
-        "adult": false,
-        "author": "HunterToon Team",
-        "description": "Rawkuma - Japanese manga site (rawkuma.net). Library browsing via admin-ajax advanced_search, JSON-LD details with raw genre labels, chapter reader on cdn.rawkuma.com. All sexual/adult genres (Adult, Ecchi, Hentai, Yaoi, Yuri, Smut, Mature, Harem, Gender Bender, Girls Love, Shoujo Ai, Shounen Ai, Lolicon, Shotacon, Mecha, Thriller-2) are excluded from the catalog, taxonomy and details.",
-        "changelog": "v1.0.0: initial release. Verified live end-to-end: library cards with cover + detail URL, details from JSON-LD (title, cover, synopsis, genres, status), chapter list from /manga/{slug}/, page images from cdn.rawkuma.com. All sexual/adult genres excluded.",
-        "ai_translation": false
-      },
-      "display": {
-        "alias": "سيرفر 6",
-        "icon": {
-          "seed": 155,
-          "icon_name": "auto_stories"
-        },
-        "in_filters": [
-          "مانغا"
         ]
       }
     }
