@@ -1,26 +1,41 @@
 ﻿function createSource(api, config) {
   var baseUrl = (config && config.base_url) || "https://realmnovel.com";
   var apiUrl = baseUrl + "/api";
-  // Gate facts verified live against realmnovel.com (Nov 2026):
-  //  - every read works WITHOUT an account (guest): /categories, /manga,
-  //    /manga/:slug, /manga/:slug/chapters, /chapters/:id all answer 200.
-  //    Registering is therefore unnecessary and harmful: the register limit is
-  //    3 accounts/day/IP, and a failed register used to break every request.
-  //  - nginx 403s any request without X-Sig (HMAC-SHA256 hex over
-  //    "METHOD\n/api{PATH-no-query}\nTS\nNONCE\nDEVICE_ID"), any non-Dart UA
-  //    and any Referer.
+  // Gate facts verified live against realmnovel.com (Nov 2026): the CONTENT
+  // routes (/manga, /manga/:slug, /manga/:slug/chapters, /chapters/:id) need
+  // THREE layers at once, otherwise the server answers 428
+  // {"attest":true,"code":"verify"}:
+  //  1. nginx: X-Sig (HMAC-SHA256 hex over
+  //     "METHOD\n/api{PATH-no-query}\nTS\nNONCE\nDEVICE_ID"), a Dart UA and an
+  //     "ins_*" device id. A wrong signature answers 401 {"sigError":"badsig"},
+  //     a non-Dart UA answers nginx 403.
+  //  2. X-Att: an attToken minted by POST /device/attest FOR THAT device id.
+  //     Tier N (no Play Integrity) is enough.
+  //  3. Authorization: the account JWT from POST /auth/login.
+  //     The attToken alone or the JWT alone still answers 428.
+  //  - POST /device/attest must NOT carry "pub": the server then stamps p/pl
+  //    claims into the token and rejects it with 428 again. {"nonce":n} is
+  //    enough and needs an account (without a JWT it answers need_login).
+  //  - The gate-free surface still answers: /categories, /links/feed,
+  //    /links/manga/:id, /comments/manga/:id, /mylist/chapters-meta/:id,
+  //    /app-config, /app-features. /links/feed carries the catalogue (titles,
+  //    signed covers, slug, chapter count) and is the fallback list when no
+  //    account is configured.
   //  - X-App-Build must be >= minBuild (/device/hello reports minBuild:8),
   //    otherwise gated chapters answer 426 {"code":"update"}.
-  //  - Play Integrity attestation is optional (attest.mode:"monitor") and the
-  //    server refuses it without Play Services, so it must never be fatal.
+  //  - config.auth_identifier + config.auth_password (or config.auth_token)
+  //    log in, then this source mints the attToken itself.
+  //    config.att_token (+ optional config.att_device_id) injects a token
+  //    taken from the official app instead.
   var userAgent = "Dart/3.9 (dart:io)";
   var APP_BUILD = "120";
   var HMAC_KEY_HEX = "61626338633034653235336232363134303435356666653565313066623161386335386363313161306165666461316530363862646562373764653766613231";
-  var ATTEST_PUB = "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEg0NTPT3n6AzL1YWFp5XQwYBE47KdSw40SDg9cs6wx53lRgOT3s1qPY4Z8l2sP874t+Dxm4wixvgw3YStrTon/g==";
   var AL = "0123456789abcdefghijklmnopqrstuvwxyz";
   // Every chapter whose number starts with a multiple of 3 is ad-gated
   // (3, 3-1, 3-2 ... 6, 9 ...). Verified on 3 titles x 24 chapters each.
   var AD_LOCK_EVERY = 3;
+  var injectedAtt = (config && (config.att_token || config.attToken)) || "";
+  var injectedDev = (config && (config.att_device_id || config.attDeviceId)) || "";
 
   var session = { id: "", token: "", att: "" };
   var bootP = null;
@@ -102,22 +117,21 @@
   async function attest() {
     try {
       var n = await post("/device/attest/nonce", {});
-      var d = await post("/device/attest", {
-        nonce: n.nonce || "",
-        token: null,
-        error: "NO_PROJECT",
-        platform: "android",
-        pub: ATTEST_PUB
-      });
-      // The server refuses when Play Integrity is unavailable; requests still
-      // succeed without X-Att, so an empty token is not a fatal error.
+      // Only the nonce: adding "pub" makes the server stamp p/pl claims into
+      // the token, and the gate then rejects that token with 428.
+      var d = await post("/device/attest", { nonce: n.nonce || "" });
+      // Without an account the server answers need_login; requests still
+      // succeed on the gate-free routes, so an empty token is not fatal.
       return d.attToken || "";
     } catch (e) {
       return "";
     }
   }
   function bootstrap(forceAtt) {
-    if (forceAtt) {
+    if (injectedAtt) {
+      session.att = injectedAtt;
+      if (injectedDev) session.id = injectedDev;
+    } else if (forceAtt) {
       if (!bootP) {
         bootP = (async function () {
           session.att = await attest();
@@ -166,11 +180,11 @@
     var u = String(url).trim();
     if (!u) return "";
     if (u.indexOf("http") === 0) {
-      // ØªØ±Ù‚ÙŠØ© http Ø¥Ù„Ù‰ https (Ù…Ø«Ù„ Ø¨Ù‚ÙŠØ© Ø§Ù„Ù…ØµØ§Ø¯Ø±).
+      // ترقية http إلى https (مثل بقية المصادر).
       if (u.indexOf("http://") === 0) return "https://" + u.substring(7);
       return u;
     }
-    // P0-4: Ù…Ø¹Ø§Ù„Ø¬Ø© // (ÙƒØ§Ù†Øª ØªÙØ¶Ø§Ø¹Ù Ø§Ù„Ù‡ÙˆØ³Øª) ÙˆØ§Ù„Ù…Ø³Ø§Ø± Ø¨Ù„Ø§ / Ø¨Ø§Ø¯Ø¦Ø©.
+    // P0-4: معالجة // (كانت تفسد المضيف) والمسار بلا / بادئة.
     if (u.indexOf("//") === 0) return "https:" + u;
     if (u.charAt(0) !== "/") u = "/" + u;
     return "https://cdn.realmnovel.com" + u;
@@ -225,8 +239,75 @@
       session.loginTried = false;
       return apiGet(path, true);
     }
-    if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : 0) + " for " + apiUrl + path);
+    if (!res || !res.ok) {
+      var err = new Error("HTTP " + (res ? res.status : 0) + " for " + apiUrl + path);
+      err.status = res ? res.status : 0;
+      throw err;
+    }
     return JSON.parse(res.body || "{}");
+  }
+
+  // Gate-free catalogue: /links/feed returns the manga metadata (title,
+  // signed cover, slug, chapter count) without the Play Integrity gate.
+  async function feedManga(page) {
+    var data = await apiGet("/links/feed?page=" + (page || 1));
+    var items = data.items || [];
+    var out = [];
+    for (var i = 0; i < items.length; i++) {
+      var m = items[i] && items[i].manga;
+      if (m && m._id) out.push(m);
+    }
+    return out;
+  }
+
+  // Catalogue-only details for the gate-free path: metadata from the feed plus
+  // the chapter numbers of /mylist/chapters-meta (no chapter ids, no pages).
+  async function fallbackDetails(slug, rawUrl) {
+    var found = null;
+    for (var p = 1; p <= 5 && !found; p++) {
+      var list;
+      try {
+        list = await feedManga(p);
+      } catch (e) {
+        break;
+      }
+      if (!list.length) break;
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].slug === slug || list[i]._id === slug) {
+          found = list[i];
+          break;
+        }
+      }
+    }
+    if (!found) throw new Error("Manga not found: " + slug);
+
+    var chapters = [];
+    try {
+      var meta = await apiGet("/mylist/chapters-meta/" + found._id);
+      var nums = meta.nums || [];
+      for (var n = 0; n < nums.length; n++) {
+        chapters.push({
+          number: String(nums[n]),
+          title: String(nums[n]),
+          views: 0,
+          url: baseUrl + "/manga/" + (found.slug || found._id),
+          isLocked: true,
+          date: ""
+        });
+      }
+    } catch (e) {}
+
+    return {
+      title: found.arabicTitle || found.englishTitle || "",
+      coverUrl: makeCdnUrl(found.cover || found.coverThumb || ""),
+      description: "",
+      genres: [],
+      chapters: chapters,
+      originalUrl: rawUrl || (baseUrl + "/manga/" + slug),
+      hasMoreChapters: false,
+      lastFetchedPage: 1,
+      contentType: "manga"
+    };
   }
 
   // Ad-gated chapters are withheld by the server (adLocked:true, pages:[]).
@@ -284,26 +365,51 @@
     requiresCloudflare: false,
 
     async getHomepageManga(args) {
+      var page = (args && args.page) || 1;
       try {
-        var page = (args && args.page) || 1;
         var data = await apiGet("/manga?page=" + page + "&limit=20");
-        var items = data.items || [];
-        return items.map(toManga);
+        return (data.items || []).map(toManga);
       } catch (e) {
+        if (!e || e.status !== 428) return [];
+      }
+      try {
+        return (await feedManga(page)).map(toManga);
+      } catch (e2) {
         return [];
       }
     },
 
     async search(args) {
+      var query = (args && args.query) || "";
+      if (!query.trim()) return [];
       try {
-        var query = (args && args.query) || "";
-        if (!query.trim()) return [];
         var data = await apiGet("/manga?search=" + encodeURIComponent(query) + "&limit=20");
-        var items = data.items || [];
-        return items.map(toManga);
+        return (data.items || []).map(toManga);
       } catch (e) {
-        return [];
+        if (!e || e.status !== 428) return [];
       }
+      var q = query.trim().toLowerCase();
+      var found = [];
+      var seen = {};
+      for (var p = 1; p <= 5 && found.length < 20; p++) {
+        var list;
+        try {
+          list = await feedManga(p);
+        } catch (e2) {
+          break;
+        }
+        if (!list.length) break;
+        for (var i = 0; i < list.length; i++) {
+          var m = list[i];
+          if (seen[m._id]) continue;
+          var hay = ((m.arabicTitle || "") + " " + (m.englishTitle || "") + " " + (m.slug || "")).toLowerCase();
+          if (hay.indexOf(q) !== -1) {
+            seen[m._id] = 1;
+            found.push(m);
+          }
+        }
+      }
+      return found.map(toManga);
     },
 
     async getFilteredManga(args) {
@@ -363,11 +469,17 @@
       var m = rawUrl.match(/\/manga\/([^/?#]+)/);
       if (m) slug = m[1];
 
-      var data = await apiGet("/manga/" + slug);
+      var data = null;
+      try {
+        data = await apiGet("/manga/" + slug);
+      } catch (e) {
+        if (!e || e.status !== 428) throw e;
+      }
+      if (!data) return fallbackDetails(slug, rawUrl);
       var manga = data.manga || data;
       if (!manga || !manga._id) throw new Error("Manga not found: " + slug);
 
-      var title = manga.arabicTitle || manga.englishTitle || "Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†";
+      var title = manga.arabicTitle || manga.englishTitle || "بدون عنوان";
       var coverRaw = manga.cover || manga.coverThumb || "";
       var cover = makeCdnUrl(coverRaw);
       var desc = manga.description || "";
@@ -426,6 +538,7 @@
       var rawUrl = (args && args.url) || "";
       var m = rawUrl.match(/\/chapters\/([^/?#]+)/);
       var chapterId = m ? m[1] : "";
+      if (!chapterId) return { kind: "image", imageUrls: [] };
 
       var data = await apiGet("/chapters/" + chapterId);
       var chapter = data.chapter || data;

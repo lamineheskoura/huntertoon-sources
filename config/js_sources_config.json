@@ -1067,7 +1067,7 @@
       "id": "manhasama",
       "sid": 119,
       "name": "مانها السماء (Manha Alsamaa)",
-      "version": "1.5.0",
+      "version": "1.6.0",
       "enabled": true,
       "status": "beta",
       "base_url": "https://realmnovel.com",
@@ -1075,6 +1075,10 @@
       "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=realmnovel.com",
       "requires_cf": false,
       "image_referer": "https://realmnovel.com/",
+      "auth_identifier": "",
+      "auth_password": "",
+      "att_token": "",
+      "att_device_id": "",
       "transport": {
         "mode": "light"
       },
@@ -1086,7 +1090,7 @@
       },
       "script": {
         "url": "sources/manhasama/source.js",
-        "sha256": "6A3F249250428BDEDC4233885101BCB74262DF7700BA63FBB500BD274F1410D3",
+        "sha256": "D400D34EF520FA11B76818A7535B5554FE610AC5FB22C1966E22497D7BEEAE8C",
         "entry": "createSource"
       },
       "capabilities": {
@@ -1107,8 +1111,8 @@
         "language": "ar",
         "adult": false,
         "author": "HunterToon Team",
-        "description": "Manha Alsamaa - Arabic manga source on realmnovel.com: guest reads need no account, every request is HMAC-signed, app-build headers are mandatory, ad-gated chapters (number % 3 == 0) open with account points",
-        "changelog": "v1.5.0: fixed the source being completely dead (\"no results\"): reads now work as a guest (no register - the 3/day/IP limit was killing every request), Play Integrity attestation is non-fatal (server answers no_gms_blocked and does not require it), POST requests are signed, X-App-Build/X-Platform are sent (minBuild:8, otherwise 426), chapter numbers keep their raw label (\"3-1\" no longer duplicates \"3\"), ad-gated chapters are flagged with isLocked and can be opened by paying points when an account is configured (config.auth_identifier + config.auth_password -> /auth/login -> /me/chapter-unlock/spend)",
+        "description": "Manha Alsamaa - Arabic manga source on realmnovel.com: every request is HMAC-signed, app-build headers are mandatory, the content routes need an account (login + device attestation), ad-gated chapters (number % 3 == 0) open with account points",
+        "changelog": "v1.6.0: cleared the Play Integrity gate on the content routes (they answered HTTP 428 {\"attest\":true,\"code\":\"verify\"}): the server needs THREE layers at once - the signed request headers (X-Sig = HMAC-SHA256 over METHOD\\n/api{PATH}\\nTS\\nNONCE\\nDEVICE_ID + a Dart UA + an \"ins_*\" device id), an X-Att attestation token minted by POST /device/attest FOR THAT device id, and the account JWT from POST /auth/login; a wrong signature answers 401 {\"sigError\":\"badsig\"} and a non-Dart UA answers nginx 403. The attest call must NOT send \"pub\": the server then stamps p/pl claims into the token and rejects it with 428 again, so only {\"nonce\":n} is sent. The source now logs in and mints the attestation token itself (config.auth_identifier + config.auth_password, or config.auth_token; config.att_token + config.att_device_id inject a token taken from the official app) and returns real chapter pages instead of an empty list. Without an account it keeps reading the gate-free surface (/links/feed, /mylist/chapters-meta, /categories) so the catalogue still shows. Also fixed the mojibake Arabic strings (the default title now reads \"بدون عنوان\")",
         "ai_translation": true
       },
       "display": {
