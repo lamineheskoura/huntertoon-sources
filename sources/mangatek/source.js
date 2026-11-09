@@ -16,6 +16,10 @@ function createSource(api, config) {
   ];
   var unlockProofSalt = saltN0Pairs[0].salt;
   var overlayN0 = saltN0Pairs[0].n0;
+  // The reader API only serves overlay data when the request carries the device
+  // fingerprint header the site's own viewer sends; without it the API answers
+  // needs_challenge + turnstile_required and never returns the overlay.
+  var deviceFingerprint = "Linux | 1080x2400x24 | Africa/Cairo | cores:8 | mem:16 | touch:1 | dpr:3";
   var lastChapterUrl = baseUrl + "/";
 
   var defaultHeaders = mergeHeaders(
@@ -832,6 +836,321 @@ function createSource(api, config) {
     return "";
   }
 
+  // ────────────────── Live key rig (self-healing on salt rotation) ──────────────────
+  // The site's ChapterImageViewer bundle keeps the proof salt and the overlay
+  // seed inside an obfuscated string table. When the hardcoded pair stops
+  // working we decode the live bundle and fingerprint the 48 hex secrets out
+  // of it, so a rotation no longer needs a code change.
+  var livePairs = [];
+  var livePairsPromise = null;
+
+  function rigArith(expr, env) {
+    var s = String(expr == null ? "" : expr).replace(/[A-Za-z_$][\w$]*/g, function (p) {
+      return Object.prototype.hasOwnProperty.call(env, p) ? "(" + env[p] + ")" : "0";
+    });
+    var i = 0;
+    function num() {
+      while (s.charAt(i) === " ") i++;
+      var c = s.charAt(i);
+      if (c === "(") { i++; var v = expr2(); if (s.charAt(i) === ")") i++; return v; }
+      if (c === "-") { i++; return -num(); }
+      if (c === "+") { i++; return num(); }
+      var st = i;
+      while (i < s.length && /[0-9.]/.test(s.charAt(i))) i++;
+      var n = parseFloat(s.slice(st, i));
+      return isNaN(n) ? 0 : n;
+    }
+    function term() {
+      var v = num();
+      for (;;) {
+        var c = s.charAt(i);
+        if (c === "*") { i++; v *= num(); }
+        else if (c === "/") { i++; v /= num(); }
+        else return v;
+      }
+    }
+    function expr2() {
+      var v = term();
+      for (;;) {
+        var c = s.charAt(i);
+        if (c === "+") { i++; v += term(); }
+        else if (c === "-") { i++; v -= term(); }
+        else return v;
+      }
+    }
+    var out = expr2();
+    return isFinite(out) ? out : NaN;
+  }
+
+  function rigB64(str, alphabet) {
+    var map = {}, i;
+    for (i = 0; i < alphabet.length; i++) map[alphabet.charAt(i)] = i;
+    var out = [], acc = 0, bits = 0;
+    for (var j = 0; j < str.length; j++) {
+      var ch = str.charAt(j);
+      if (ch === "=") break;
+      var v = map[ch];
+      if (v === undefined) continue;
+      acc = acc * 64 + v;
+      bits += 6;
+      if (bits >= 8) {
+        bits -= 8;
+        out.push(Math.floor(acc / Math.pow(2, bits)) % 256);
+        acc = acc % Math.pow(2, bits);
+      }
+    }
+    var s = "";
+    for (var k = 0; k < out.length; k++) s += String.fromCharCode(out[k]);
+    return s;
+  }
+
+  function rigFindFunctions(src) {
+    var out = [], re = /(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/g, m;
+    while ((m = re.exec(src))) {
+      var bodyStart = src.indexOf("{", re.lastIndex);
+      if (bodyStart < 0) continue;
+      var depth = 0, end = -1, str = null;
+      for (var i = bodyStart; i < src.length; i++) {
+        var c = src.charAt(i);
+        if (str) {
+          if (c === "\\") { i++; continue; }
+          if (c === str) str = null;
+          continue;
+        }
+        if (c === '"' || c === "'" || c === "`") { str = c; continue; }
+        if (c === "{") depth++;
+        else if (c === "}") { depth--; if (!depth) { end = i + 1; break; } }
+      }
+      if (end < 0) continue;
+      out.push({ name: m[1], start: m.index, bodyStart: bodyStart, bodyEnd: end });
+    }
+    return out;
+  }
+
+  function rigParse(src) {
+    var rot = src.match(/\}\)\((\w+),[^;]{0,160}\);/);
+    if (!rot) return null;
+    var arrayFn = rot[1];
+    var fnAt = src.indexOf("function " + arrayFn + "(");
+    if (fnAt < 0) return null;
+    var arrStart = src.indexOf("[", fnAt);
+    var arrEnd = src.indexOf("]", arrStart);
+    if (arrStart < 0 || arrEnd < 0) return null;
+    var region = src.slice(arrStart, arrEnd + 1);
+    var entries = [], re = /"((?:[^"\\]|\\.)*)"/g, m;
+    while ((m = re.exec(region))) {
+      try { entries.push(JSON.parse('"' + m[1] + '"')); } catch (e) { entries.push(m[1]); }
+    }
+    if (!entries.length) return null;
+    var funcs = rigFindFunctions(src);
+    var dec = null;
+    for (var i = 0; i < funcs.length; i++) {
+      var body = src.slice(funcs[i].bodyStart, funcs[i].bodyEnd);
+      if (body.indexOf(arrayFn + "()") < 0) continue;
+      var off = body.match(/([A-Za-z_$][\w$]*)\s*=\s*\1\s*-\s*\(([^()]*)\)/);
+      if (!off) continue;
+      var alpha = body.match(/["']([A-Za-z0-9+/=_-]{60,70})["']/);
+      if (!alpha) continue;
+      dec = { name: funcs[i].name, offset: rigArith(off[2], {}), alphabet: alpha[1] };
+      break;
+    }
+    if (!dec) return null;
+    var defs = {}, wRe = /function\s+([A-Za-z_$][\w$]*)\(([^)]*)\)\{return\s+([A-Za-z_$][\w$]*)\(([^)]*)\)\}/g;
+    while ((m = wRe.exec(src))) {
+      var name = m[1];
+      if (name === m[3]) continue;
+      var ps = m[2].split(","), as = m[4].split(",");
+      if (ps.length < 2 || as.length < 2) continue;
+      for (var a = 0; a < ps.length; a++) { ps[a] = ps[a].replace(/\s+/g, ""); as[a] = as[a].replace(/\s+/g, ""); }
+      if (!defs[name]) defs[name] = [];
+      defs[name].push({ ps: ps, as: as, callee: m[3] });
+    }
+    return {
+      arrayFn: arrayFn, entries: entries, defs: defs, decName: dec.name,
+      offset: dec.offset, alphabet: dec.alphabet, funcs: funcs, src: src
+    };
+  }
+
+  function rigResolve(P, name, a, b, scope, depth) {
+    if (depth > 8) return [];
+    var cands = [], i;
+    if (scope && scope[name]) cands = cands.concat(scope[name]);
+    if (P.defs[name]) cands = cands.concat(P.defs[name]);
+    var out = [];
+    for (i = 0; i < cands.length; i++) {
+      var d = cands[i], env = {}, p;
+      for (p = 0; p < d.ps.length; p++) env[d.ps[p]] = p === 0 ? a : b;
+      var v0 = rigArith(d.as[0], env), v1 = rigArith(d.as[1], env);
+      if (d.callee === P.decName) {
+        var idx = v0 - P.offset;
+        if (isFinite(idx)) out.push(idx);
+      } else if (P.defs[d.callee]) {
+        out = out.concat(rigResolve(P, d.callee, v0, v1, scope, depth + 1));
+      }
+    }
+    return out;
+  }
+
+  function rigScopeDefs(text) {
+    var map = {}, re = /function\s+([A-Za-z_$][\w$]*)\(([^)]*)\)\{return\s+([A-Za-z_$][\w$]*)\(([^)]*)\)\}/g, m;
+    while ((m = re.exec(text))) {
+      var ps = m[2].split(","), as = m[4].split(",");
+      if (ps.length < 2 || as.length < 2) continue;
+      for (var a = 0; a < ps.length; a++) { ps[a] = ps[a].replace(/\s+/g, ""); as[a] = as[a].replace(/\s+/g, ""); }
+      if (!map[m[1]]) map[m[1]] = [];
+      map[m[1]].push({ ps: ps, as: as, callee: m[3] });
+    }
+    return map;
+  }
+
+  function rigGroups(text) {
+    var groups = [], cur = null, re = /([A-Za-z_$][\w$]*)\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)/g, m;
+    while ((m = re.exec(text))) {
+      var joined = cur && /^\s*\+\s*$/.test(text.slice(cur.end, m.index));
+      if (!joined) {
+        if (cur && cur.items.length >= 4) groups.push(cur);
+        cur = { start: m.index, items: [] };
+      }
+      cur.items.push({ name: m[1], a: parseInt(m[2], 10), b: parseInt(m[3], 10) });
+      cur.end = re.lastIndex;
+    }
+    if (cur && cur.items.length >= 4) groups.push(cur);
+    return groups;
+  }
+
+  function rigInnermost(P, pos) {
+    var best = null;
+    for (var i = 0; i < P.funcs.length; i++) {
+      var f = P.funcs[i];
+      if (f.start > pos || f.bodyEnd <= pos) continue;
+      if (!best || f.start > best.start) best = f;
+    }
+    return best;
+  }
+
+  function rigScopeDepth(P, pos) {
+    var d = 0;
+    for (var i = 0; i < P.funcs.length; i++) {
+      var f = P.funcs[i];
+      if (f.start <= pos && f.bodyEnd > pos) d++;
+    }
+    return d;
+  }
+
+  function rigScopeFor(P, pos, cache) {
+    var owner = rigInnermost(P, pos);
+    if (!owner) return {};
+    if (cache[owner.start]) return cache[owner.start];
+    var defs = rigScopeDefs(P.src.slice(owner.start, owner.bodyEnd));
+    cache[owner.start] = defs;
+    return defs;
+  }
+
+  function rigExtractKeys(src) {
+    var P = rigParse(src);
+    if (!P) return null;
+    var N = P.entries.length, i;
+    var decoded = new Array(N);
+    for (i = 0; i < N; i++) decoded[i] = rigB64(P.entries[i], P.alphabet);
+    var HEX8 = /^[0-9a-f]{8}$/i;
+    var hexRaw = [];
+    for (i = 0; i < N; i++) if (HEX8.test(decoded[i])) hexRaw.push(i);
+    if (!hexRaw.length) return null;
+    var pipeAt = src.indexOf('"|"');
+    if (pipeAt < 0) return null;
+    var proof = rigInnermost(P, pipeAt);
+    if (!proof) return null;
+    var proofBody = src.slice(proof.start, proof.bodyEnd);
+    var proofScope = rigScopeDefs(proofBody);
+    var salts = [], seeds = [];
+
+    function harvest(bodyText, scope, isProof) {
+      var groups = rigGroups(bodyText);
+      for (var g = 0; g < groups.length; g++) {
+        if (groups[g].items.length < 6) continue;
+        var sets = [];
+        var broken = false;
+        for (var q = 0; q < groups[g].items.length && !broken; q++) {
+          var idxs = rigResolve(P, groups[g].items[q].name, groups[g].items[q].a, groups[g].items[q].b, scope, 0);
+          if (!idxs.length) broken = true;
+          else sets.push(idxs);
+        }
+        if (broken) continue;
+        for (var c0 = 0; c0 < sets[0].length; c0++) {
+          for (var h = 0; h < hexRaw.length; h++) {
+            var rot = ((hexRaw[h] - sets[0][c0]) % N + N) % N;
+            var parts = [], ok = true;
+            for (var p = 0; p < sets.length && ok; p++) {
+              var picked = null;
+              for (var c = 0; c < sets[p].length && picked === null; c++) {
+                var raw = ((sets[p][c] + rot) % N + N) % N;
+                if (HEX8.test(decoded[raw])) picked = decoded[raw];
+              }
+              if (picked === null) ok = false; else parts.push(picked);
+            }
+            if (!ok) continue;
+            var val = parts.join("");
+            if (!/^[0-9a-f]{48}$/i.test(val)) continue;
+            if (isProof) { if (salts.indexOf(val) < 0) salts.push(val); }
+            else if (seeds.indexOf(val) < 0) seeds.push(val);
+          }
+        }
+      }
+    }
+
+    harvest(proofBody, proofScope, true);
+    var all = rigGroups(src), cache = {}, minDepth = null, g2, d;
+    for (g2 = 0; g2 < all.length; g2++) {
+      if (all[g2].items.length < 6) continue;
+      d = rigScopeDepth(P, all[g2].start);
+      if (minDepth === null || d < minDepth) minDepth = d;
+    }
+    for (g2 = 0; g2 < all.length; g2++) {
+      if (all[g2].items.length < 6) continue;
+      if (rigScopeDepth(P, all[g2].start) > minDepth + 1) continue;
+      harvest(src.slice(all[g2].start - 4, all[g2].end), rigScopeFor(P, all[g2].start, cache), false);
+    }
+    if (!salts.length) return null;
+    var n0s = [];
+    for (var z = 0; z < seeds.length && n0s.length < 8; z++) if (seeds[z] !== salts[0]) n0s.push(seeds[z]);
+    return { salt: salts[0], salts: salts.slice(0, 8), n0s: n0s, tableLen: N };
+  }
+
+  function findViewerBundleUrl(html) {
+    var m = String(html || "").match(/\/_astro\/ChapterImageViewer\.[A-Za-z0-9_\-]+\.js/);
+    return m ? baseUrl + m[0] : null;
+  }
+
+  async function ensureLivePairs(html) {
+    if (livePairs.length) return livePairs;
+    if (!html || !api.http) return [];
+    if (livePairsPromise) {
+      try { return await livePairsPromise; } catch (e) { return []; }
+    }
+    livePairsPromise = (async function () {
+      var bundleUrl = findViewerBundleUrl(html);
+      if (!bundleUrl) return [];
+      var res = await api.http(bundleUrl, {
+        method: "GET",
+        headers: { "User-Agent": userAgent, Accept: "*/*", Referer: baseUrl + "/" }
+      });
+      if (!res || !res.ok || !res.body) return [];
+      var keys = rigExtractKeys(res.body);
+      if (!keys || !keys.salts.length) return [];
+      var pairs = [];
+      for (var d = 0; d < 4 && pairs.length < 6; d++) {
+        for (var i = 0; i < keys.salts.length && pairs.length < 6; i++) {
+          for (var j = 0; j < keys.n0s.length && pairs.length < 6; j++) {
+            if (i + j === d) pairs.push({ salt: keys.salts[i], n0: keys.n0s[j] });
+          }
+        }
+      }
+      livePairs = pairs;
+      return pairs;
+    })();
+    try { return await livePairsPromise; } catch (e2) { return []; }
+  }
+
   async function postUnlock(payload) {
     var res = await api.http(apiBase + "/api/reader/unlock", {
       method: "POST",
@@ -839,7 +1158,8 @@ function createSource(api, config) {
         "Content-Type": "application/json",
         "Accept": "application/json, text/plain, */*",
         "Referer": baseUrl + "/",
-        "Origin": baseUrl
+        "Origin": baseUrl,
+        "x-device": deviceFingerprint
       },
       body: JSON.stringify(payload)
     });
@@ -854,41 +1174,50 @@ function createSource(api, config) {
   // Gate-mode full page list: POST /api/reader/pages with the same proof
   // {chapterId, mangaSlug, chapterNumber, token, proof, shadow} -> {success, data:[url,...]}
   // Tries each saltN0 pair until one works (salt rotates periodically).
-  async function fetchGatePageUrls(props) {
+  async function tryGatePageUrls(props, pairs) {
+    var cidNum = Number(props.chapterId);
+    for (var si = 0; si < pairs.length; si++) {
+      var salt = pairs[si].salt;
+      var gProof = sha256HexAscii(salt + "|" + props.unlockToken + "|" + props.chapterId);
+      var gRes2 = await api.http(apiBase + "/api/reader/pages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json, text/plain, */*",
+          "Referer": baseUrl + "/",
+          "Origin": baseUrl,
+          "x-device": deviceFingerprint
+        },
+        body: JSON.stringify({
+          chapterId: cidNum || props.chapterId,
+          mangaSlug: props.mangaSlug || "",
+          chapterNumber: String(props.chapterNumber || ""),
+          token: props.unlockToken,
+          proof: gProof,
+          shadow: 1
+        })
+      });
+      if (!gRes2 || !gRes2.ok) continue;
+      var gParsed = null;
+      try { gParsed = JSON.parse(gRes2.body || "{}"); } catch (eGJson) { continue; }
+      if (!gParsed || !gParsed.success || !Array.isArray(gParsed.data)) continue;
+      var gUrls = [];
+      for (var gi = 0; gi < gParsed.data.length; gi++) {
+        var gu = processImageUrl(String(gParsed.data[gi] || ""));
+        if (gu) gUrls.push(gu);
+      }
+      if (gUrls.length) return gUrls;
+    }
+    return [];
+  }
+
+  async function fetchGatePageUrls(props, html) {
     try {
       if (!props || !props.chapterId || !props.unlockToken || !api.http) return [];
-      var cidNum = Number(props.chapterId);
-      for (var si = 0; si < saltN0Pairs.length; si++) {
-        var salt = saltN0Pairs[si].salt;
-        var gProof = sha256HexAscii(salt + "|" + props.unlockToken + "|" + props.chapterId);
-        var gRes2 = await api.http(apiBase + "/api/reader/pages", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json, text/plain, */*",
-            "Referer": baseUrl + "/",
-            "Origin": baseUrl
-          },
-          body: JSON.stringify({
-            chapterId: cidNum || props.chapterId,
-            mangaSlug: props.mangaSlug || "",
-            chapterNumber: String(props.chapterNumber || ""),
-            token: props.unlockToken,
-            proof: gProof,
-            shadow: 1
-          })
-        });
-        if (!gRes2 || !gRes2.ok) continue;
-        var gParsed = null;
-        try { gParsed = JSON.parse(gRes2.body || "{}"); } catch (eGJson) { continue; }
-        if (!gParsed || !gParsed.success || !Array.isArray(gParsed.data)) continue;
-        var gUrls = [];
-        for (var gi = 0; gi < gParsed.data.length; gi++) {
-          var gu = processImageUrl(String(gParsed.data[gi] || ""));
-          if (gu) gUrls.push(gu);
-        }
-        if (gUrls.length) return gUrls;
-      }
+      var urls = await tryGatePageUrls(props, saltN0Pairs);
+      if (urls.length) return urls;
+      var live = await ensureLivePairs(html);
+      if (live.length) return await tryGatePageUrls(props, live);
       return [];
     } catch (eGate) { return []; }
   }
@@ -999,46 +1328,58 @@ function createSource(api, config) {
     } catch (eOuter) { return null; }
   }
 
-  async function unlockOverlayContent(chapterId, unlockToken) {
+  async function tryUnlockPairs(chapterId, unlockToken, pairs) {
+    var cidNum = Number(chapterId);
+    for (var si = 0; si < pairs.length; si++) {
+      var salt = pairs[si].salt;
+      var proof = sha256HexAscii(salt + "|" + unlockToken + "|" + chapterId);
+      var step1 = await postUnlock({
+        chapterId: cidNum || chapterId,
+        token: unlockToken,
+        proof: proof,
+        esid: ovMakeEsid()
+      });
+      if (!step1) continue;
+      var direct = await claimOverlay(step1, unlockToken, chapterId, pairs[si].n0);
+      if (direct) return { data: direct };
+      // Payload present but unreadable → the salt is right and the N0 rotated.
+      if (step1.overlay || step1.imageUrls) return { data: null, needLive: true };
+      // Proof accepted but no overlay payload (baked chapter) → salt is right, stop.
+      if (!step1.needs_challenge) return { data: null, needLive: false };
+      if (step1.turnstile_required || step1.turnstileRequired) continue;
+      var powBits = Number(step1.pow_bits || step1.powBits || 0);
+      var nonce = step1.nonce || "";
+      var pow = "";
+      if (powBits > 0) {
+        if (!nonce) continue;
+        pow = solvePow(String(nonce), powBits);
+        if (!pow) continue;
+      }
+      var step2payload = {
+        chapterId: cidNum || chapterId,
+        token: unlockToken,
+        proof: proof,
+        esid: ovMakeEsid()
+      };
+      if (nonce) step2payload.nonce = nonce;
+      if (pow) step2payload.pow = pow;
+      var step2 = await postUnlock(step2payload);
+      if (!step2) continue;
+      return { data: await claimOverlay(step2, unlockToken, chapterId, pairs[si].n0) };
+    }
+    return { data: null, needLive: true };
+  }
+
+  async function unlockOverlayContent(chapterId, unlockToken, html) {
     try {
       if (!chapterId || !unlockToken || !api.http) return null;
-      var cidNum = Number(chapterId);
-      for (var si = 0; si < saltN0Pairs.length; si++) {
-        var salt = saltN0Pairs[si].salt;
-        var proof = sha256HexAscii(salt + "|" + unlockToken + "|" + chapterId);
-        var step1 = await postUnlock({
-          chapterId: cidNum || chapterId,
-          token: unlockToken,
-          proof: proof,
-          esid: ovMakeEsid()
-        });
-        if (!step1) continue;
-        var direct = await claimOverlay(step1, unlockToken, chapterId, saltN0Pairs[si].n0);
-        if (direct) return direct;
-        // Proof accepted but no overlay payload (baked chapter) → salt is right, stop.
-        if (!step1.needs_challenge) break;
-        if (step1.turnstile_required || step1.turnstileRequired) continue;
-        var powBits = Number(step1.pow_bits || step1.powBits || 0);
-        var nonce = step1.nonce || "";
-        var pow = "";
-        if (powBits > 0) {
-          if (!nonce) continue;
-          pow = solvePow(String(nonce), powBits);
-          if (!pow) continue;
-        }
-        var step2payload = {
-          chapterId: cidNum || chapterId,
-          token: unlockToken,
-          proof: proof,
-          esid: ovMakeEsid()
-        };
-        if (nonce) step2payload.nonce = nonce;
-        if (pow) step2payload.pow = pow;
-        var step2 = await postUnlock(step2payload);
-        if (!step2) continue;
-        return await claimOverlay(step2, unlockToken, chapterId, saltN0Pairs[si].n0);
-      }
-      return null;
+      var res = await tryUnlockPairs(chapterId, unlockToken, saltN0Pairs);
+      if (res && res.data) return res.data;
+      if (!res || !res.needLive) return null;
+      var live = await ensureLivePairs(html);
+      if (!live.length) return null;
+      var res2 = await tryUnlockPairs(chapterId, unlockToken, live);
+      return (res2 && res2.data) || null;
     } catch (e) {
       return null;
     }
@@ -1338,7 +1679,7 @@ function createSource(api, config) {
         // Gate-mode: SSR props only carry the first visible pages; the full
         // page list comes from /api/reader/pages (pending placeholders are decoys).
         if (String(props.gateMode || props.gate_mode || "") === "on" || textMode === "overlay") {
-          var gateUrls = await fetchGatePageUrls(props);
+          var gateUrls = await fetchGatePageUrls(props, html);
           if (gateUrls.length > imageUrls.length) imageUrls = gateUrls;
         }
         if (textMode === "overlay") {
@@ -1357,7 +1698,7 @@ function createSource(api, config) {
           }
           // New path: overlay_via_unlock — fetch blob from reader/unlock API
           try {
-            var unlocked = await unlockOverlayContent(props.chapterId, props.unlockToken);
+            var unlocked = await unlockOverlayContent(props.chapterId, props.unlockToken, html);
             if (unlocked) {
               return buildOverlayContent(
                 imageUrls,
