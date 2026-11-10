@@ -1,10 +1,10 @@
 {
-  "version": "1.64.0",
+  "version": "1.65.0",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.11.09.1",
+  "manifest_version": "2026.11.10.1",
   "generated_at": "2026-09-04T14:30:00Z",
-  "last_updated": "2026-11-09T07:20:35Z",
+  "last_updated": "2026-11-10T08:00:00Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
   "min_app_version": "1.4.0",
   "repository": {
@@ -3104,6 +3104,63 @@
         "alias": "سيرفر 5",
         "icon": {
           "seed": 154,
+          "icon_name": "auto_stories"
+        },
+        "in_filters": [
+          "مانهوا"
+        ]
+      }
+    },
+    "manhuatop": {
+      "id": "manhuatop",
+      "sid": 156,
+      "name": "ManhuaTop EN",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://manhuatop.org",
+      "website_url": "https://manhuatop.org",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=manhuatop.org",
+      "requires_cf": true,
+      "image_referer": "https://manhuatop.org/",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://manhuatop.org/",
+        "Origin": "https://manhuatop.org"
+      },
+      "script": {
+        "url": "sources/manhuatop/source.js",
+        "sha256": "8578B7053D6F52936B4E8E32C83EA67FB85D1D608C1B07F02D596876FB14D06B",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "manhwa"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": true,
+        "supports_download": true,
+        "requires_cloudflare": true
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "en",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "ManhuaTop EN - English manhwa/manga site (manhuatop.org). Latest updates, search, genre/type filters and chapter reader with lazy chapter pages.",
+        "changangelog": "v1.0.0: initial release. Listings parsed from /series/ (real manga grid block), genre taxonomy from the site genre select, search from /search?q=, details from /manhua/{slug}/ (synopsis, genre chips, status), chapters from ?tab=chapters&chapter_page=N (50 per page, lazy loading through fetchMoreChapters), chapter images via alt=\"Chapter image N\". Adult/sexual genres (Adult, Smut, Ecchi, Mature, Harem, Yaoi, Yuri, Gender Bender, Mecha, ...) are hidden from the taxonomy and every listed title is checked against the site's own classification, so adult titles never appear in any list.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "سيرفر 6",
+        "icon": {
+          "seed": 156,
           "icon_name": "auto_stories"
         },
         "in_filters": [
