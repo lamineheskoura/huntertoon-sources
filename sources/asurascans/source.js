@@ -6,6 +6,7 @@ function createSource(api, config) {
     "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
   var lastChapterUrl = baseUrl + "/";
   var apiBase = "https://api.asurascans.com";
+  var AMP = String.fromCharCode(38);
 
   // Mirrors /api/genres exactly - a genre outside this list returns zero rows.
   var defaultGenres = [
@@ -142,7 +143,51 @@ function createSource(api, config) {
     return "0";
   }
 
+  // Astro island props encode every value as [marker, value]; unwrap them.
+  function unwrapAstro(v) {
+    if (Array.isArray(v) && v.length === 2 && typeof v[0] === "number") {
+      return unwrapAstro(v[1]);
+    }
+    return v;
+  }
+
+  // The chapter list island carries the real lock flag (is_premium) per
+  // chapter. The rendered rows do NOT: every row contains the Tailwind class
+  // "block", so a naive "lock" substring match flags the whole series.
+  function parsePremiumFlags(html) {
+    var flags = {};
+    var re = /<astro-island\b[^>]*props="([^"]+)"/gi;
+    var m;
+    while ((m = re.exec(html))) {
+      var raw = m[1]
+        .split(AMP + "quot;").join('"')
+        .split(AMP + "amp;").join(AMP)
+        .split(AMP + "#39;").join("'")
+        .split(AMP + "lt;").join("<")
+        .split(AMP + "gt;").join(">");
+      var data;
+      try {
+        data = JSON.parse(raw);
+      } catch (e) {
+        continue;
+      }
+      var list = data && data.chapters;
+      if (!Array.isArray(list)) continue;
+      var arr = unwrapAstro(list);
+      if (!Array.isArray(arr)) continue;
+      for (var i = 0; i < arr.length; i++) {
+        var ch = unwrapAstro(arr[i]);
+        if (!ch || typeof ch !== "object") continue;
+        var num = unwrapAstro(ch.number);
+        if (num === undefined || num === null) continue;
+        flags[String(num)] = unwrapAstro(ch.is_premium) === true;
+      }
+    }
+    return flags;
+  }
+
   async function extractChapters(html) {
+    var flags = parsePremiumFlags(html);
     var items = await api.cssAll(html, "div[class*='divide'] a[href*='chapter']");
     if (!items || !items.length) items = await api.cssAll(html, "a[href*='chapter']");
     var chapters = [];
@@ -158,7 +203,7 @@ function createSource(api, config) {
 
       var chNum = extractChapterNumber(chapterUrl);
       var ine = it.html || "";
-      var isLocked = ine.toLowerCase().indexOf("lock") !== -1;
+      var isLocked = flags[chNum] === true;
 
       var dateStr = "";
       var dateRes = ine.match(/(\d+\s+(?:hour|day|week|month|minute|second|year)s?\s+ago)/i);

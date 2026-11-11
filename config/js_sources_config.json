@@ -1,10 +1,10 @@
 {
-  "version": "1.65.1",
+  "version": "1.65.2",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.11.10.2",
+  "manifest_version": "2026.11.10.3",
   "generated_at": "2026-09-04T14:30:00Z",
-  "last_updated": "2026-11-10T09:10:00Z",
+  "last_updated": "2026-11-10T09:40:00Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
   "min_app_version": "1.4.0",
   "repository": {
@@ -1640,7 +1640,7 @@
       "id": "asurascans",
       "sid": 102,
       "name": "Asura Scans",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "enabled": true,
       "status": "beta",
       "base_url": "https://asurascans.com",
@@ -1657,7 +1657,7 @@
       },
       "script": {
         "url": "sources/asurascans/source.js",
-        "sha256": "910dbbf3d4072a50a4dcdda2aab948f2816e3c2be3a2b38ce4375ca88dc11a41",
+        "sha256": "6F5CFF7BB187029401146D04BB09A83D8D1B35E004AF1045B1681FC9EAA8E644",
         "entry": "createSource"
       },
       "capabilities": {
@@ -1679,7 +1679,7 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "Asura Scans English manga/manhwa source (Astro.js SSR). Listing, search and filters all use /browse/comics (q, genres, type, page); detail at /comics/{slug}; reader at /comics/{slug}/chapter/{num}; images on cdn.asurascans.com. Supports locked chapter detection.",
-        "changelog": "v1.2.0: Fix list repeats (homepage mixed with browse pages - every page now comes from /browse/comics?page=N), fix broken search (server-side ?q= instead of an unrelated browse fallback), fix filters (real genre list from /api/genres and real types manhwa/manga/manhua instead of names the site does not have, which returned zero rows).",
+        "changelog": "v1.2.1: fixed wrong chapter lock flags. The lock test matched the substring 'lock' inside the Tailwind class 'block', so every chapter of every series was shown as locked, while real premium chapters were not detected. The lock flag now comes from the site's own chapter payload (Astro island props, is_premium per chapter). v1.2.0: Fix list repeats (homepage mixed with browse pages - every page now comes from /browse/comics?page=N), fix broken chapter reader.",
         "ai_translation": false
       },
       "display": {
