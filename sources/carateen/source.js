@@ -687,9 +687,18 @@ function createSource(api, config) {
     },
 
     getImageHeaders(args) {
+      var url = String((args && args.url) || "");
+      var host = "";
+      var hm = /^https?:\/\/([^/]+)/i.exec(url);
+      if (hm) host = hm[1].toLowerCase();
+      // Covers live on cdn.spacetoongo.com, which 403s any request carrying a
+      // carateen.tv referer (hotlink guard). Same-origin referer passes.
+      var referer = host && host.indexOf("carateen.tv") === -1
+        ? "https://" + host + "/"
+        : baseUrl + "/";
       return {
         "User-Agent": userAgent,
-        "Referer": baseUrl + "/",
+        "Referer": referer,
         "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
         "Accept-Language": "ar,en-US;q=0.9,en;q=0.8"
       };

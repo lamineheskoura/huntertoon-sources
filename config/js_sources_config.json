@@ -1,10 +1,10 @@
 {
-  "version": "1.65.0",
+  "version": "1.65.1",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.11.10.1",
+  "manifest_version": "2026.11.10.2",
   "generated_at": "2026-09-04T14:30:00Z",
-  "last_updated": "2026-11-10T08:00:00Z",
+  "last_updated": "2026-11-10T09:10:00Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
   "min_app_version": "1.4.0",
   "repository": {
@@ -2542,7 +2542,7 @@
       "id": "carateen",
       "sid": 145,
       "name": "كراتين",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "enabled": true,
       "status": "beta",
       "base_url": "https://carateen.tv",
@@ -2558,7 +2558,7 @@
       },
       "script": {
         "url": "sources/carateen/source.js",
-        "sha256": "9ceeb8ecd05ac5b82c1016d0c7b947f6cbb1d1879373c2e761b41cabc5b06c8f",
+        "sha256": "4F6239CC25E3E196D5D350B897FDAC15753AB1BFC6277FCEB2CD7F9DBABD0912",
         "entry": "createSource"
       },
       "capabilities": {
@@ -2580,7 +2580,7 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "كراتين - Arabic cartoon/anime source (Vue SPA + encrypted JSON API). SP+TG catalogs, episodes, direct HLS via pure-JS AES-256-CBC.",
-        "changelog": "v1.0.3: homepage = full All-Works grid with load-more (recent fallback), all episodes unlocked. v1.0.2/1.0.1: crash fixes.",
+        "changelog": "v1.0.4: fixed missing covers. Cover images are hosted on cdn.spacetoongo.com, which rejects any request carrying a carateen.tv Referer (403 hotlink guard), so getImageHeaders now sends a same-origin Referer for external cover hosts and keeps the carateen.tv Referer only for carateen.tv assets (posters). v1.0.3: homepage = full All-Works grid with load-more (recent fallback), all episodes unlocked. v1.0.2/1.0.1: crash fixes.",
         "ai_translation": false
       },
       "display": {
