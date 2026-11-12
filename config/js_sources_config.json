@@ -2,9 +2,9 @@
   "version": "1.65.3",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.11.10.4",
+  "manifest_version": "2026.11.12.1",
   "generated_at": "2026-09-04T14:30:00Z",
-  "last_updated": "2026-11-12T00:00:00Z",
+  "last_updated": "2026-11-12T21:43:59Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
   "min_app_version": "1.4.0",
   "repository": {
@@ -3001,7 +3001,7 @@
       "id": "goodtoon010",
       "sid": 153,
       "name": "GoodToon",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "enabled": true,
       "status": "beta",
       "base_url": "https://www.goodtoon010.com",
@@ -3036,11 +3036,11 @@
         "runtime_api_version": "1.0"
       },
       "metadata": {
-        "language": "en",
+        "language": "ko",
         "adult": false,
         "author": "HunterToon Team",
-        "description": "GoodToon - English manhwa site (goodtoon010.com). Archive browsing, server-side details and chapter reader. Adult/Ecchi genres excluded from lists via site filter cookies and client-side genre filtering; raw genre labels passed to app Block Filter.",
-        "changelog": "v1.0.0: initial release. Verified live end-to-end: 60+ series per page, details with raw genres, chapter lists via latest-chapter link, page images from img.goodtoon9001.top.",
+        "description": "GoodToon - Korean manhwa site (goodtoon010.com, <html lang=\"ko\">). Archive browsing, server-side details and chapter reader. Adult/Ecchi genres excluded from lists via site filter cookies and client-side genre filtering; raw genre labels passed to app Block Filter.",
+        "changelog": "v1.0.1: corrected source language to Korean (\"ko\") — the site serves <html lang=\"ko\"> and Korean titles; it had been registered as an English source. v1.0.0: initial release. Verified live end-to-end: 60+ series per page, details with raw genres, chapter lists via latest-chapter link, page images from img.goodtoon9001.top.",
         "ai_translation": false
       },
       "display": {
