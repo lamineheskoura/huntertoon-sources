@@ -488,14 +488,18 @@ function createSource(api, config) {
 
   // ────────────────── Homepage / Search ──────────────────
 
-  async function listCards(pageHtml) {
-    var selectors = [
-      "article.nhv-library-card",
-      ".page-item-detail",
-      ".nhv-pitem",
-      ".c-tabs-item__content",
-      ".page-listing-item .row > div"
-    ];
+  // listingOnly = archive pages (/cont/, /cont-genre/): past the last page
+  // the site redirects to the homepage, which carries no library-grid card.
+  async function listCards(pageHtml, listingOnly) {
+    var selectors = listingOnly
+      ? ["article.nhv-library-card"]
+      : [
+          "article.nhv-library-card",
+          ".page-item-detail",
+          ".nhv-pitem",
+          ".c-tabs-item__content",
+          ".page-listing-item .row > div"
+        ];
     var coverSel = ".nhv-library-card__cover img, .item-thumb img, .nhv-pitem__cover img, .tab-thumb img, img";
     var titleSel =
       "h2.nhv-library-card__title a, .post-title h3 a, .post-title a, .nhv-pitem__title, .tab-content .post-title a, h3 a, h4 a";
@@ -560,6 +564,37 @@ function createSource(api, config) {
       if (out.length) break;
     }
 
+    return out;
+  }
+
+  // The library grid serves 10 cards per page, which do not overflow the
+  // app's 3-column browse grid: its scroll-driven "load more" never fires
+  // and the list stops after one page. Serve 3 site pages per app page.
+  var SITE_PAGES_PER_APP_PAGE = 3;
+
+  async function collectListingPages(appPage, urlsForSitePage) {
+    var out = [];
+    var seen = {};
+    var firstSitePage = (appPage - 1) * SITE_PAGES_PER_APP_PAGE + 1;
+    for (var k = 0; k < SITE_PAGES_PER_APP_PAGE; k++) {
+      var sitePage = firstSitePage + k;
+      var urls = urlsForSitePage(sitePage);
+      var items = [];
+      for (var i = 0; i < urls.length; i++) {
+        try {
+          var pageHtml = await html(urls[i]);
+          items = await listCards(pageHtml, true);
+          if (items.length) break;
+        } catch (e) {
+          continue;
+        }
+      }
+      for (var j = 0; j < items.length; j++) {
+        if (seen[items[j].detailUrl]) continue;
+        seen[items[j].detailUrl] = true;
+        out.push(items[j]);
+      }
+    }
     return out;
   }
 
@@ -728,15 +763,6 @@ function createSource(api, config) {
     return decodeEntities(String(s || "").replace(/<[^>]*>/g, " ")).replace(/\s+/g, " ").trim();
   }
 
-  // Guard: unknown genre slugs 302 to the homepage (200 with homepage
-  // cards). A valid genre archive titles itself "{genre} - ...".
-  function isGenrePage(pageHtml, genre) {
-    var m = String(pageHtml || "").match(/<title>([\s\S]*?)<\/title>/i);
-    if (!m) return false;
-    var title = cleanTitleFallback(m[1]);
-    return title.indexOf(genre) === 0;
-  }
-
   // ────────────────── Public API ──────────────────
 
   return {
@@ -744,31 +770,21 @@ function createSource(api, config) {
 
     async getHomepageManga(args) {
       var page = (args && args.page) || 1;
-      var urls =
-        page === 1
+      return await collectListingPages(page, function (sitePage) {
+        return sitePage === 1
           ? [baseUrl + "/cont/", baseUrl + "/"]
-          : [baseUrl + "/cont/page/" + page + "/", baseUrl + "/cont/page/" + page + "/?m_orderby=latest"];
-
-      for (var i = 0; i < urls.length; i++) {
-        try {
-          var pageHtml = await html(urls[i]);
-          var items = await listCards(pageHtml);
-          if (items.length) return items;
-        } catch (e) {
-          continue;
-        }
-      }
-      return [];
+          : [baseUrl + "/cont/page/" + sitePage + "/", baseUrl + "/cont/page/" + sitePage + "/?m_orderby=latest"];
+      });
     },
 
     async search(args) {
       var q = (args && args.query) || "";
       if (!q.trim()) return [];
+      // The site ignores ?page= on search and /page/N/?s= returns the site's
+      // own listing, so the search result is a single page.
+      if ((args && args.page) > 1) return [];
       var encoded = encodeURIComponent(q);
-      var urls =
-        (args && args.page) > 1
-          ? [baseUrl + "/page/" + args.page + "/?s=" + encoded + "&post_type=wp-manga", baseUrl + "/?s=" + encoded + "&post_type=wp-manga&page=" + args.page]
-          : [baseUrl + "/?s=" + encoded + "&post_type=wp-manga"];
+      var urls = [baseUrl + "/?s=" + encoded + "&post_type=wp-manga"];
 
       for (var i = 0; i < urls.length; i++) {
         try {
@@ -784,18 +800,18 @@ function createSource(api, config) {
 
     async getFilteredManga(args) {
       // Genre archives live at /cont-genre/{slug}/ (verified live slugs in
-      // defaultGenres). Unknown slugs 302 to the homepage — the title guard
-      // rejects those instead of returning homepage cards as filtered data.
+      // defaultGenres). Unknown slugs land on the homepage, which carries no
+      // library-grid card, so they return no items instead of homepage cards.
       try {
         var page = (args && args.page) || 1;
         var genre = cleanTitleFallback((args && args.genre) || "");
         if (genre) {
-          var gurl = page === 1
-            ? baseUrl + "/cont-genre/" + encodeURIComponent(genre) + "/"
-            : baseUrl + "/cont-genre/" + encodeURIComponent(genre) + "/page/" + page + "/";
-          var ghtml = await html(gurl);
-          if (!ghtml || !isGenrePage(ghtml, genre)) return [];
-          return await listCards(ghtml);
+          var slug = encodeURIComponent(genre);
+          return await collectListingPages(page, function (sitePage) {
+            return sitePage === 1
+              ? [baseUrl + "/cont-genre/" + slug + "/"]
+              : [baseUrl + "/cont-genre/" + slug + "/page/" + sitePage + "/"];
+          });
         }
         return await this.getHomepageManga(args);
       } catch (e) {
