@@ -10,6 +10,7 @@ function createSource(api, config) {
   // Salt+N0 pairs rotate together — extracted from live ChapterImageViewer bundle.
   // When unlock returns 403, add the new (salt, N0) pair here and bump version.
   var saltN0Pairs = [
+    { salt: "1ac6ae94866f127f1c6238a63fe31d9ffcaa01e44cb11185", n0: "563d0546c0b6bd0d15b66c61fe725c2b00d74d4bb200d14d" }, // 2026-11-09
     { salt: "56f651f0d98c2732253f6a94b29cf0091ffb1c5b4f3bf747", n0: "369436543a9ef136e903055581da0a952d946a694968660b" }, // 2026-11
     { salt: "cc9544a33ccbc953b9e7546c9b134524f3c3a06e81d392f0", n0: "2435eb747e78f582e781909ebbfc14826e4f3954b4268850" }, // 2026-10
     { salt: "ef771d5a42fb528b6dfde4b3948d465008fa971aa81bee44", n0: "1235018d44c15445b1741805c8de4a35a17338bd04cc565d" }, // prior
@@ -947,7 +948,7 @@ function createSource(api, config) {
     for (var i = 0; i < funcs.length; i++) {
       var body = src.slice(funcs[i].bodyStart, funcs[i].bodyEnd);
       if (body.indexOf(arrayFn + "()") < 0) continue;
-      var off = body.match(/([A-Za-z_$][\w$]*)\s*=\s*\1\s*-\s*\(([^()]*)\)/);
+      var off = body.match(/([A-Za-z_$][\w$]*)\s*=\s*\1\s*-\s*(\([^()]*\)|[-+*/()0-9]+)/);
       if (!off) continue;
       var alpha = body.match(/["']([A-Za-z0-9+/=_-]{60,70})["']/);
       if (!alpha) continue;
