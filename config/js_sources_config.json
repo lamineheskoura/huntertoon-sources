@@ -1,10 +1,10 @@
 {
-  "version": "1.65.3",
+  "version": "1.65.4",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.11.12.1",
+  "manifest_version": "2026.11.12.2",
   "generated_at": "2026-09-04T14:30:00Z",
-  "last_updated": "2026-11-12T21:43:59Z",
+  "last_updated": "2026-11-12T22:30:00Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
   "min_app_version": "1.4.0",
   "repository": {
@@ -3001,7 +3001,7 @@
       "id": "goodtoon010",
       "sid": 153,
       "name": "GoodToon",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "enabled": true,
       "status": "beta",
       "base_url": "https://www.goodtoon010.com",
@@ -3018,7 +3018,7 @@
       },
       "script": {
         "url": "sources/goodtoon010/source.js",
-        "sha256": "88E71CDFFC6A77B11DFE78735F58D7C62C07B1EBF2F0B3C127AB3F38E6D24ECF",
+        "sha256": "4CC92789EE3EF9E3C09CA00F6270FBAE0581128FB7BB143E4FA6684213C81570",
         "entry": "createSource"
       },
       "capabilities": {
@@ -3040,7 +3040,7 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "GoodToon - Korean manhwa site (goodtoon010.com, <html lang=\"ko\">). Archive browsing, server-side details and chapter reader. Adult/Ecchi genres excluded from lists via site filter cookies and client-side genre filtering; raw genre labels passed to app Block Filter.",
-        "changelog": "v1.0.1: corrected source language to Korean (\"ko\") — the site serves <html lang=\"ko\"> and Korean titles; it had been registered as an English source. v1.0.0: initial release. Verified live end-to-end: 60+ series per page, details with raw genres, chapter lists via latest-chapter link, page images from img.goodtoon9001.top.",
+        "changelog": "v1.0.2: Fix detail-page genres - the theme links only the FIRST category, so the app saw one label per title and never the adult ones; now every category is read from the manga-summary-genres div (with the body-class taxonomy slugs and the theme link as fallbacks), so the app's Block Filter can see 성인/BL and block mis-tagged adult titles; v1.0.1: corrected source language to Korean (\"ko\") — the site serves <html lang=\"ko\"> and Korean titles; it had been registered as an English source. v1.0.0: initial release. Verified live end-to-end: 60+ series per page, details with raw genres, chapter lists via latest-chapter link, page images from img.goodtoon9001.top.",
         "ai_translation": false
       },
       "display": {

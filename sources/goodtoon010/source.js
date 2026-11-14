@@ -176,11 +176,32 @@ function createSource(api, config) {
 
       var genresOut = [];
       var gseen = {};
-      var gre = /<a[^>]+href="[^"]*\/manga-genre\/[^"]+"[^>]*>([^<]+)<\/a>/g;
-      var gm;
-      while ((gm = gre.exec(d))) {
-        var tag = cleanTitle(gm[1]);
-        if (tag && !gseen[tag]) { gseen[tag] = 1; genresOut.push(tag); }
+      function addGenre(label) {
+        var g = cleanTitle(label);
+        if (!g || gseen[g]) return;
+        gseen[g] = 1;
+        genresOut.push(g);
+      }
+      // Every category sits in one comma-separated div; the theme links only
+      // the first one, so link scraping alone lost the rest (adult included).
+      var gdivRe = /<div[^>]*class="[^"]*manga-summary-genres[^"]*"[^>]*>([\s\S]*?)<\/div>/g;
+      var gdiv;
+      while ((gdiv = gdivRe.exec(d))) {
+        var gparts = stripHtml(gdiv[1]).split(/[,，]/);
+        for (var gp = 0; gp < gparts.length; gp++) addGenre(gparts[gp]);
+      }
+      // Fallback: the taxonomy slugs the theme puts in the post body class.
+      if (!genresOut.length) {
+        var gslugs = d.match(/wp-manga-genre-[a-z0-9\-]+/g) || [];
+        for (var gs = 0; gs < gslugs.length; gs++) {
+          addGenre(gslugs[gs].substring("wp-manga-genre-".length).replace(/-/g, " "));
+        }
+      }
+      // Fallback: the theme's own genre link.
+      if (!genresOut.length) {
+        var gre = /<a[^>]+href="[^"]*\/manga-genre\/[^"]+"[^>]*>([^<]+)<\/a>/g;
+        var gm;
+        while ((gm = gre.exec(d))) addGenre(gm[1]);
       }
 
       var status = "";
