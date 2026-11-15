@@ -351,6 +351,141 @@
     return (parseInt(m[0], 10) % AD_LOCK_EVERY) === 0;
   }
 
+  // ---- Upstream publisher fallback (zero points) --------------------------
+  // realmnovel's own manga record points at its upstream publisher
+  // (sourceUrl: "https://atsu.moe/"), which serves the very same chapters to
+  // anonymous readers - no account, no points, no ad. Verified live Nov 2026:
+  // chapter 2 is the same file on both sides (20 pages, 790x3230) and
+  // cdn.atsu.moe serves /static/pages/{chapterId}/{i}.webp for every
+  // i < pageCount, with any Referer. An ad-gated chapter (number % 3 == 0)
+  // can therefore be read without spending a single point.
+  var ATSU_WEB = "https://atsu.moe";
+  var ATSU_CDN = "https://cdn.atsu.moe/static/pages";
+  var atsuCache = {};   // title key -> {id, chapters}
+  var atsuBySlug = {};  // realmnovel slug -> same map
+
+  function normTitle(s) {
+    return String(s || "")
+      .toLowerCase()
+      .replace(/[\u064B-\u0652]/g, "")            // Arabic diacritics
+      .replace(/[^a-z0-9\u0600-\u06ff]+/g, " ")
+      .trim();
+  }
+
+  // realmnovel "24-5" is atsu "24.5" - the same bonus chapter.
+  function chapterKey(number) {
+    var s = String(number == null ? "" : number).trim();
+    var m = s.match(/^(\d+)\s*-\s*(\d+)$/);
+    if (m) return parseInt(m[1], 10) + "." + parseInt(m[2], 10);
+    var f = parseFloat(s);
+    return isFinite(f) ? String(f) : "";
+  }
+
+  async function atsuJson(path) {
+    try {
+      var res = await api.http(ATSU_WEB + path, {
+        method: "GET",
+        headers: { "User-Agent": userAgent, Accept: "application/json, text/plain, */*" },
+        transport: "light"
+      });
+      if (!res || !res.ok) return null;
+      return JSON.parse(res.body || "{}");
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // The atsu manga that matches this realmnovel title. A wrong manga would
+  // serve another work, so only an exact or containment match is accepted.
+  async function atsuMangaId(titles) {
+    var names = [];
+    for (var i = 0; i < titles.length; i++) {
+      var n = normTitle(titles[i]);
+      if (n && names.indexOf(n) === -1) names.push(n);
+    }
+    for (var t = 0; t < names.length; t++) {
+      var data = await atsuJson("/collections/manga/documents/search?q=" + encodeURIComponent(names[t]) + "&query_by=title&per_page=10");
+      var hits = (data && data.hits) || [];
+      var best = "";
+      for (var h = 0; h < hits.length; h++) {
+        var doc = hits[h].document || hits[h] || {};
+        var title = normTitle(doc.title);
+        if (!title || !doc.id) continue;
+        if (title === names[t]) { best = doc.id; break; }
+        if (!best && (title.indexOf(names[t]) !== -1 || names[t].indexOf(title) !== -1)) best = doc.id;
+      }
+      if (best) return best;
+    }
+    return "";
+  }
+
+  // {id, chapters:{key:[{id,pageCount}]}} for one manga, cached.
+  async function atsuChapterMap(titles) {
+    var list = [];
+    for (var i = 0; i < titles.length; i++) {
+      if (titles[i]) list.push(titles[i]);
+    }
+    var cacheKey = normTitle(list[0]) + "|" + normTitle(list[1]);
+    if (atsuCache[cacheKey]) return atsuCache[cacheKey];
+    var entry = null;
+    try {
+      var id = await atsuMangaId(list);
+      if (id) {
+        var data = await atsuJson("/api/manga/allChapters?mangaId=" + encodeURIComponent(id));
+        var rows = (data && data.chapters) || [];
+        var chapters = {};
+        for (var r = 0; r < rows.length; r++) {
+          var k = chapterKey(rows[r].number != null ? rows[r].number : rows[r].title);
+          if (!k) continue;
+          if (!chapters[k]) chapters[k] = [];
+          chapters[k].push({ id: rows[r].id, pageCount: Number(rows[r].pageCount) || 0 });
+        }
+        entry = { id: id, chapters: chapters };
+      }
+    } catch (e) {
+      entry = null;
+    }
+    atsuCache[cacheKey] = entry;
+    return entry;
+  }
+
+  function atsuHas(map, number) {
+    if (!map) return false;
+    var rows = map.chapters[chapterKey(number)] || [];
+    return rows.length > 0;
+  }
+
+  // Page URLs of the scanlation whose layout is closest to the realmnovel
+  // upload (atsu keeps one upload per translation group).
+  function atsuPages(map, number, wantPages) {
+    if (!map) return [];
+    var rows = map.chapters[chapterKey(number)] || [];
+    if (!rows.length) return [];
+    var best = rows[0];
+    var bestDiff = Infinity;
+    for (var i = 0; i < rows.length; i++) {
+      var diff = wantPages ? Math.abs(rows[i].pageCount - wantPages) : 0;
+      if (diff < bestDiff) { bestDiff = diff; best = rows[i]; }
+    }
+    var urls = [];
+    for (var p = 0; p < best.pageCount; p++) {
+      urls.push(ATSU_CDN + "/" + best.id + "/" + p + ".webp");
+    }
+    return urls;
+  }
+
+  // Zero-point fallback: read the chapter from the upstream publisher.
+  async function atsuFallback(chapter) {
+    try {
+      if (!chapter || !chapter.manga) return null;
+      var map = await atsuChapterMap([chapter.manga.englishTitle, chapter.manga.arabicTitle]);
+      var urls = atsuPages(map, chapter.number, Number(chapter.pagesCount) || 0);
+      return urls.length ? urls : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   function toManga(item) {
     var cover = item.cover || item.coverThumb || "";
     return {
@@ -486,9 +621,16 @@
       var genres = (manga.categories || []).map(function (c) { return c.name || ""; }).filter(Boolean);
       var status = manga.status || "ongoing";
 
+      // The upstream lookup runs in parallel: it only decides which chapters
+      // are advertised as locked and must not slow the catalogue down.
+      var atsuMapP = atsuChapterMap([manga.englishTitle, manga.arabicTitle]);
       var chData = await apiGet("/manga/" + slug + "/chapters?limit=200&page=1");
       var allItems = chData.items || [];
       var unlockable = await unlockablePoints();
+      // Chapters the upstream publisher serves free must not be advertised as
+      // locked, otherwise the app never asks for their pages.
+      var atsuMap = await atsuMapP;
+      atsuBySlug[slug] = atsuMap;
       var total = chData.total || 0;
       var limit = chData.limit || 200;
       var totalPages = Math.ceil(total / limit);
@@ -506,10 +648,10 @@
           views: 0,
           url: baseUrl + "/chapters/" + c._id,
           // The app blocks a locked chapter and points the reader at the
-          // original site. Only advertise it as locked while the account
-          // cannot pay for it - otherwise the reader must be allowed in so
-          // the source can spend the points and serve the pages.
-          isLocked: isAdGated(c.number) && !unlockable,
+          // original site. Only advertise it as locked while neither the
+          // points nor the upstream publisher can open it - otherwise the
+          // reader must be allowed in so the source can serve the pages.
+          isLocked: isAdGated(c.number) && !unlockable && !atsuHas(atsuMap, c.number),
           date: (c.createdAt || "").split("T")[0]
         };
       });
@@ -543,12 +685,17 @@
       var data = await apiGet("/chapters/" + chapterId);
       var chapter = data.chapter || data;
       if (chapter && chapter.adLocked === true) {
+        // Zero points first: the upstream publisher serves the same chapter.
+        var atsuUrls = await atsuFallback(chapter);
+        if (atsuUrls) return { kind: "image", imageUrls: atsuUrls };
         if (await unlockAdChapter(chapterId)) {
           data = await apiGet("/chapters/" + chapterId);
           chapter = data.chapter || data;
         }
       }
-      if (!chapter || !chapter.pages) {
+      if (!chapter || !chapter.pages || !chapter.pages.length) {
+        var altUrls = await atsuFallback(chapter);
+        if (altUrls) return { kind: "image", imageUrls: altUrls };
         return { kind: "image", imageUrls: [] };
       }
 
@@ -645,6 +792,7 @@
         var chItems = chData.items || [];
         if (chItems.length === 0) return null;
         var unlockable = await unlockablePoints();
+        var atsuMap = atsuBySlug[slug] || null;
 
         var chapters = chItems.map(function (c) {
           return {
@@ -652,7 +800,7 @@
             title: c.title || c.number || "",
             views: 0,
             url: baseUrl + "/chapters/" + c._id,
-            isLocked: isAdGated(c.number) && !unlockable,
+            isLocked: isAdGated(c.number) && !unlockable && !atsuHas(atsuMap, c.number),
             date: (c.createdAt || "").split("T")[0]
           };
         });

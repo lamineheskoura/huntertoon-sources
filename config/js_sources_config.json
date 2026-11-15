@@ -1067,7 +1067,7 @@
       "id": "manhasama",
       "sid": 119,
       "name": "مانها السماء (Manha Alsamaa)",
-      "version": "1.6.0",
+      "version": "1.7.0",
       "enabled": true,
       "status": "beta",
       "base_url": "https://realmnovel.com",
@@ -1090,7 +1090,7 @@
       },
       "script": {
         "url": "sources/manhasama/source.js",
-        "sha256": "D400D34EF520FA11B76818A7535B5554FE610AC5FB22C1966E22497D7BEEAE8C",
+        "sha256": "624658967C4E0C5B285C41F6EE4752FD9DE10EF1C6DF61800005CBC3BEAA069F",
         "entry": "createSource"
       },
       "capabilities": {
@@ -1111,8 +1111,8 @@
         "language": "ar",
         "adult": false,
         "author": "HunterToon Team",
-        "description": "Manha Alsamaa - Arabic manga source on realmnovel.com: every request is HMAC-signed, app-build headers are mandatory, the content routes need an account (login + device attestation), ad-gated chapters (number % 3 == 0) open with account points",
-        "changelog": "v1.6.0: cleared the Play Integrity gate on the content routes (they answered HTTP 428 {\"attest\":true,\"code\":\"verify\"}): the server needs THREE layers at once - the signed request headers (X-Sig = HMAC-SHA256 over METHOD\\n/api{PATH}\\nTS\\nNONCE\\nDEVICE_ID + a Dart UA + an \"ins_*\" device id), an X-Att attestation token minted by POST /device/attest FOR THAT device id, and the account JWT from POST /auth/login; a wrong signature answers 401 {\"sigError\":\"badsig\"} and a non-Dart UA answers nginx 403. The attest call must NOT send \"pub\": the server then stamps p/pl claims into the token and rejects it with 428 again, so only {\"nonce\":n} is sent. The source now logs in and mints the attestation token itself (config.auth_identifier + config.auth_password, or config.auth_token; config.att_token + config.att_device_id inject a token taken from the official app) and returns real chapter pages instead of an empty list. Without an account it keeps reading the gate-free surface (/links/feed, /mylist/chapters-meta, /categories) so the catalogue still shows. Also fixed the mojibake Arabic strings (the default title now reads \"بدون عنوان\")",
+        "description": "Manha Alsamaa - Arabic manga source on realmnovel.com: every request is HMAC-signed, app-build headers are mandatory, the content routes need an account (login + device attestation), ad-gated chapters (number % 3 == 0) are read from the upstream publisher atsu.moe with zero points",
+        "changelog": "v1.7.0: ad-gated chapters (number % 3 == 0) no longer need points. The realmnovel manga record points at its upstream publisher (sourceUrl: https://atsu.moe/), which serves the same chapters to anonymous readers, so the source now resolves the realmnovel title to the atsu manga through the public search endpoint, reads its chapter list from the public /api/manga/allChapters endpoint and serves the pages from cdn.atsu.moe/static/pages/{chapterId}/{i}.webp. Verified live Nov 2026: chapter 2 is the same file on both sides (20 pages, 790x3230) and chapter 3 comes back with its 13 pages without spending a single point; the points path stays as the last resort for chapters atsu does not have. v1.6.0: cleared the Play Integrity gate on the content routes (they answered HTTP 428 {\"attest\":true,\"code\":\"verify\"}): the server needs THREE layers at once - the signed request headers (X-Sig = HMAC-SHA256 over METHOD\\n/api{PATH}\\nTS\\nNONCE\\nDEVICE_ID + a Dart UA + an \"ins_*\" device id), an X-Att attestation token minted by POST /device/attest FOR THAT device id, and the account JWT from POST /auth/login; a wrong signature answers 401 {\"sigError\":\"badsig\"} and a non-Dart UA answers nginx 403. The attest call must NOT send \"pub\": the server then stamps p/pl claims into the token and rejects it with 428 again, so only {\"nonce\":n} is sent. The source now logs in and mints the attestation token itself (config.auth_identifier + config.auth_password, or config.auth_token; config.att_token + config.att_device_id inject a token taken from the official app) and returns real chapter pages instead of an empty list. Without an account it keeps reading the gate-free surface (/links/feed, /mylist/chapters-meta, /categories) so the catalogue still shows. Also fixed the mojibake Arabic strings (the default title now reads \"بدون عنوان\")",
         "ai_translation": true
       },
       "display": {
