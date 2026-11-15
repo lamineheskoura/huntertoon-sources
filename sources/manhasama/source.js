@@ -821,11 +821,22 @@
     },
 
     getImageHeaders(args) {
-      return {
+      var u = String((args && args.url) || "");
+      var isAtsu = u.indexOf("cdn.atsu.moe") !== -1;
+      var h = {
         "User-Agent": userAgent,
-        Referer: baseUrl + "/",
+        Referer: isAtsu ? ATSU_WEB + "/" : baseUrl + "/",
         Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
       };
+      if (isAtsu) {
+        // The app injects Sec-Fetch-Dest: image + Sec-Fetch-Mode: no-cors +
+        // Sec-Fetch-Site: cross-site on every image it has no value for, and
+        // cdn.atsu.moe answers 403 to exactly that triple (Cloudflare bot
+        // rule). Supplying our own Sec-Fetch-Site keeps the app from
+        // overriding it - same-site is what the site itself sends.
+        h["Sec-Fetch-Site"] = "same-site";
+      }
+      return h;
     },
 
     sanitizeCoverUrl(args) {
