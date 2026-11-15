@@ -2,9 +2,9 @@
   "version": "1.65.4",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.11.09.2",
+  "manifest_version": "2026.11.15.1",
   "generated_at": "2026-09-04T14:30:00Z",
-  "last_updated": "2026-11-14T23:00:37Z",
+  "last_updated": "2026-11-15T09:20:00Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
   "min_app_version": "1.4.0",
   "repository": {
