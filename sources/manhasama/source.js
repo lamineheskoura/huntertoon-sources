@@ -279,23 +279,38 @@
         }
       }
     }
-    if (!found) throw new Error("Manga not found: " + slug);
+    if (!found) {
+      // The gate-free feed only carries the newest page or two, so a library
+      // entry can drop out of it. The slug is still the English title.
+      var guess = slug.replace(/[-_]+/g, " ").replace(/\b[a-z]/g, function (ch) {
+        return ch.toUpperCase();
+      });
+      found = { slug: slug, _id: slug, englishTitle: guess, arabicTitle: "" };
+    }
 
-    var chapters = [];
-    try {
-      var meta = await apiGet("/mylist/chapters-meta/" + found._id);
-      var nums = meta.nums || [];
-      for (var n = 0; n < nums.length; n++) {
-        chapters.push({
-          number: String(nums[n]),
-          title: String(nums[n]),
-          views: 0,
-          url: baseUrl + "/manga/" + (found.slug || found._id),
-          isLocked: true,
-          date: ""
-        });
-      }
-    } catch (e) {}
+    // Play Integrity closes realmnovel's content routes on some devices
+    // (HTTP 428, code "verify"), so no chapter id is available. The upstream
+    // publisher has every chapter of the same work and serves it free.
+    var map = await atsuChapterMap([found.englishTitle, found.arabicTitle]);
+    atsuBySlug[slug] = map;
+    var chapters = atsuChapterList(map, [found.englishTitle, found.arabicTitle]);
+    if (!chapters) {
+      chapters = [];
+      try {
+        var meta = await apiGet("/mylist/chapters-meta/" + found._id);
+        var nums = meta.nums || [];
+        for (var n = 0; n < nums.length; n++) {
+          chapters.push({
+            number: String(nums[n]),
+            title: String(nums[n]),
+            views: 0,
+            url: baseUrl + "/manga/" + (found.slug || found._id),
+            isLocked: true,
+            date: ""
+          });
+        }
+      } catch (e) {}
+    }
 
     return {
       title: found.arabicTitle || found.englishTitle || "",
@@ -486,7 +501,13 @@
           var k = chapterKey(rows[r].number != null ? rows[r].number : rows[r].title);
           if (!k) continue;
           if (!chapters[k]) chapters[k] = [];
-          chapters[k].push({ id: rows[r].id, pageCount: Number(rows[r].pageCount) || 0 });
+          chapters[k].push({
+            id: rows[r].id,
+            pageCount: Number(rows[r].pageCount) || 0,
+            number: rows[r].number,
+            title: rows[r].title,
+            createdAt: rows[r].createdAt
+          });
         }
         entry = { id: id, chapters: chapters };
       }
@@ -501,6 +522,54 @@
     if (!map) return false;
     var rows = map.chapters[chapterKey(number)] || [];
     return rows.length > 0;
+  }
+
+  // atsu timestamps are epoch milliseconds; the app shows the date as-is.
+  function atsuDate(v) {
+    if (v == null || v === "") return "";
+    if (typeof v === "number") {
+      var d = new Date(v);
+      return isFinite(d.getTime()) ? d.toISOString().split("T")[0] : "";
+    }
+    return String(v).split("T")[0];
+  }
+
+  // The whole chapter list from the upstream publisher, newest first. Used
+  // when realmnovel's content routes are closed by Play Integrity (HTTP 428,
+  // code "verify"): the device then gets no chapter ids at all, while the
+  // upstream publisher serves every chapter of the same work for free.
+  function atsuChapterList(map, titles) {
+    if (!map) return null;
+    var keys = Object.keys(map.chapters);
+    if (!keys.length) return null;
+    var out = [];
+    for (var i = 0; i < keys.length; i++) {
+      var rows = map.chapters[keys[i]];
+      var best = rows[0];
+      for (var r = 1; r < rows.length; r++) {
+        if (rows[r].pageCount > best.pageCount) best = rows[r];
+      }
+      var label = best.number != null ? String(best.number) : keys[i];
+      var id = "atsu-" + keys[i];
+      // The reader resolves this synthetic id later; keep its lookup here.
+      chapterMeta[id] = {
+        number: label,
+        titles: titles,
+        pagesCount: best.pageCount
+      };
+      out.push({
+        number: label,
+        title: best.title || label,
+        views: 0,
+        url: baseUrl + "/chapters/" + id,
+        isLocked: false,
+        date: atsuDate(best.createdAt)
+      });
+    }
+    out.sort(function (a, b) {
+      return (parseFloat(b.number) || 0) - (parseFloat(a.number) || 0);
+    });
+    return out;
   }
 
   // The authoritative page list of one scanlation group.
@@ -542,7 +611,10 @@
     if (!map) return null;
     var rows = map.chapters[chapterKey(number)] || [];
     if (!rows.length) return null;
+    // No reference page count (the gate-free list has none): take the
+    // fullest upload, not the closest to zero.
     var ordered = rows.slice().sort(function (a, b) {
+      if (!wantPages) return b.pageCount - a.pageCount;
       return Math.abs(a.pageCount - wantPages) - Math.abs(b.pageCount - wantPages);
     });
     var best = null;
@@ -714,7 +786,27 @@
       // The upstream lookup runs in parallel: it only decides which chapters
       // are advertised as locked and must not slow the catalogue down.
       var atsuMapP = atsuChapterMap([manga.englishTitle, manga.arabicTitle]);
-      var chData = await apiGet("/manga/" + slug + "/chapters?limit=200&page=1");
+      var chData = null;
+      try {
+        chData = await apiGet("/manga/" + slug + "/chapters?limit=200&page=1");
+      } catch (e2) {
+        // The Play Integrity gate can hit only the content route: the
+        // metadata above is enough to build the list from upstream.
+        if (!e2 || e2.status !== 428) throw e2;
+      }
+      if (!chData) {
+        return {
+          title: title,
+          coverUrl: cover,
+          description: strip(desc),
+          genres: genres,
+          chapters: atsuChapterList(await atsuMapP, [manga.englishTitle, manga.arabicTitle]) || [],
+          originalUrl: rawUrl || (baseUrl + "/manga/" + slug),
+          hasMoreChapters: false,
+          lastFetchedPage: 1,
+          contentType: "manga"
+        };
+      }
       var allItems = chData.items || [];
       var unlockable = await unlockablePoints();
       // Chapters the upstream publisher serves free must not be advertised as
@@ -772,6 +864,19 @@
       var m = rawUrl.match(/\/chapters\/([^/?#]+)/);
       var chapterId = m ? m[1] : "";
       if (!chapterId) return { kind: "image", imageUrls: [] };
+
+      // An id built from the upstream list (atsuChapterList): realmnovel
+      // never had an id for it, so go straight to the publisher.
+      if (chapterId.indexOf("atsu-") === 0) {
+        var up = chapterMeta[chapterId];
+        if (!up) return { kind: "image", imageUrls: [] };
+        var upPages = await atsuFallback({
+          manga: { englishTitle: up.titles[0], arabicTitle: up.titles[1] },
+          number: up.number,
+          pagesCount: up.pagesCount
+        });
+        return upPages ? atsuResult(upPages) : { kind: "image", imageUrls: [] };
+      }
 
       var data = null;
       var chapter = null;
