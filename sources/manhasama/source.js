@@ -195,11 +195,6 @@
     return m ? m[1] : "0";
   }
 
-  function uuid() {
-    var h = randHex(32);
-    return h.slice(0, 8) + "-" + h.slice(8, 12) + "-" + h.slice(12, 16) + "-" + h.slice(16, 20) + "-" + h.slice(20);
-  }
-
   function validImage(src) {
     src = makeAbsolute(src);
     if (!src || src.indexOf("data:image") === 0) return "";
@@ -245,6 +240,17 @@
       throw err;
     }
     return JSON.parse(res.body || "{}");
+  }
+
+  // The gate answers in TWO shapes, and both mean the same thing for this
+  // source: the app layer answers 428 {"attest":true,"code":"verify"}, and
+  // the edge (nginx) answers 403 when the request carries no attestation at
+  // all (verified live Nov 2026). realmnovel's content routes are closed to
+  // this device, so the upstream publisher is the only place the pages can
+  // come from - a 403 must never be thrown to the reader as a failure.
+  function isGateError(e) {
+    var s = e && e.status;
+    return s === 428 || s === 403;
   }
 
   // Gate-free catalogue: /links/feed returns the manga metadata (title,
@@ -323,41 +329,6 @@
       lastFetchedPage: 1,
       contentType: "manga"
     };
-  }
-
-  // Ad-gated chapters are withheld by the server (adLocked:true, pages:[]).
-  // The only server-side way to open one is paying points:
-  // /me/chapter-unlock/cost gives the price (6) and /me/chapter-unlock/spend
-  // pays it. Points arrive only from watched ads (verified by Google), so this
-  // works for an account that already holds them.
-  async function unlockAdChapter(chapterId) {
-    try {
-      if (!session.token) return false;
-      var cost = await apiGet("/me/chapter-unlock/cost");
-      var need = Number(cost.costPerChapter) || 0;
-      if (!need) return false;
-      var bal = await apiGet("/me/points");
-      if ((Number(bal.points) || 0) < need) return false;
-      var spent = await post("/me/chapter-unlock/spend", { chapterId: chapterId, spendId: uuid() });
-      return !!(spent && spent.ok);
-    } catch (e) {
-      return false;
-    }
-  }
-
-  // Points the signed-in account holds, minus the price of one chapter.
-  // null = unknown (no account / request failed).
-  async function unlockablePoints() {
-    try {
-      if (!session.token) return 0;
-      var cost = await apiGet("/me/chapter-unlock/cost");
-      var need = Number(cost.costPerChapter) || 0;
-      var bal = await apiGet("/me/points");
-      var have = Number(bal.points) || 0;
-      return need && have >= need ? have : 0;
-    } catch (e) {
-      return 0;
-    }
   }
 
   function isAdGated(number) {
@@ -631,19 +602,41 @@
   }
 
   // Zero-point fallback: read the chapter from the upstream publisher.
-  async function atsuFallback(chapter) {
+  //
+  // The chapter's identity comes from the details page (chapterMeta) when it
+  // is known, and from the server payload otherwise: the upstream chapter is
+  // found by the NUMBER, so a missing title must not lose the chapter.
+  async function atsuFallback(chapter, chapterId) {
     try {
-      if (!chapter || !chapter.manga) return null;
-      var map = await atsuChapterMap([chapter.manga.englishTitle, chapter.manga.arabicTitle]);
-      return await atsuPages(map, chapter.number, Number(chapter.pagesCount) || 0);
+      var titles = [];
+      var number = chapter ? chapter.number : null;
+      var pagesCount = chapter ? Number(chapter.pagesCount) || 0 : 0;
+      var meta = chapterId ? chapterMeta[chapterId] : null;
+      if (meta) {
+        if (meta.number != null) number = meta.number;
+        if (meta.pagesCount) pagesCount = meta.pagesCount;
+        titles = meta.titles || [];
+      }
+      if (chapter && chapter.manga) {
+        titles = [chapter.manga.englishTitle, chapter.manga.arabicTitle];
+      }
+      if (!titles.length || number == null) return null;
+      var map = await atsuChapterMap(titles);
+      return await atsuPages(map, number, pagesCount);
     } catch (e) {
       return null;
     }
   }
 
   // The upstream pages in the app's reader contract.
+  //
+  // They are the RAW scans: realmnovel's Arabic is an overlay (bubbles)
+  // that only its closed content routes carry (the page files are
+  // byte-identical to the upstream's). A chapter served from the upstream is
+  // therefore flagged, so the reader can offer its own translation lane for
+  // it instead of showing a foreign scan.
   function atsuResult(atsu) {
-    var out = { kind: "image", imageUrls: atsu.urls };
+    var out = { kind: "image", imageUrls: atsu.urls, needsTranslation: true };
     if (atsu.aspects) out.imageAspects = atsu.aspects;
     return out;
   }
@@ -667,7 +660,7 @@
         var data = await apiGet("/manga?page=" + page + "&limit=20");
         return (data.items || []).map(toManga);
       } catch (e) {
-        if (!e || e.status !== 428) return [];
+        if (!isGateError(e)) return [];
       }
       try {
         return (await feedManga(page)).map(toManga);
@@ -683,7 +676,7 @@
         var data = await apiGet("/manga?search=" + encodeURIComponent(query) + "&limit=20");
         return (data.items || []).map(toManga);
       } catch (e) {
-        if (!e || e.status !== 428) return [];
+        if (!isGateError(e)) return [];
       }
       var q = query.trim().toLowerCase();
       var found = [];
@@ -770,7 +763,9 @@
       try {
         data = await apiGet("/manga/" + slug);
       } catch (e) {
-        if (!e || e.status !== 428) throw e;
+        // 403 (no attestation at the edge) and 428 (the app layer) both mean
+        // the same: the content routes are closed to this device.
+        if (!isGateError(e)) throw e;
       }
       if (!data) return fallbackDetails(slug, rawUrl);
       var manga = data.manga || data;
@@ -790,9 +785,9 @@
       try {
         chData = await apiGet("/manga/" + slug + "/chapters?limit=200&page=1");
       } catch (e2) {
-        // The Play Integrity gate can hit only the content route: the
-        // metadata above is enough to build the list from upstream.
-        if (!e2 || e2.status !== 428) throw e2;
+        // The gate can hit only the content route: the metadata above is
+        // enough to build the list from upstream.
+        if (!isGateError(e2)) throw e2;
       }
       if (!chData) {
         return {
@@ -808,7 +803,6 @@
         };
       }
       var allItems = chData.items || [];
-      var unlockable = await unlockablePoints();
       // Chapters the upstream publisher serves free must not be advertised as
       // locked, otherwise the app never asks for their pages.
       var atsuMap = await atsuMapP;
@@ -831,10 +825,10 @@
           views: 0,
           url: baseUrl + "/chapters/" + c._id,
           // The app blocks a locked chapter and points the reader at the
-          // original site. Only advertise it as locked while neither the
-          // points nor the upstream publisher can open it - otherwise the
-          // reader must be allowed in so the source can serve the pages.
-          isLocked: isAdGated(c.number) && !unlockable && !atsuHas(atsuMap, c.number),
+          // original site. Only advertise it as locked while the upstream
+          // publisher cannot open it - otherwise the reader must be allowed
+          // in so the source can serve the pages. Points are NEVER spent.
+          isLocked: isAdGated(c.number) && !atsuHas(atsuMap, c.number),
           date: (c.createdAt || "").split("T")[0]
         };
       });
@@ -884,30 +878,24 @@
         data = await apiGet("/chapters/" + chapterId);
         chapter = data.chapter || data;
       } catch (e) {
-        // realmnovel refused the chapter (banned account, expired
-        // attestation, ...): the upstream publisher still has it, and the
-        // details page left us the chapter number and the manga title.
+        // realmnovel refused the chapter (gate closed, banned account,
+        // expired attestation, ...): the upstream publisher still has it, and
+        // the details page left us the chapter number and the manga title.
         var meta = chapterMeta[chapterId];
         if (!meta) throw e;
-        var rescued = await atsuFallback({
-          manga: { englishTitle: meta.titles[0], arabicTitle: meta.titles[1] },
-          number: meta.number,
-          pagesCount: meta.pagesCount
-        });
+        var rescued = await atsuFallback(null, chapterId);
         if (!rescued) throw e;
         return atsuResult(rescued);
       }
       if (chapter && chapter.adLocked === true) {
-        // Zero points first: the upstream publisher serves the same chapter.
-        var atsu = await atsuFallback(chapter);
+        // Zero points, always: the upstream publisher serves the same chapter.
+        // The points path (POST /me/chapter-unlock/spend) is gone on purpose -
+        // this source never spends the reader's points.
+        var atsu = await atsuFallback(chapter, chapterId);
         if (atsu) return atsuResult(atsu);
-        if (await unlockAdChapter(chapterId)) {
-          data = await apiGet("/chapters/" + chapterId);
-          chapter = data.chapter || data;
-        }
       }
       if (!chapter || !chapter.pages || !chapter.pages.length) {
-        var alt = await atsuFallback(chapter);
+        var alt = await atsuFallback(chapter, chapterId);
         if (alt) return atsuResult(alt);
         return { kind: "image", imageUrls: [] };
       }
@@ -1004,7 +992,6 @@
         var chData = await apiGet("/manga/" + slug + "/chapters?limit=200&page=" + nextPage);
         var chItems = chData.items || [];
         if (chItems.length === 0) return null;
-        var unlockable = await unlockablePoints();
         var atsuMap = atsuBySlug[slug] || null;
         var meta = chapterMeta[chItems[0] && chItems[0]._id];
         rememberChapters(chItems, meta ? meta.titles : []);
@@ -1015,7 +1002,7 @@
             title: c.title || c.number || "",
             views: 0,
             url: baseUrl + "/chapters/" + c._id,
-            isLocked: isAdGated(c.number) && !unlockable && !atsuHas(atsuMap, c.number),
+            isLocked: isAdGated(c.number) && !atsuHas(atsuMap, c.number),
             date: (c.createdAt || "").split("T")[0]
           };
         });
