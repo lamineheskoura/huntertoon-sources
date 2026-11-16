@@ -379,7 +379,13 @@
   function rememberChapters(items, titles) {
     for (var i = 0; i < items.length; i++) {
       var c = items[i] || {};
-      if (c._id) chapterMeta[c._id] = { number: c.number, titles: titles };
+      if (c._id) {
+        chapterMeta[c._id] = {
+          number: c.number,
+          titles: titles,
+          pagesCount: Number(c.pagesCount) || 0
+        };
+      }
     }
   }
 
@@ -757,7 +763,8 @@
         if (!meta) throw e;
         var rescued = await atsuFallback({
           manga: { englishTitle: meta.titles[0], arabicTitle: meta.titles[1] },
-          number: meta.number
+          number: meta.number,
+          pagesCount: meta.pagesCount
         });
         if (!rescued) throw e;
         return atsuResult(rescued);
