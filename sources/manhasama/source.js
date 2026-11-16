@@ -10,12 +10,24 @@
   //     "ins_*" device id. A wrong signature answers 401 {"sigError":"badsig"},
   //     a non-Dart UA answers nginx 403.
   //  2. X-Att: an attToken minted by POST /device/attest FOR THAT device id.
-  //     Tier N (no Play Integrity) is enough.
+  //     The server ENFORCES Play Integrity (device/hello reports
+  //     {"attest":{"mode":"enforce","sample":100}}), so the token can no
+  //     longer be minted without it: {"nonce":n} alone answers no_gms_blocked.
+  //     The attToken therefore comes from the official app (config.att_token
+  //     + config.att_device_id).
   //  3. Authorization: the account JWT from POST /auth/login.
   //     The attToken alone or the JWT alone still answers 428.
   //  - POST /device/attest must NOT carry "pub": the server then stamps p/pl
   //    claims into the token and rejects it with 428 again. {"nonce":n} is
   //    enough and needs an account (without a JWT it answers need_login).
+  //  - The ad gate: an ad-gated chapter (the server's own "adLocked" flag)
+  //    is served WITHOUT its pages and WITHOUT its Arabic overlay until the
+  //    account unlocked it with a rewarded ad: POST /adgate/start answers
+  //    {"gid":...,"minSeconds":5}, Google's server-side verification posts
+  //    to /adgate/ssv, then POST /adgate/claim unlocks the chapter. Points
+  //    are never spent and an ad is never faked, so a chapter the server
+  //    still withholds is REPORTED as ad-gated instead of being replaced by
+  //    the upstream publisher's English scans.
   //  - The gate-free surface still answers: /categories, /links/feed,
   //    /links/manga/:id, /comments/manga/:id, /mylist/chapters-meta/:id,
   //    /app-config, /app-features. /links/feed carries the catalogue (titles,
@@ -251,6 +263,27 @@
   function isGateError(e) {
     var s = e && e.status;
     return s === 428 || s === 403;
+  }
+
+  // The ad gate: realmnovel withholds the pages - AND the Arabic overlay -
+  // of an ad-gated chapter until the account unlocked it with a rewarded ad
+  // (POST /adgate/start -> gid, Google's server-side verification posts to
+  // /adgate/ssv, POST /adgate/claim unlocks it). The upstream publisher is
+  // NOT a substitute here: its pages are the raw English scans, and the
+  // reader asked for realmnovel's Arabic.
+  function adLockedError(number) {
+    var e = new Error("ad_locked: realmnovel serves chapter " + (number || "") +
+      " only after the ad unlock - it withholds the Arabic overlay until then," +
+      " and the source never spends points nor substitutes the upstream scans");
+    e.status = 423;
+    return e;
+  }
+
+  // The content routes need the attestation AND the account, so an ad-gated
+  // chapter can only be served when that session exists. Without it the
+  // chapter stays locked instead of being advertised as readable.
+  function canServeRealmnovel() {
+    return !!(session.att && session.token);
   }
 
   // Gate-free catalogue: /links/feed returns the manga metadata (title,
@@ -489,12 +522,6 @@
     return entry;
   }
 
-  function atsuHas(map, number) {
-    if (!map) return false;
-    var rows = map.chapters[chapterKey(number)] || [];
-    return rows.length > 0;
-  }
-
   // atsu timestamps are epoch milliseconds; the app shows the date as-is.
   function atsuDate(v) {
     if (v == null || v === "") return "";
@@ -533,7 +560,9 @@
         title: best.title || label,
         views: 0,
         url: baseUrl + "/chapters/" + id,
-        isLocked: false,
+        // Same rule as the realmnovel list: an ad-gated chapter is locked
+        // while the source cannot talk to realmnovel's content routes.
+        isLocked: isAdGated(label) && !canServeRealmnovel(),
         date: atsuDate(best.createdAt)
       });
     }
@@ -825,10 +854,12 @@
           views: 0,
           url: baseUrl + "/chapters/" + c._id,
           // The app blocks a locked chapter and points the reader at the
-          // original site. Only advertise it as locked while the upstream
-          // publisher cannot open it - otherwise the reader must be allowed
-          // in so the source can serve the pages. Points are NEVER spent.
-          isLocked: isAdGated(c.number) && !atsuHas(atsuMap, c.number),
+          // original site. An ad-gated chapter is served by realmnovel ITSELF
+          // (Arabic overlay) once the account unlocked it with an ad, so it
+          // must NOT be advertised as locked while that session exists - the
+          // reader has to be allowed in to reach the Arabic. Points are NEVER
+          // spent, and the upstream scans are never substituted for it.
+          isLocked: isAdGated(c.number) && !canServeRealmnovel(),
           date: (c.createdAt || "").split("T")[0]
         };
       });
@@ -864,6 +895,9 @@
       if (chapterId.indexOf("atsu-") === 0) {
         var up = chapterMeta[chapterId];
         if (!up) return { kind: "image", imageUrls: [] };
+        // The upstream pages carry no Arabic at all, so they are NOT a
+        // substitute for an ad-gated chapter.
+        if (isAdGated(up.number)) throw adLockedError(up.number);
         var upPages = await atsuFallback({
           manga: { englishTitle: up.titles[0], arabicTitle: up.titles[1] },
           number: up.number,
@@ -874,33 +908,54 @@
 
       var data = null;
       var chapter = null;
+      var failed = null;
       try {
         data = await apiGet("/chapters/" + chapterId);
         chapter = data.chapter || data;
       } catch (e) {
         // realmnovel refused the chapter (gate closed, banned account,
-        // expired attestation, ...): the upstream publisher still has it, and
-        // the details page left us the chapter number and the manga title.
-        var meta = chapterMeta[chapterId];
-        if (!meta) throw e;
-        var rescued = await atsuFallback(null, chapterId);
-        if (!rescued) throw e;
-        return atsuResult(rescued);
+        // expired attestation, ...).
+        failed = e;
       }
-      if (chapter && chapter.adLocked === true) {
-        // Zero points, always: the upstream publisher serves the same chapter.
-        // The points path (POST /me/chapter-unlock/spend) is gone on purpose -
-        // this source never spends the reader's points.
-        var atsu = await atsuFallback(chapter, chapterId);
-        if (atsu) return atsuResult(atsu);
-      }
-      if (!chapter || !chapter.pages || !chapter.pages.length) {
+
+      var meta = chapterMeta[chapterId] || null;
+      var number = (chapter && chapter.number != null)
+        ? chapter.number
+        : (meta ? meta.number : null);
+      // The server's own flag first, the numbered heuristic as the fallback
+      // (the server never answers for a chapter it refuses to serve).
+      var adGated = chapter ? chapter.adLocked === true : isAdGated(number);
+
+      var pages = (chapter && chapter.pages) || [];
+      if (!pages.length) {
+        if (failed) {
+          // realmnovel did not answer for this chapter at all. The upstream
+          // publisher may still have it, but ONLY for a free chapter: an
+          // ad-gated one has no Arabic upstream and is never substituted.
+          if (adGated) throw failed;
+          // A free chapter the server could not answer for at all: the
+          // upstream publisher still has it, and the details page left us the
+          // chapter number and the manga title.
+          if (!meta) throw failed;
+          var rescued = await atsuFallback(null, chapterId);
+          if (!rescued) throw failed;
+          return atsuResult(rescued);
+        }
+        if (adGated) {
+          // The server answered and withheld the pages: the ad gate is the
+          // reason (the account has to unlock the chapter with a rewarded ad
+          // in the official app). No points are spent and the upstream scans
+          // are NOT substituted (they carry no Arabic).
+          throw adLockedError(number);
+        }
         var alt = await atsuFallback(chapter, chapterId);
         if (alt) return atsuResult(alt);
         return { kind: "image", imageUrls: [] };
       }
 
-      var pages = chapter.pages || [];
+      // realmnovel's OWN pages: the images and the Arabic overlay (bubbles),
+      // exactly like an open chapter - also for a chapter the account
+      // unlocked with an ad.
       // The page list and the per-page sizes come from the SAME array, so
       // the aspect ratios stay parallel to the image list.
       var urls = [];
@@ -1002,7 +1057,7 @@
             title: c.title || c.number || "",
             views: 0,
             url: baseUrl + "/chapters/" + c._id,
-            isLocked: isAdGated(c.number) && !atsuHas(atsuMap, c.number),
+            isLocked: isAdGated(c.number) && !canServeRealmnovel(),
             date: (c.createdAt || "").split("T")[0]
           };
         });

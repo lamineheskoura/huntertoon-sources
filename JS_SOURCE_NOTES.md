@@ -69,6 +69,11 @@ scripts keep working when a new optional method lands.
   width/height; omit it (or send a non-positive/non-finite entry) and the
   reader measures instead. A missing `getChapterContent` falls back to
   `getChapterPages` and is wrapped as `image`.
+- `needsTranslation: true` marks a chapter whose pages carry NO translated
+  text (the source serves the raw foreign scans, so the Arabic the reader
+  wants is missing). The reader uses it to offer its own translation lane for
+  that chapter only - a chapter that already carries the server's overlay must
+  NOT set it. The flag is ignored by the app versions that predate it.
 
 **Error strings are part of the wire.** The app parses them, not a human:
 
@@ -233,3 +238,14 @@ Downloader rules:
 - `lavascans`
   - JS must match the built-in image extraction behavior closely.
   - Covers and reader images both need valid headers and correct URL normalization.
+- `manhasama`
+  - The site gates some chapters behind a rewarded ad and withholds their
+    translated overlay until the account unlocks them. The source serves the
+    site's own Arabic (the `bubbles` overlay) whenever the server sends it -
+    including a chapter the account unlocked - and raises an explicit
+    `ad_locked` error for a chapter the server still withholds. It never
+    substitutes another site's scans for it, and it never spends the site's
+    points.
+  - `needsTranslation: true` marks the chapters that fall back to the raw
+    upstream scans, which happens only for a FREE chapter that realmnovel
+    cannot answer for at all (its Play Integrity gate is closed).
