@@ -52,3 +52,16 @@ served the old pair again). Re-verify right before declaring the release
 done, and treat raw as the only authority for "the bytes are published".
 A mixed pair (old manifest + new script) is REFUSED by the app with the sha256
 message — a visible error, not a broken install.
+
+## raw can serve the OLD script for a few minutes after a push (2026-11-16)
+After pushing v1.8.3, the raw manifest was already `2026.11.16.5` while
+`raw/sources/manhasama/source.js` still returned the previous blob (36481 B,
+sha A6F440...). raw.githubusercontent.com is a CDN with `max-age=300`, so
+the two URLs converge at different moments - a `?v=<ts>` query does NOT
+bypass it.
+
+=> Do not re-release or edit the manifest during that window: the app would
+fetch a new manifest with the old script and refuse the install (`sha256
+mismatch`). Wait ~5 minutes and re-hash raw until `raw script sha ==
+manifest sha`; raw is the app's primary URL, jsdelivr may lag or oscillate.
+
