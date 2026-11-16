@@ -45,3 +45,10 @@ re-check until all hosts agree. The pinned `@<commit>/<path>` form always
 serves the exact committed bytes — use it to prove the bytes are correct while
 the `@main` copies converge. raw.githubusercontent.com (max-age 300) is the
 app's primary and converges in minutes; jsdelivr is the fallback and can lag.
+
+⇒ A single green check is NOT proof of convergence: the jsdelivr `@main` copy
+OSCILLATES (2026-11-16: cdn.jsdelivr.net was fully correct for ~25 min, then
+served the old pair again). Re-verify right before declaring the release
+done, and treat raw as the only authority for "the bytes are published".
+A mixed pair (old manifest + new script) is REFUSED by the app with the sha256
+message — a visible error, not a broken install.
