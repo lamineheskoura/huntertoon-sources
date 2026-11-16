@@ -441,6 +441,29 @@
       }
       if (best) return best;
     }
+    // Second pass: upstream files the work under an alias ("The Ultimate
+    // All-Rounder" vs "Versatile Martial Arts Ace"), and a title-only search
+    // never sees those - the manga then looks like it does not exist here.
+    // Same wrong-manga guard: only an exact match, or a containment match
+    // between two long names, is accepted.
+    for (var t2 = 0; t2 < names.length; t2++) {
+      var data2 = await atsuJson("/collections/manga/documents/search?q=" + encodeURIComponent(names[t2]) + "&query_by=title,otherNames&per_page=10");
+      var hits2 = (data2 && data2.hits) || [];
+      var best2 = "";
+      for (var h2 = 0; h2 < hits2.length; h2++) {
+        var doc2 = hits2[h2].document || hits2[h2] || {};
+        if (!doc2.id) continue;
+        var cands = [doc2.title].concat(doc2.otherNames || []);
+        for (var c = 0; c < cands.length; c++) {
+          var alt = normTitle(cands[c]);
+          if (!alt) continue;
+          if (alt === names[t2]) return doc2.id;
+          if (!best2 && alt.length >= 12 && names[t2].length >= 12 &&
+              (alt.indexOf(names[t2]) !== -1 || names[t2].indexOf(alt) !== -1)) best2 = doc2.id;
+        }
+      }
+      if (best2) return best2;
+    }
     return "";
   }
 
