@@ -348,21 +348,40 @@
   function isAdGated(number) {
     var m = String(number || "").match(/\d+/);
     if (!m) return false;
-    return (parseInt(m[0], 10) % AD_LOCK_EVERY) === 0;
+    var n = parseInt(m[0], 10);
+    // Chapter 0 is a prologue the server never gates (verified live: it comes
+    // back with its pages), so it must not be advertised as locked.
+    if (n <= 0) return false;
+    return (n % AD_LOCK_EVERY) === 0;
   }
 
   // ---- Upstream publisher fallback (zero points) --------------------------
   // realmnovel's own manga record points at its upstream publisher
   // (sourceUrl: "https://atsu.moe/"), which serves the very same chapters to
-  // anonymous readers - no account, no points, no ad. Verified live Nov 2026:
-  // chapter 2 is the same file on both sides (20 pages, 790x3230) and
-  // cdn.atsu.moe serves /static/pages/{chapterId}/{i}.webp for every
-  // i < pageCount, with any Referer. An ad-gated chapter (number % 3 == 0)
-  // can therefore be read without spending a single point.
+  // anonymous readers - no account, no points, no ad. An ad-gated chapter
+  // (number % 3 == 0) can therefore be read without spending a single point.
+  // The page paths are NOT guessable: the same chapter may live as
+  // "<n>.webp" (old upload), "<hash>.avif" (recent upload) or even under a
+  // nested "<group>/<sub>/<file>" folder, so they are read from atsu's own
+  // chapter endpoint (see atsuChapterPages).
   var ATSU_WEB = "https://atsu.moe";
-  var ATSU_CDN = "https://cdn.atsu.moe/static/pages";
+  // The CDN root: the page paths atsu's API returns already carry their own
+  // prefix ("/static/pages/<chapterId>/<file>"), old uploads as "<n>.webp"
+  // and recent ones as "<hash>.avif".
+  var ATSU_CDN = "https://cdn.atsu.moe";
   var atsuCache = {};   // title key -> {id, chapters}
   var atsuBySlug = {};  // realmnovel slug -> same map
+  // chapter id -> {number, titles}: the details page knows both, so the
+  // upstream route still works when realmnovel refuses the chapter route
+  // (banned account, expired attestation, ...).
+  var chapterMeta = {};
+
+  function rememberChapters(items, titles) {
+    for (var i = 0; i < items.length; i++) {
+      var c = items[i] || {};
+      if (c._id) chapterMeta[c._id] = { number: c.number, titles: titles };
+    }
+  }
 
   function normTitle(s) {
     return String(s || "")
@@ -455,23 +474,59 @@
     return rows.length > 0;
   }
 
-  // Page URLs of the scanlation whose layout is closest to the realmnovel
-  // upload (atsu keeps one upload per translation group).
-  function atsuPages(map, number, wantPages) {
-    if (!map) return [];
-    var rows = map.chapters[chapterKey(number)] || [];
-    if (!rows.length) return [];
-    var best = rows[0];
-    var bestDiff = Infinity;
-    for (var i = 0; i < rows.length; i++) {
-      var diff = wantPages ? Math.abs(rows[i].pageCount - wantPages) : 0;
-      if (diff < bestDiff) { bestDiff = diff; best = rows[i]; }
-    }
+  // The authoritative page list of one scanlation group.
+  //
+  // atsu's file names are NOT always "<index>.webp": recent uploads use
+  // "<hash>.avif". Guessing the shape 404s on EVERY page of those chapters -
+  // the reader then shows the page count while each image fails. atsu's own
+  // reader asks for the real paths instead:
+  //   GET /api/read/chapter?mangaId=<id>&chapterId=<groupId>
+  //   -> readChapter.pages[] = [{ image: "/static/pages/...", aspectRatio }]
+  async function atsuChapterPages(mangaId, chapterId) {
+    var data = await atsuJson("/api/read/chapter?mangaId=" + encodeURIComponent(mangaId) + "&chapterId=" + encodeURIComponent(chapterId));
+    var rc = (data && (data.readChapter || data)) || null;
+    var pages = (rc && rc.pages) || [];
+    if (!pages.length) return null;
     var urls = [];
-    for (var p = 0; p < best.pageCount; p++) {
-      urls.push(ATSU_CDN + "/" + best.id + "/" + p + ".webp");
+    var aspects = [];
+    var webp = true;
+    for (var i = 0; i < pages.length; i++) {
+      var p = pages[i] || {};
+      var path = String(p.image || "");
+      if (!path) return null;
+      if (path.indexOf(".webp") === -1) webp = false;
+      urls.push(ATSU_CDN + path);
+      var ar = Number(p.aspectRatio) || 0;
+      aspects.push(ar > 0 ? ar : 0);
     }
-    return urls;
+    // The app commits every page's extent on its FIRST paint: the ratios are
+    // only sent when EVERY page has one.
+    for (var a = 0; a < aspects.length; a++) {
+      if (!(aspects[a] > 0)) { aspects = null; break; }
+    }
+    return { urls: urls, aspects: aspects, webp: webp };
+  }
+
+  // Pages of the scanlation whose layout is closest to the realmnovel upload
+  // (atsu keeps one upload per translation group).
+  async function atsuPages(map, number, wantPages) {
+    if (!map) return null;
+    var rows = map.chapters[chapterKey(number)] || [];
+    if (!rows.length) return null;
+    var ordered = rows.slice().sort(function (a, b) {
+      return Math.abs(a.pageCount - wantPages) - Math.abs(b.pageCount - wantPages);
+    });
+    var best = null;
+    for (var i = 0; i < ordered.length; i++) {
+      var got = await atsuChapterPages(map.id, ordered[i].id);
+      if (!got) continue;
+      // Prefer the .webp upload: Android's BitmapRegionDecoder - the reader's
+      // native splitter - only learned AVIF in API 31, while .webp works on
+      // every supported device.
+      if (!best || (got.webp && !best.webp)) best = got;
+      if (best.webp) break;
+    }
+    return best;
   }
 
   // Zero-point fallback: read the chapter from the upstream publisher.
@@ -479,11 +534,17 @@
     try {
       if (!chapter || !chapter.manga) return null;
       var map = await atsuChapterMap([chapter.manga.englishTitle, chapter.manga.arabicTitle]);
-      var urls = atsuPages(map, chapter.number, Number(chapter.pagesCount) || 0);
-      return urls.length ? urls : null;
+      return await atsuPages(map, chapter.number, Number(chapter.pagesCount) || 0);
     } catch (e) {
       return null;
     }
+  }
+
+  // The upstream pages in the app's reader contract.
+  function atsuResult(atsu) {
+    var out = { kind: "image", imageUrls: atsu.urls };
+    if (atsu.aspects) out.imageAspects = atsu.aspects;
+    return out;
   }
 
   function toManga(item) {
@@ -631,6 +692,7 @@
       // locked, otherwise the app never asks for their pages.
       var atsuMap = await atsuMapP;
       atsuBySlug[slug] = atsuMap;
+      rememberChapters(allItems, [manga.englishTitle, manga.arabicTitle]);
       var total = chData.total || 0;
       var limit = chData.limit || 200;
       var totalPages = Math.ceil(total / limit);
@@ -682,20 +744,36 @@
       var chapterId = m ? m[1] : "";
       if (!chapterId) return { kind: "image", imageUrls: [] };
 
-      var data = await apiGet("/chapters/" + chapterId);
-      var chapter = data.chapter || data;
+      var data = null;
+      var chapter = null;
+      try {
+        data = await apiGet("/chapters/" + chapterId);
+        chapter = data.chapter || data;
+      } catch (e) {
+        // realmnovel refused the chapter (banned account, expired
+        // attestation, ...): the upstream publisher still has it, and the
+        // details page left us the chapter number and the manga title.
+        var meta = chapterMeta[chapterId];
+        if (!meta) throw e;
+        var rescued = await atsuFallback({
+          manga: { englishTitle: meta.titles[0], arabicTitle: meta.titles[1] },
+          number: meta.number
+        });
+        if (!rescued) throw e;
+        return atsuResult(rescued);
+      }
       if (chapter && chapter.adLocked === true) {
         // Zero points first: the upstream publisher serves the same chapter.
-        var atsuUrls = await atsuFallback(chapter);
-        if (atsuUrls) return { kind: "image", imageUrls: atsuUrls };
+        var atsu = await atsuFallback(chapter);
+        if (atsu) return atsuResult(atsu);
         if (await unlockAdChapter(chapterId)) {
           data = await apiGet("/chapters/" + chapterId);
           chapter = data.chapter || data;
         }
       }
       if (!chapter || !chapter.pages || !chapter.pages.length) {
-        var altUrls = await atsuFallback(chapter);
-        if (altUrls) return { kind: "image", imageUrls: altUrls };
+        var alt = await atsuFallback(chapter);
+        if (alt) return atsuResult(alt);
         return { kind: "image", imageUrls: [] };
       }
 
@@ -793,6 +871,8 @@
         if (chItems.length === 0) return null;
         var unlockable = await unlockablePoints();
         var atsuMap = atsuBySlug[slug] || null;
+        var meta = chapterMeta[chItems[0] && chItems[0]._id];
+        rememberChapters(chItems, meta ? meta.titles : []);
 
         var chapters = chItems.map(function (c) {
           return {
