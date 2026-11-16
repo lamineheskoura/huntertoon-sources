@@ -2,9 +2,9 @@
   "version": "1.65.4",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.11.16.1",
+  "manifest_version": "2026.11.16.2",
   "generated_at": "2026-09-04T14:30:00Z",
-  "last_updated": "2026-11-16T01:05:00Z",
+  "last_updated": "2026-11-16T01:12:00Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
   "min_app_version": "1.4.0",
   "repository": {
@@ -1091,7 +1091,7 @@
       },
       "script": {
         "url": "sources/manhasama/source.js",
-        "sha256": "D7CA88B2F514D370FBA50CD409DE1B0B256488A51B5E88B86D7E293B63BD7AC7",
+        "sha256": "1650BB60DDD8145F0E2060AB715F3EAD9A1E7C9644B478A99173D3C4EACCF431",
         "entry": "createSource"
       },
       "capabilities": {
