@@ -306,20 +306,28 @@
 
   // The gate-free chapter list: /mylist/chapters-meta/<mangaId> carries the
   // chapter NUMBERS only (no ids, no pages). It is the honest list when the
-  // content routes are closed to this device: every chapter is locked,
-  // because realmnovel itself cannot serve it here.
-  async function chaptersMetaList(mangaId, slug) {
+  // content routes are closed to this device.
+  async function chaptersMetaList(mangaId) {
     var chapters = [];
     try {
       var meta = await apiGet("/mylist/chapters-meta/" + mangaId);
       var nums = meta.nums || [];
       for (var n = 0; n < nums.length; n++) {
+        var number = String(nums[n]);
         chapters.push({
-          number: String(nums[n]),
-          title: String(nums[n]),
+          number: number,
+          title: number,
           views: 0,
-          url: baseUrl + "/manga/" + (slug || mangaId),
-          isLocked: true,
+          // This route carries no realmnovel chapter id, so the url carries the
+          // chapter NUMBER: tapping it asks realmnovel itself for that
+          // chapter and the reader sees the server's own answer (the gate
+          // error) instead of a silent empty chapter.
+          url: baseUrl + "/chapters/" + number,
+          // ONLY the ad-gated chapters are locked - and only while the source
+          // has no realmnovel session. The free chapters stay open, exactly
+          // like in v1.8.0: the list must never read as "everything is
+          // closed".
+          isLocked: isAdGated(number) && !canServeRealmnovel(),
           date: ""
         });
       }
@@ -348,7 +356,7 @@
     }
     if (!found) throw new Error("Manga not found: " + slug);
 
-    var chapters = await chaptersMetaList(found._id, found.slug || found._id);
+    var chapters = await chaptersMetaList(found._id);
 
     return {
       title: found.arabicTitle || found.englishTitle || "",
@@ -529,7 +537,7 @@
           coverUrl: cover,
           description: strip(desc),
           genres: genres,
-          chapters: await chaptersMetaList(manga._id, manga.slug || slug),
+          chapters: await chaptersMetaList(manga._id),
           originalUrl: rawUrl || (baseUrl + "/manga/" + slug),
           hasMoreChapters: false,
           lastFetchedPage: 1,
