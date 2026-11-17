@@ -32,6 +32,10 @@
   //    comes from the server itself. No upstream publisher fallback, no
   //    machine translation lane - a chapter the server refuses is refused
   //    here too, and the chapter list is never rebuilt from another site.
+  //  - v1.8.7: a chapter that does NOT open explains itself IN the reader
+  //    (kind:"text" notice with the HTTP status) instead of reaching the user
+  //    as the app's generic "no pages" / "no connection". The reader has no
+  //    console, so this is the only honest diagnostic channel.
   //  - The gate-free surface still answers: /categories, /links/feed,
   //    /links/manga/:id, /comments/manga/:id, /mylist/chapters-meta/:id,
   //    /app-config, /app-features. /links/feed carries the catalogue (titles,
@@ -270,18 +274,53 @@
     return s === 428 || s === 403;
   }
 
+  // The reader has no console and no dialog: a throw reaches the user as the
+  // app's generic "no pages" / "no connection", which hides the real cause.
+  // A text result is the only channel the reader renders, so a chapter that
+  // did not open says WHY here (gate, ad lock, offline) instead of an empty
+  // chapter. It is a notice, never invented content.
+  function readerNotice(title, lines) {
+    return { kind: "text", chapterTitle: title, textContent: lines.join("\n") };
+  }
+
   // The ad gate: realmnovel withholds the pages - AND the Arabic overlay -
   // of an ad-gated chapter until the account unlocked it with a rewarded ad
   // (POST /adgate/start -> gid, Google's server-side verification posts to
   // /adgate/ssv, POST /adgate/claim unlocks it). No points are spent, no ad
   // is faked and no other publisher's scans are substituted: the chapter is
   // reported as ad-gated instead.
-  function adLockedError(number) {
-    var e = new Error("ad_locked: realmnovel serves chapter " + (number || "") +
-      " only after the ad unlock - it withholds the Arabic overlay until then," +
-      " and the source never spends points nor substitutes another site's scans");
-    e.status = 423;
-    return e;
+  function adLockedNotice(number) {
+    return readerNotice("هذا الفصل مقفل بإعلان", [
+      "الفصل " + (number || "") + " لا تُسلّمه realmnovel قبل فتحه بإعلان مكافأة حقيقي من التطبيق الرسمي.",
+      "افتح الفصل مرة واحدة في تطبيق «مانها السماء» (إعلان أو نقاطك أنت)، ثم أعد فتحه هنا بنفس الحساب.",
+      "المصدر لا يزوّر إعلاناً ولا نقاطاً ولا يستبدل صفحات ناشر آخر."
+    ]);
+  }
+
+  function gateNotice(e) {
+    var s = (e && e.status) || 0;
+    if (s === 428 || s === 403) {
+      return readerNotice("الخادم يطلب توثيق الجهاز (HTTP " + s + ")", [
+        "realmnovel يرفض مسارات المحتوى بلا توثيق Play Integrity وحساب مسجّل.",
+        "أضف في إعدادات المصدر:",
+        "att_token و att_device_id (من التطبيق الرسمي، صالح ~60 دقيقة)",
+        "auth_identifier و auth_password (حسابك في realmnovel)",
+        "بدون هذين العنصرين يظهر الكتالوج فقط ولا يُفتح أي فصل."
+      ]);
+    }
+    if (s === 401 || s === 426) {
+      return readerNotice("الحساب أو إصدار التطبيق مرفوض (HTTP " + s + ")", [
+        "راجع auth_identifier/auth_password في إعدادات المصدر،",
+        "أو جدّد att_token من التطبيق الرسمي."
+      ]);
+    }
+    if (!s) {
+      return readerNotice("تعذّر الاتصال بـ realmnovel", [
+        "لم يصل الطلب إلى الخادم (شبكة أو مهلة).",
+        "تحقق من الاتصال ثم أعد المحاولة."
+      ]);
+    }
+    return null;
   }
 
   // The content routes need the attestation AND the account, so an ad-gated
@@ -602,8 +641,10 @@
       // Those ids are not realmnovel ids: they can only lead to another
       // publisher's foreign scans, so they are refused here.
       if (chapterId.indexOf("atsu-") === 0) {
-        throw new Error("stale_chapter_id: " + chapterId +
-          " is not a realmnovel chapter id - reopen the manga to get the real list");
+        return readerNotice("معرّف فصل قديم", [
+          "هذا الفصل محفوظ بمعرّف من نسخة قديمة من المصدر (" + chapterId + ").",
+          "افتح المانجا من جديد واختر الفصل من قائمتها الحالية."
+        ]);
       }
 
       var data = null;
@@ -615,17 +656,23 @@
         // realmnovel refused the chapter (gate closed, banned account,
         // expired attestation, ...). Nothing else may serve it: another
         // publisher's scans carry no Arabic, and the source never spends
-        // points nor fakes an ad.
+        // points nor fakes an ad. The reason is shown IN the reader, because
+        // a throw would only surface as the app's "no pages".
+        var notice = gateNotice(e);
+        if (notice) return notice;
         throw e;
       }
       if (chapter && chapter.adLocked === true && !(chapter.pages && chapter.pages.length)) {
         // The server answered and withheld the pages: the ad gate is the
         // reason (the account has to unlock the chapter with a rewarded ad in
         // the official app). Report it instead of substituting foreign scans.
-        throw adLockedError(chapter.number);
+        return adLockedNotice(chapter.number);
       }
       if (!chapter || !chapter.pages || !chapter.pages.length) {
-        return { kind: "image", imageUrls: [] };
+        return readerNotice("لا توجد صفحات لهذا الفصل", [
+          "استجاب الخادم لكنه لم يُرسل أي صفحة (ولا علَم قفل).",
+          "هذا خلل من جهة realmnovel لهذا الفصل، وليس خطأ في الاتصال."
+        ]);
       }
 
       var pages = chapter.pages || [];
