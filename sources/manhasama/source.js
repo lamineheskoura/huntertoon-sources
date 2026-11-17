@@ -12,7 +12,7 @@
   //  2. X-Att: an attToken minted by POST /device/attest FOR THAT device id.
   //     The server ENFORCES Play Integrity (device/hello reports
   //     {"attest":{"mode":"enforce","sample":100}}), so the token can no
-  //     longer be minted without it: {"nonce":n} alone answers no_gms_blocked.
+  //     longer be minted here: {"nonce":n} alone answers no_gms_blocked.
   //     The attToken therefore comes from the official app (config.att_token
   //     + config.att_device_id).
   //  3. Authorization: the account JWT from POST /auth/login.
@@ -27,7 +27,11 @@
   //    to /adgate/ssv, then POST /adgate/claim unlocks the chapter. Points
   //    are never spent and an ad is never faked, so a chapter the server
   //    still withholds is REPORTED as ad-gated instead of being replaced by
-  //    the upstream publisher's English scans.
+  //    another publisher's scans.
+  //  - v1.8.6 reads realmnovel ONLY: every page and every Arabic overlay
+  //    comes from the server itself. No upstream publisher fallback, no
+  //    machine translation lane - a chapter the server refuses is refused
+  //    here too, and the chapter list is never rebuilt from another site.
   //  - The gate-free surface still answers: /categories, /links/feed,
   //    /links/manga/:id, /comments/manga/:id, /mylist/chapters-meta/:id,
   //    /app-config, /app-features. /links/feed carries the catalogue (titles,
@@ -108,9 +112,10 @@
     }).then(function (res) { return safeJson(res && res.body); });
   }
   // Account login. The API accepts {identifier, password} where identifier is
-  // the e-mail OR the username, and answers {token, user}. Only an account
-  // that owns points can open ad-gated chapters, so this is the one path that
-  // can actually unlock them; without credentials the source stays a guest.
+  // the e-mail OR the username, and answers {token, user}. The account is one
+  // of the three layers the content routes need (the attestation and the
+  // signed headers are the other two); without credentials the source stays a
+  // guest and the content routes answer 428.
   async function login() {
     var id = (config && (config.auth_identifier || config.authIdentifier)) || "";
     var pw = (config && (config.auth_password || config.authPassword)) || "";
@@ -254,12 +259,12 @@
     return JSON.parse(res.body || "{}");
   }
 
-  // The gate answers in TWO shapes, and both mean the same thing for this
-  // source: the app layer answers 428 {"attest":true,"code":"verify"}, and
-  // the edge (nginx) answers 403 when the request carries no attestation at
-  // all (verified live Nov 2026). realmnovel's content routes are closed to
-  // this device, so the upstream publisher is the only place the pages can
-  // come from - a 403 must never be thrown to the reader as a failure.
+  // The gate answers in TWO shapes and both mean the same for this source:
+  // the app layer answers 428 {"attest":true,"code":"verify"} and the edge
+  // (nginx) answers 403 when the request carries no attestation at all
+  // (verified live Nov 2026). A closed gate is NOT an error to throw at the
+  // reader and NOT a reason to serve another site's pages: the source falls
+  // back to the gate-free catalogue (feed + chapter numbers).
   function isGateError(e) {
     var s = e && e.status;
     return s === 428 || s === 403;
@@ -268,13 +273,13 @@
   // The ad gate: realmnovel withholds the pages - AND the Arabic overlay -
   // of an ad-gated chapter until the account unlocked it with a rewarded ad
   // (POST /adgate/start -> gid, Google's server-side verification posts to
-  // /adgate/ssv, POST /adgate/claim unlocks it). The upstream publisher is
-  // NOT a substitute here: its pages are the raw English scans, and the
-  // reader asked for realmnovel's Arabic.
+  // /adgate/ssv, POST /adgate/claim unlocks it). No points are spent, no ad
+  // is faked and no other publisher's scans are substituted: the chapter is
+  // reported as ad-gated instead.
   function adLockedError(number) {
     var e = new Error("ad_locked: realmnovel serves chapter " + (number || "") +
       " only after the ad unlock - it withholds the Arabic overlay until then," +
-      " and the source never spends points nor substitutes the upstream scans");
+      " and the source never spends points nor substitutes another site's scans");
     e.status = 423;
     return e;
   }
@@ -299,6 +304,29 @@
     return out;
   }
 
+  // The gate-free chapter list: /mylist/chapters-meta/<mangaId> carries the
+  // chapter NUMBERS only (no ids, no pages). It is the honest list when the
+  // content routes are closed to this device: every chapter is locked,
+  // because realmnovel itself cannot serve it here.
+  async function chaptersMetaList(mangaId, slug) {
+    var chapters = [];
+    try {
+      var meta = await apiGet("/mylist/chapters-meta/" + mangaId);
+      var nums = meta.nums || [];
+      for (var n = 0; n < nums.length; n++) {
+        chapters.push({
+          number: String(nums[n]),
+          title: String(nums[n]),
+          views: 0,
+          url: baseUrl + "/manga/" + (slug || mangaId),
+          isLocked: true,
+          date: ""
+        });
+      }
+    } catch (e) {}
+    return chapters;
+  }
+
   // Catalogue-only details for the gate-free path: metadata from the feed plus
   // the chapter numbers of /mylist/chapters-meta (no chapter ids, no pages).
   async function fallbackDetails(slug, rawUrl) {
@@ -318,38 +346,9 @@
         }
       }
     }
-    if (!found) {
-      // The gate-free feed only carries the newest page or two, so a library
-      // entry can drop out of it. The slug is still the English title.
-      var guess = slug.replace(/[-_]+/g, " ").replace(/\b[a-z]/g, function (ch) {
-        return ch.toUpperCase();
-      });
-      found = { slug: slug, _id: slug, englishTitle: guess, arabicTitle: "" };
-    }
+    if (!found) throw new Error("Manga not found: " + slug);
 
-    // Play Integrity closes realmnovel's content routes on some devices
-    // (HTTP 428, code "verify"), so no chapter id is available. The upstream
-    // publisher has every chapter of the same work and serves it free.
-    var map = await atsuChapterMap([found.englishTitle, found.arabicTitle]);
-    atsuBySlug[slug] = map;
-    var chapters = atsuChapterList(map, [found.englishTitle, found.arabicTitle]);
-    if (!chapters) {
-      chapters = [];
-      try {
-        var meta = await apiGet("/mylist/chapters-meta/" + found._id);
-        var nums = meta.nums || [];
-        for (var n = 0; n < nums.length; n++) {
-          chapters.push({
-            number: String(nums[n]),
-            title: String(nums[n]),
-            views: 0,
-            url: baseUrl + "/manga/" + (found.slug || found._id),
-            isLocked: true,
-            date: ""
-          });
-        }
-      } catch (e) {}
-    }
+    var chapters = await chaptersMetaList(found._id, found.slug || found._id);
 
     return {
       title: found.arabicTitle || found.englishTitle || "",
@@ -372,302 +371,6 @@
     // back with its pages), so it must not be advertised as locked.
     if (n <= 0) return false;
     return (n % AD_LOCK_EVERY) === 0;
-  }
-
-  // ---- Upstream publisher fallback (zero points) --------------------------
-  // realmnovel's own manga record points at its upstream publisher
-  // (sourceUrl: "https://atsu.moe/"), which serves the very same chapters to
-  // anonymous readers - no account, no points, no ad. An ad-gated chapter
-  // (number % 3 == 0) can therefore be read without spending a single point.
-  // The page paths are NOT guessable: the same chapter may live as
-  // "<n>.webp" (old upload), "<hash>.avif" (recent upload) or even under a
-  // nested "<group>/<sub>/<file>" folder, so they are read from atsu's own
-  // chapter endpoint (see atsuChapterPages).
-  var ATSU_WEB = "https://atsu.moe";
-  // The CDN root: the page paths atsu's API returns already carry their own
-  // prefix ("/static/pages/<chapterId>/<file>"), old uploads as "<n>.webp"
-  // and recent ones as "<hash>.avif".
-  var ATSU_CDN = "https://cdn.atsu.moe";
-  var atsuCache = {};   // title key -> {id, chapters}
-  var atsuBySlug = {};  // realmnovel slug -> same map
-  // chapter id -> {number, titles}: the details page knows both, so the
-  // upstream route still works when realmnovel refuses the chapter route
-  // (banned account, expired attestation, ...).
-  var chapterMeta = {};
-
-  function rememberChapters(items, titles) {
-    for (var i = 0; i < items.length; i++) {
-      var c = items[i] || {};
-      if (c._id) {
-        chapterMeta[c._id] = {
-          number: c.number,
-          titles: titles,
-          pagesCount: Number(c.pagesCount) || 0
-        };
-      }
-    }
-  }
-
-  function normTitle(s) {
-    return String(s || "")
-      .toLowerCase()
-      .replace(/[\u064B-\u0652]/g, "")            // Arabic diacritics
-      .replace(/[^a-z0-9\u0600-\u06ff]+/g, " ")
-      .trim();
-  }
-
-  // realmnovel "24-5" is atsu "24.5" - the same bonus chapter.
-  function chapterKey(number) {
-    var s = String(number == null ? "" : number).trim();
-    var m = s.match(/^(\d+)\s*-\s*(\d+)$/);
-    if (m) return parseInt(m[1], 10) + "." + parseInt(m[2], 10);
-    var f = parseFloat(s);
-    return isFinite(f) ? String(f) : "";
-  }
-
-  async function atsuJson(path) {
-    try {
-      var res = await api.http(ATSU_WEB + path, {
-        method: "GET",
-        headers: { "User-Agent": userAgent, Accept: "application/json, text/plain, */*" },
-        transport: "light"
-      });
-      if (!res || !res.ok) return null;
-      return JSON.parse(res.body || "{}");
-    } catch (e) {
-      return null;
-    }
-  }
-
-  // The atsu manga that matches this realmnovel title. A wrong manga would
-  // serve another work, so only an exact or containment match is accepted.
-  async function atsuMangaId(titles) {
-    var names = [];
-    for (var i = 0; i < titles.length; i++) {
-      var n = normTitle(titles[i]);
-      if (n && names.indexOf(n) === -1) names.push(n);
-    }
-    for (var t = 0; t < names.length; t++) {
-      var data = await atsuJson("/collections/manga/documents/search?q=" + encodeURIComponent(names[t]) + "&query_by=title&per_page=10");
-      var hits = (data && data.hits) || [];
-      var best = "";
-      for (var h = 0; h < hits.length; h++) {
-        var doc = hits[h].document || hits[h] || {};
-        var title = normTitle(doc.title);
-        if (!title || !doc.id) continue;
-        if (title === names[t]) { best = doc.id; break; }
-        if (!best && (title.indexOf(names[t]) !== -1 || names[t].indexOf(title) !== -1)) best = doc.id;
-      }
-      if (best) return best;
-    }
-    // Second pass: upstream files the work under an alias ("The Ultimate
-    // All-Rounder" vs "Versatile Martial Arts Ace"), and a title-only search
-    // never sees those - the manga then looks like it does not exist here.
-    // Same wrong-manga guard: only an exact match, or a containment match
-    // between two long names, is accepted.
-    for (var t2 = 0; t2 < names.length; t2++) {
-      var data2 = await atsuJson("/collections/manga/documents/search?q=" + encodeURIComponent(names[t2]) + "&query_by=title,otherNames&per_page=10");
-      var hits2 = (data2 && data2.hits) || [];
-      var best2 = "";
-      for (var h2 = 0; h2 < hits2.length; h2++) {
-        var doc2 = hits2[h2].document || hits2[h2] || {};
-        if (!doc2.id) continue;
-        var cands = [doc2.title].concat(doc2.otherNames || []);
-        for (var c = 0; c < cands.length; c++) {
-          var alt = normTitle(cands[c]);
-          if (!alt) continue;
-          if (alt === names[t2]) return doc2.id;
-          if (!best2 && alt.length >= 12 && names[t2].length >= 12 &&
-              (alt.indexOf(names[t2]) !== -1 || names[t2].indexOf(alt) !== -1)) best2 = doc2.id;
-        }
-      }
-      if (best2) return best2;
-    }
-    return "";
-  }
-
-  // {id, chapters:{key:[{id,pageCount}]}} for one manga, cached.
-  async function atsuChapterMap(titles) {
-    var list = [];
-    for (var i = 0; i < titles.length; i++) {
-      if (titles[i]) list.push(titles[i]);
-    }
-    var cacheKey = normTitle(list[0]) + "|" + normTitle(list[1]);
-    if (atsuCache[cacheKey]) return atsuCache[cacheKey];
-    var entry = null;
-    try {
-      var id = await atsuMangaId(list);
-      if (id) {
-        var data = await atsuJson("/api/manga/allChapters?mangaId=" + encodeURIComponent(id));
-        var rows = (data && data.chapters) || [];
-        var chapters = {};
-        for (var r = 0; r < rows.length; r++) {
-          var k = chapterKey(rows[r].number != null ? rows[r].number : rows[r].title);
-          if (!k) continue;
-          if (!chapters[k]) chapters[k] = [];
-          chapters[k].push({
-            id: rows[r].id,
-            pageCount: Number(rows[r].pageCount) || 0,
-            number: rows[r].number,
-            title: rows[r].title,
-            createdAt: rows[r].createdAt
-          });
-        }
-        entry = { id: id, chapters: chapters };
-      }
-    } catch (e) {
-      entry = null;
-    }
-    atsuCache[cacheKey] = entry;
-    return entry;
-  }
-
-  // atsu timestamps are epoch milliseconds; the app shows the date as-is.
-  function atsuDate(v) {
-    if (v == null || v === "") return "";
-    if (typeof v === "number") {
-      var d = new Date(v);
-      return isFinite(d.getTime()) ? d.toISOString().split("T")[0] : "";
-    }
-    return String(v).split("T")[0];
-  }
-
-  // The whole chapter list from the upstream publisher, newest first. Used
-  // when realmnovel's content routes are closed by Play Integrity (HTTP 428,
-  // code "verify"): the device then gets no chapter ids at all, while the
-  // upstream publisher serves every chapter of the same work for free.
-  function atsuChapterList(map, titles) {
-    if (!map) return null;
-    var keys = Object.keys(map.chapters);
-    if (!keys.length) return null;
-    var out = [];
-    for (var i = 0; i < keys.length; i++) {
-      var rows = map.chapters[keys[i]];
-      var best = rows[0];
-      for (var r = 1; r < rows.length; r++) {
-        if (rows[r].pageCount > best.pageCount) best = rows[r];
-      }
-      var label = best.number != null ? String(best.number) : keys[i];
-      var id = "atsu-" + keys[i];
-      // The reader resolves this synthetic id later; keep its lookup here.
-      chapterMeta[id] = {
-        number: label,
-        titles: titles,
-        pagesCount: best.pageCount
-      };
-      out.push({
-        number: label,
-        title: best.title || label,
-        views: 0,
-        url: baseUrl + "/chapters/" + id,
-        // Same rule as the realmnovel list: an ad-gated chapter is locked
-        // while the source cannot talk to realmnovel's content routes.
-        isLocked: isAdGated(label) && !canServeRealmnovel(),
-        date: atsuDate(best.createdAt)
-      });
-    }
-    out.sort(function (a, b) {
-      return (parseFloat(b.number) || 0) - (parseFloat(a.number) || 0);
-    });
-    return out;
-  }
-
-  // The authoritative page list of one scanlation group.
-  //
-  // atsu's file names are NOT always "<index>.webp": recent uploads use
-  // "<hash>.avif". Guessing the shape 404s on EVERY page of those chapters -
-  // the reader then shows the page count while each image fails. atsu's own
-  // reader asks for the real paths instead:
-  //   GET /api/read/chapter?mangaId=<id>&chapterId=<groupId>
-  //   -> readChapter.pages[] = [{ image: "/static/pages/...", aspectRatio }]
-  async function atsuChapterPages(mangaId, chapterId) {
-    var data = await atsuJson("/api/read/chapter?mangaId=" + encodeURIComponent(mangaId) + "&chapterId=" + encodeURIComponent(chapterId));
-    var rc = (data && (data.readChapter || data)) || null;
-    var pages = (rc && rc.pages) || [];
-    if (!pages.length) return null;
-    var urls = [];
-    var aspects = [];
-    var webp = true;
-    for (var i = 0; i < pages.length; i++) {
-      var p = pages[i] || {};
-      var path = String(p.image || "");
-      if (!path) return null;
-      if (path.indexOf(".webp") === -1) webp = false;
-      urls.push(ATSU_CDN + path);
-      var ar = Number(p.aspectRatio) || 0;
-      aspects.push(ar > 0 ? ar : 0);
-    }
-    // The app commits every page's extent on its FIRST paint: the ratios are
-    // only sent when EVERY page has one.
-    for (var a = 0; a < aspects.length; a++) {
-      if (!(aspects[a] > 0)) { aspects = null; break; }
-    }
-    return { urls: urls, aspects: aspects, webp: webp };
-  }
-
-  // Pages of the scanlation whose layout is closest to the realmnovel upload
-  // (atsu keeps one upload per translation group).
-  async function atsuPages(map, number, wantPages) {
-    if (!map) return null;
-    var rows = map.chapters[chapterKey(number)] || [];
-    if (!rows.length) return null;
-    // No reference page count (the gate-free list has none): take the
-    // fullest upload, not the closest to zero.
-    var ordered = rows.slice().sort(function (a, b) {
-      if (!wantPages) return b.pageCount - a.pageCount;
-      return Math.abs(a.pageCount - wantPages) - Math.abs(b.pageCount - wantPages);
-    });
-    var best = null;
-    for (var i = 0; i < ordered.length; i++) {
-      var got = await atsuChapterPages(map.id, ordered[i].id);
-      if (!got) continue;
-      // Prefer the .webp upload: Android's BitmapRegionDecoder - the reader's
-      // native splitter - only learned AVIF in API 31, while .webp works on
-      // every supported device.
-      if (!best || (got.webp && !best.webp)) best = got;
-      if (best.webp) break;
-    }
-    return best;
-  }
-
-  // Zero-point fallback: read the chapter from the upstream publisher.
-  //
-  // The chapter's identity comes from the details page (chapterMeta) when it
-  // is known, and from the server payload otherwise: the upstream chapter is
-  // found by the NUMBER, so a missing title must not lose the chapter.
-  async function atsuFallback(chapter, chapterId) {
-    try {
-      var titles = [];
-      var number = chapter ? chapter.number : null;
-      var pagesCount = chapter ? Number(chapter.pagesCount) || 0 : 0;
-      var meta = chapterId ? chapterMeta[chapterId] : null;
-      if (meta) {
-        if (meta.number != null) number = meta.number;
-        if (meta.pagesCount) pagesCount = meta.pagesCount;
-        titles = meta.titles || [];
-      }
-      if (chapter && chapter.manga) {
-        titles = [chapter.manga.englishTitle, chapter.manga.arabicTitle];
-      }
-      if (!titles.length || number == null) return null;
-      var map = await atsuChapterMap(titles);
-      return await atsuPages(map, number, pagesCount);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  // The upstream pages in the app's reader contract.
-  //
-  // They are the RAW scans: realmnovel's Arabic is an overlay (bubbles)
-  // that only its closed content routes carry (the page files are
-  // byte-identical to the upstream's). A chapter served from the upstream is
-  // therefore flagged, so the reader can offer its own translation lane for
-  // it instead of showing a foreign scan.
-  function atsuResult(atsu) {
-    var out = { kind: "image", imageUrls: atsu.urls, needsTranslation: true };
-    if (atsu.aspects) out.imageAspects = atsu.aspects;
-    return out;
   }
 
   function toManga(item) {
@@ -807,15 +510,17 @@
       var genres = (manga.categories || []).map(function (c) { return c.name || ""; }).filter(Boolean);
       var status = manga.status || "ongoing";
 
-      // The upstream lookup runs in parallel: it only decides which chapters
-      // are advertised as locked and must not slow the catalogue down.
-      var atsuMapP = atsuChapterMap([manga.englishTitle, manga.arabicTitle]);
+      // The chapter list comes from realmnovel ONLY. Its ids are the ones the
+      // reader opens, so every chapter is served by the server itself (the
+      // Arabic overlay included). A list rebuilt from another publisher would
+      // hand the reader foreign scans for the FREE chapters too - that was the
+      // v1.8.3..1.8.5 bug.
       var chData = null;
       try {
         chData = await apiGet("/manga/" + slug + "/chapters?limit=200&page=1");
       } catch (e2) {
-        // The gate can hit only the content route: the metadata above is
-        // enough to build the list from upstream.
+        // The gate can hit only the chapter-list route. The metadata above is
+        // enough for the gate-free number list (every chapter locked).
         if (!isGateError(e2)) throw e2;
       }
       if (!chData) {
@@ -824,7 +529,7 @@
           coverUrl: cover,
           description: strip(desc),
           genres: genres,
-          chapters: atsuChapterList(await atsuMapP, [manga.englishTitle, manga.arabicTitle]) || [],
+          chapters: await chaptersMetaList(manga._id, manga.slug || slug),
           originalUrl: rawUrl || (baseUrl + "/manga/" + slug),
           hasMoreChapters: false,
           lastFetchedPage: 1,
@@ -832,11 +537,6 @@
         };
       }
       var allItems = chData.items || [];
-      // Chapters the upstream publisher serves free must not be advertised as
-      // locked, otherwise the app never asks for their pages.
-      var atsuMap = await atsuMapP;
-      atsuBySlug[slug] = atsuMap;
-      rememberChapters(allItems, [manga.englishTitle, manga.arabicTitle]);
       var total = chData.total || 0;
       var limit = chData.limit || 200;
       var totalPages = Math.ceil(total / limit);
@@ -858,7 +558,7 @@
           // (Arabic overlay) once the account unlocked it with an ad, so it
           // must NOT be advertised as locked while that session exists - the
           // reader has to be allowed in to reach the Arabic. Points are NEVER
-          // spent, and the upstream scans are never substituted for it.
+          // spent, and no other publisher's scans are ever substituted.
           isLocked: isAdGated(c.number) && !canServeRealmnovel(),
           date: (c.createdAt || "").split("T")[0]
         };
@@ -889,73 +589,38 @@
       var m = rawUrl.match(/\/chapters\/([^/?#]+)/);
       var chapterId = m ? m[1] : "";
       if (!chapterId) return { kind: "image", imageUrls: [] };
-
-      // An id built from the upstream list (atsuChapterList): realmnovel
-      // never had an id for it, so go straight to the publisher.
+      // v1.8.3..1.8.5 built synthetic "atsu-<number>" chapter ids when the
+      // content routes were closed, and the reader kept them in its history.
+      // Those ids are not realmnovel ids: they can only lead to another
+      // publisher's foreign scans, so they are refused here.
       if (chapterId.indexOf("atsu-") === 0) {
-        var up = chapterMeta[chapterId];
-        if (!up) return { kind: "image", imageUrls: [] };
-        // The upstream pages carry no Arabic at all, so they are NOT a
-        // substitute for an ad-gated chapter.
-        if (isAdGated(up.number)) throw adLockedError(up.number);
-        var upPages = await atsuFallback({
-          manga: { englishTitle: up.titles[0], arabicTitle: up.titles[1] },
-          number: up.number,
-          pagesCount: up.pagesCount
-        });
-        return upPages ? atsuResult(upPages) : { kind: "image", imageUrls: [] };
+        throw new Error("stale_chapter_id: " + chapterId +
+          " is not a realmnovel chapter id - reopen the manga to get the real list");
       }
 
       var data = null;
       var chapter = null;
-      var failed = null;
       try {
         data = await apiGet("/chapters/" + chapterId);
         chapter = data.chapter || data;
       } catch (e) {
         // realmnovel refused the chapter (gate closed, banned account,
-        // expired attestation, ...).
-        failed = e;
+        // expired attestation, ...). Nothing else may serve it: another
+        // publisher's scans carry no Arabic, and the source never spends
+        // points nor fakes an ad.
+        throw e;
       }
-
-      var meta = chapterMeta[chapterId] || null;
-      var number = (chapter && chapter.number != null)
-        ? chapter.number
-        : (meta ? meta.number : null);
-      // The server's own flag first, the numbered heuristic as the fallback
-      // (the server never answers for a chapter it refuses to serve).
-      var adGated = chapter ? chapter.adLocked === true : isAdGated(number);
-
-      var pages = (chapter && chapter.pages) || [];
-      if (!pages.length) {
-        if (failed) {
-          // realmnovel did not answer for this chapter at all. The upstream
-          // publisher may still have it, but ONLY for a free chapter: an
-          // ad-gated one has no Arabic upstream and is never substituted.
-          if (adGated) throw failed;
-          // A free chapter the server could not answer for at all: the
-          // upstream publisher still has it, and the details page left us the
-          // chapter number and the manga title.
-          if (!meta) throw failed;
-          var rescued = await atsuFallback(null, chapterId);
-          if (!rescued) throw failed;
-          return atsuResult(rescued);
-        }
-        if (adGated) {
-          // The server answered and withheld the pages: the ad gate is the
-          // reason (the account has to unlock the chapter with a rewarded ad
-          // in the official app). No points are spent and the upstream scans
-          // are NOT substituted (they carry no Arabic).
-          throw adLockedError(number);
-        }
-        var alt = await atsuFallback(chapter, chapterId);
-        if (alt) return atsuResult(alt);
+      if (chapter && chapter.adLocked === true && !(chapter.pages && chapter.pages.length)) {
+        // The server answered and withheld the pages: the ad gate is the
+        // reason (the account has to unlock the chapter with a rewarded ad in
+        // the official app). Report it instead of substituting foreign scans.
+        throw adLockedError(chapter.number);
+      }
+      if (!chapter || !chapter.pages || !chapter.pages.length) {
         return { kind: "image", imageUrls: [] };
       }
 
-      // realmnovel's OWN pages: the images and the Arabic overlay (bubbles),
-      // exactly like an open chapter - also for a chapter the account
-      // unlocked with an ad.
+      var pages = chapter.pages || [];
       // The page list and the per-page sizes come from the SAME array, so
       // the aspect ratios stay parallel to the image list.
       var urls = [];
@@ -1047,9 +712,6 @@
         var chData = await apiGet("/manga/" + slug + "/chapters?limit=200&page=" + nextPage);
         var chItems = chData.items || [];
         if (chItems.length === 0) return null;
-        var atsuMap = atsuBySlug[slug] || null;
-        var meta = chapterMeta[chItems[0] && chItems[0]._id];
-        rememberChapters(chItems, meta ? meta.titles : []);
 
         var chapters = chItems.map(function (c) {
           return {
@@ -1079,21 +741,11 @@
 
     getImageHeaders(args) {
       var u = String((args && args.url) || "");
-      var isAtsu = u.indexOf("cdn.atsu.moe") !== -1;
-      var h = {
+      return {
         "User-Agent": userAgent,
-        Referer: isAtsu ? ATSU_WEB + "/" : baseUrl + "/",
+        Referer: baseUrl + "/",
         Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
       };
-      if (isAtsu) {
-        // The app injects Sec-Fetch-Dest: image + Sec-Fetch-Mode: no-cors +
-        // Sec-Fetch-Site: cross-site on every image it has no value for, and
-        // cdn.atsu.moe answers 403 to exactly that triple (Cloudflare bot
-        // rule). Supplying our own Sec-Fetch-Site keeps the app from
-        // overriding it - same-site is what the site itself sends.
-        h["Sec-Fetch-Site"] = "same-site";
-      }
-      return h;
     },
 
     sanitizeCoverUrl(args) {

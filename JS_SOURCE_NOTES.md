@@ -246,6 +246,9 @@ Downloader rules:
     `ad_locked` error for a chapter the server still withholds. It never
     substitutes another site's scans for it, and it never spends the site's
     points.
-  - `needsTranslation: true` marks the chapters that fall back to the raw
-    upstream scans, which happens only for a FREE chapter that realmnovel
-    cannot answer for at all (its Play Integrity gate is closed).
+  - Every page comes from realmnovel itself (v1.8.6): the chapter list is
+    realmnovel's own list of ids, so a free chapter is opened on the server
+    and carries the Arabic overlay. There is no other-publisher fallback and
+    no `needsTranslation` lane - a chapter the server refuses is refused here
+    too, and a closed chapter-list route falls back to the gate-free number
+    list with every chapter locked.
