@@ -260,8 +260,8 @@
     return out;
   }
 
-  // Catalogue-only details for the gate-free path: metadata from the feed, and
-  // the chapter list from the upstream publisher (real ids, nothing locked).
+  // Catalogue-only details for the gate-free path: metadata from the feed plus
+  // the chapter numbers of /mylist/chapters-meta (no chapter ids, no pages).
   async function fallbackDetails(slug, rawUrl) {
     var found = null;
     for (var p = 1; p <= 5 && !found; p++) {
@@ -281,16 +281,21 @@
     }
     if (!found) throw new Error("Manga not found: " + slug);
 
-    // The gate-free number list carries no chapter ids, and marking every
-    // chapter locked (the v1.8.0..v1.8.2 stub) is exactly the "all chapters
-    // are locked" bug: the reader then blocks every chapter and, if one is
-    // opened, its URL is the MANGA page, so getChapterContent finds no
-    // chapter id and shows "no pages". The upstream publisher serves the same
-    // work free, so the list is built from it with real chapter ids and
-    // isLocked:false - the v1.8.3 fix, kept here on top of the v1.8.0 code.
-    var titles = [found.englishTitle, found.arabicTitle];
-    var map = await atsuChapterMap(titles);
-    var chapters = atsuChapterList(map, titles) || [];
+    var chapters = [];
+    try {
+      var meta = await apiGet("/mylist/chapters-meta/" + found._id);
+      var nums = meta.nums || [];
+      for (var n = 0; n < nums.length; n++) {
+        chapters.push({
+          number: String(nums[n]),
+          title: String(nums[n]),
+          views: 0,
+          url: baseUrl + "/manga/" + (found.slug || found._id),
+          isLocked: true,
+          date: ""
+        });
+      }
+    } catch (e) {}
 
     return {
       title: found.arabicTitle || found.englishTitle || "",
@@ -374,7 +379,13 @@
   function rememberChapters(items, titles) {
     for (var i = 0; i < items.length; i++) {
       var c = items[i] || {};
-      if (c._id) chapterMeta[c._id] = { number: c.number, titles: titles };
+      if (c._id) {
+        chapterMeta[c._id] = {
+          number: c.number,
+          titles: titles,
+          pagesCount: Number(c.pagesCount) || 0
+        };
+      }
     }
   }
 
@@ -430,6 +441,29 @@
       }
       if (best) return best;
     }
+    // Second pass: upstream files the work under an alias ("The Ultimate
+    // All-Rounder" vs "Versatile Martial Arts Ace"), and a title-only search
+    // never sees those - the manga then looks like it does not exist here.
+    // Same wrong-manga guard: only an exact match, or a containment match
+    // between two long names, is accepted.
+    for (var t2 = 0; t2 < names.length; t2++) {
+      var data2 = await atsuJson("/collections/manga/documents/search?q=" + encodeURIComponent(names[t2]) + "&query_by=title,otherNames&per_page=10");
+      var hits2 = (data2 && data2.hits) || [];
+      var best2 = "";
+      for (var h2 = 0; h2 < hits2.length; h2++) {
+        var doc2 = hits2[h2].document || hits2[h2] || {};
+        if (!doc2.id) continue;
+        var cands = [doc2.title].concat(doc2.otherNames || []);
+        for (var c = 0; c < cands.length; c++) {
+          var alt = normTitle(cands[c]);
+          if (!alt) continue;
+          if (alt === names[t2]) return doc2.id;
+          if (!best2 && alt.length >= 12 && names[t2].length >= 12 &&
+              (alt.indexOf(names[t2]) !== -1 || names[t2].indexOf(alt) !== -1)) best2 = doc2.id;
+        }
+      }
+      if (best2) return best2;
+    }
     return "";
   }
 
@@ -452,13 +486,7 @@
           var k = chapterKey(rows[r].number != null ? rows[r].number : rows[r].title);
           if (!k) continue;
           if (!chapters[k]) chapters[k] = [];
-          chapters[k].push({
-            id: rows[r].id,
-            pageCount: Number(rows[r].pageCount) || 0,
-            number: rows[r].number,
-            title: rows[r].title,
-            createdAt: rows[r].createdAt
-          });
+          chapters[k].push({ id: rows[r].id, pageCount: Number(rows[r].pageCount) || 0 });
         }
         entry = { id: id, chapters: chapters };
       }
@@ -473,57 +501,6 @@
     if (!map) return false;
     var rows = map.chapters[chapterKey(number)] || [];
     return rows.length > 0;
-  }
-
-  // atsu timestamps are epoch milliseconds; the app shows the date as-is.
-  function atsuDate(v) {
-    if (v == null || v === "") return "";
-    if (typeof v === "number") {
-      var d = new Date(v);
-      return isFinite(d.getTime()) ? d.toISOString().split("T")[0] : "";
-    }
-    return String(v).split("T")[0];
-  }
-
-  // The whole chapter list from the upstream publisher, newest first. Used
-  // when realmnovel's content routes are closed by Play Integrity (HTTP 428,
-  // code "verify"): the device then gets no chapter ids at all, while the
-  // upstream publisher serves every chapter of the same work for free. This
-  // is the v1.8.3 fix for the "every chapter is locked" stub: the stub gave
-  // each chapter isLocked:true AND the manga URL as its chapter URL, so the
-  // reader blocked them all and, if opened, found no chapter id at all.
-  function atsuChapterList(map, titles) {
-    if (!map) return null;
-    var keys = Object.keys(map.chapters);
-    if (!keys.length) return null;
-    var out = [];
-    for (var i = 0; i < keys.length; i++) {
-      var rows = map.chapters[keys[i]];
-      var best = rows[0];
-      for (var r = 1; r < rows.length; r++) {
-        if (rows[r].pageCount > best.pageCount) best = rows[r];
-      }
-      var label = best.number != null ? String(best.number) : keys[i];
-      var id = "atsu-" + keys[i];
-      // The reader resolves this synthetic id later; keep its lookup here.
-      chapterMeta[id] = {
-        number: label,
-        titles: titles,
-        pagesCount: best.pageCount
-      };
-      out.push({
-        number: label,
-        title: best.title || label,
-        views: 0,
-        url: baseUrl + "/chapters/" + id,
-        isLocked: false,
-        date: atsuDate(best.createdAt)
-      });
-    }
-    out.sort(function (a, b) {
-      return (parseFloat(b.number) || 0) - (parseFloat(a.number) || 0);
-    });
-    return out;
   }
 
   // The authoritative page list of one scanlation group.
@@ -809,7 +786,8 @@
         if (!meta) throw e;
         var rescued = await atsuFallback({
           manga: { englishTitle: meta.titles[0], arabicTitle: meta.titles[1] },
-          number: meta.number
+          number: meta.number,
+          pagesCount: meta.pagesCount
         });
         if (!rescued) throw e;
         return atsuResult(rescued);
