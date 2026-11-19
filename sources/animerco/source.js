@@ -87,14 +87,19 @@ function createSource(api, config) {
   }
 
   async function postAjax(params) {
+    // POST to the episode page's own origin: the site's domain moves
+    // (det -> eva) and a 301 on POST drops the body, so a hardcoded base
+    // host answers "0" for every server.
+    var ajaxReferer = params.referer || baseUrl + "/";
+    var ajaxOrigin = (String(ajaxReferer).match(/^(https?:\/\/[^\/]+)/i) || [])[1] || baseUrl;
     var body = "action=player_ajax" +
       "&security=" + encodeURIComponent(params.security || "") +
       "&post=" + encodeURIComponent(params.post || "") +
       "&nume=" + encodeURIComponent(params.nume || "") +
       "&type=" + encodeURIComponent(params.stype || "tv");
-    var headers = mergeHeaders(ajaxHeaders, { "Referer": params.referer || baseUrl + "/" });
+    var headers = mergeHeaders(ajaxHeaders, { "Referer": ajaxReferer });
     if (api.http) {
-      var res = await api.http(baseUrl + "/wp-admin/admin-ajax.php", { method: "POST", headers: headers, body: body });
+      var res = await api.http(ajaxOrigin + "/wp-admin/admin-ajax.php", { method: "POST", headers: headers, body: body });
       if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : 0) + " for player_ajax");
       try {
         return JSON.parse(res.body || "{}");
@@ -407,7 +412,16 @@ function createSource(api, config) {
       var lm = inner.match(/<span[^>]+class=(["'])[^"']*server[^"']*\1[^>]*>([\s\S]*?)<\/span>/i);
       if (lm) label = unescapeHtml(stripTags(lm[2]));
       if (!label) label = "server-" + nume;
-      out.push({ post: post, nume: nume, stype: stype, label: cleanTitle(label) });
+      out.push({
+        post: post,
+        nume: nume,
+        stype: stype,
+        label: cleanTitle(label),
+        // New theme (1.6.4) pre-signs the player URL in the anchor, so the
+        // AJAX round-trip is only needed when it is missing or expired.
+        embed: unescapeHtml(attr("data-embed-url")),
+        exp: parseInt(attr("data-embed-exp"), 10) || 0
+      });
       if (out.length > 20) break;
     }
     return out;
@@ -871,8 +885,10 @@ function createSource(api, config) {
       return null;
     }
     // mp4upload: player.src({..., src: "https://...mp4"}), Referer-locked.
+    // The extension must end the URL (or start a query) — `\.mp4` alone also
+    // matches the host "mp4upload.com" and once returned video.min.js.
     if (u.indexOf("mp4upload") !== -1) {
-      var mm = h.match(/src["']?\s*[:=]\s*["'](https?:[^"'<>]+\.mp4[^"'<>]*)["']/i);
+      var mm = h.match(/["'](https?:[^"'<>]*?\.mp4(?:[?#][^"'<>]*)?)["']/i);
       if (mm) return { url: mm[1].replace(/\\\//g, "/"), stream: "mp4" };
       return null;
     }
@@ -884,12 +900,15 @@ function createSource(api, config) {
       if (ym2) return { url: ym2[2].replace(/\\\//g, "/"), stream: "mp4" };
       return null;
     }
-    // vidmoly: sources: [{file: "...m3u8?..."}] (12h token).
+    // vidmoly: sources: [{file: "...m3u8?..."}] (12h token). The page also
+    // has a non-media `file:` (poster/slides API) — take the first real one.
     if (u.indexOf("vidmoly") !== -1) {
-      var dm = h.match(/\bfile\s*:\s*(["'])([^"']+)\1/i);
-      if (dm) {
+      var dre = /\bfile\s*:\s*(["'])([^"']+)\1/g, dm;
+      while ((dm = dre.exec(h)) !== null) {
         var du = dm[2].replace(/\\\//g, "/");
-        return { url: du, stream: du.indexOf(".m3u8") !== -1 ? "m3u8" : "mp4" };
+        if (/\.(m3u8|mp4)(?:[?#]|$)/i.test(du)) {
+          return { url: du, stream: du.indexOf(".m3u8") !== -1 ? "m3u8" : "mp4" };
+        }
       }
       return null;
     }
@@ -907,6 +926,9 @@ function createSource(api, config) {
   }
 
   async function decodeEpisodeServers(pageUrl) {
+    // The app's server sheet cancels at 10s; stop early and return the
+    // servers found so far instead of being cut off with nothing.
+    var DECODE_BUDGET_MS = 8000;
     var out = [];
     var html = await fetchHtml(pageUrl);
     var sec = securityNonce(html);
@@ -933,29 +955,39 @@ function createSource(api, config) {
       }
     }
     for (var i = 0; i < options.length; i++) {
-      if (budgetExpired(bud, t0, 20000)) break;
+      if (budgetExpired(bud, t0, DECODE_BUDGET_MS)) break;
       var optLabelLow = String((options[i] && options[i].label) || "").toLowerCase();
       var isOkOpt = (optLabelLow === OK_HOST_KEY || embedHostOf(options[i].label, "") === OK_HOST_KEY);
-      if (isOkOpt && (budgetExpired(bud, t0, 20000) || bud.n <= OK_MIN_BUD)) continue;
+      if (isOkOpt && (budgetExpired(bud, t0, DECODE_BUDGET_MS) || bud.n <= OK_MIN_BUD)) continue;
       var opt = options[i];
       var embedPage = "";
       try {
-        bud.n--;
-        var pj = null;
+        var nowSec = 0;
         try {
-          pj = await postAjax({ security: sec, post: opt.post, nume: opt.nume, stype: opt.stype, referer: pageUrl });
-        } catch (ePost) {
-          pj = null;
+          nowSec = Math.floor(new Date().getTime() / 1000);
+        } catch (eNow) {}
+        var embedUrl = "";
+        if (opt.embed && (!opt.exp || opt.exp > nowSec + 5)) {
+          embedUrl = makeAbsolute(opt.embed);
         }
-        var embedUrl = (pj && pj.embed_url) || "";
+        if (!embedUrl) {
+          bud.n--;
+          var pj = null;
+          try {
+            pj = await postAjax({ security: sec, post: opt.post, nume: opt.nume, stype: opt.stype, referer: pageUrl });
+          } catch (ePost) {
+            pj = null;
+          }
+          embedUrl = (pj && pj.embed_url) || "";
+        }
         // Security retry inside budget: fresh nonce + single retry (no bud raise). ok single attempt: no retry.
-        if (!embedUrl && !isOkOpt && !budgetExpired(bud, t0, 20000)) {
+        if (!embedUrl && !isOkOpt && !budgetExpired(bud, t0, DECODE_BUDGET_MS)) {
           try {
             bud.n--;
             var freshHtml = await fetchHtml(pageUrl, { "Referer": pageUrl });
             var freshSec = securityNonce(freshHtml) || sec;
             if (freshSec) sec = freshSec;
-            if (!budgetExpired(bud, t0, 20000)) {
+            if (!budgetExpired(bud, t0, DECODE_BUDGET_MS)) {
               bud.n--;
               try {
                 pj = await postAjax({ security: sec, post: opt.post, nume: opt.nume, stype: opt.stype, referer: pageUrl });
@@ -1007,7 +1039,7 @@ function createSource(api, config) {
       if (isOkServer) {
         const okPassthroughReason = embedReasonFor(opt.label, embedPage);
         entry.reason = okPassthroughReason;
-      } else if (needsDeep(opt.label, embedPage) && !budgetExpired(bud, t0, 20000)) {
+      } else if (needsDeep(opt.label, embedPage) && !budgetExpired(bud, t0, DECODE_BUDGET_MS)) {
         try {
           bud.n--;
           var ehtml = await fetchHtml(embedPage, { "Referer": pageUrl });
@@ -1031,7 +1063,7 @@ function createSource(api, config) {
             // Deep resolver failed: try embed-resolve where possible, else honest reason.
             var deepKind = needsEmbedResolve(opt.label, embedPage);
             var deepDirect = "";
-            if (deepKind && !budgetExpired(bud, t0, 20000)) {
+            if (deepKind && !budgetExpired(bud, t0, DECODE_BUDGET_MS)) {
               try {
                 if (deepKind === "videa") deepDirect = await resolveVideaEmbed(embedPage, bud, pageUrl);
                 else if (deepKind === "uqload") deepDirect = await resolveUqloadEmbed(embedPage, bud, pageUrl);
@@ -1064,7 +1096,7 @@ function createSource(api, config) {
       } else if (!needsDeep(opt.label, embedPage)) {
         // التسعة/others: direct solution where possible, else honest passthrough (not blind).
         var embedKind = needsEmbedResolve(opt.label, embedPage);
-        if (embedKind && !budgetExpired(bud, t0, 20000)) {
+        if (embedKind && !budgetExpired(bud, t0, DECODE_BUDGET_MS)) {
           var embedDirect = "";
           try {
             if (embedKind === "videa") embedDirect = await resolveVideaEmbed(embedPage, bud, pageUrl);
@@ -1159,7 +1191,7 @@ function createSource(api, config) {
         if (url.indexOf("/episodes/") !== -1) {
           // Episode URL: try to climb to its season page via nav link.
           var epHtml = await fetchHtml(url);
-          var sm = epHtml.match(/<a[^>]+href=(["'])([^"']*\/seasons\/[^"']*)\1/);
+          var sm = epHtml.match(/<a[^>]+href=(["'])([^"']*\/seasons\/[^"']+)\1/);
           if (sm) {
             try {
               return await parseAnimeDetails(await fetchHtml(makeAbsolute(sm[2])), makeAbsolute(sm[2]));
