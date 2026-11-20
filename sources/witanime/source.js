@@ -797,6 +797,78 @@ function createSource(api, config) {
     return null;
   }
 
+  // TEMP v1.4.3 device probe: the sheet lists these lines, then this block
+  // is removed in the next release. Names only, never cookie values.
+  var SERVER_PROBE = true;
+
+  async function probeServers(watchUrl) {
+    var rows = [];
+    var html = "";
+    var status = 0;
+    var names = [];
+    try {
+      var res = await api.http(watchUrl, {
+        method: "GET",
+        headers: withCookies(mergeHeaders(defaultHeaders, {}))
+      });
+      status = (res && res.status) || 0;
+      html = String((res && res.body) || "");
+      var raw = "";
+      var hs = (res && res.headers) || {};
+      for (var k in hs) {
+        if (String(k).toLowerCase() === "set-cookie") { raw = String(hs[k]); break; }
+      }
+      var parts = raw ? raw.split(/\n|,(?=\s*[A-Za-z0-9_-]+=)/) : [];
+      for (var i = 0; i < parts.length; i++) {
+        var nm = String(parts[i] || "").split(";")[0].split("=")[0].trim();
+        if (nm) names.push(nm);
+      }
+      rememberCookies(res);
+    } catch (e) {
+      rows.push("GET THREW " + String((e && e.message) || e).slice(0, 70));
+    }
+    var csrf = getCsrfToken(html);
+    rows.push("GET=" + status + " len=" + html.length + " meta=" + (csrf ? 1 : 0));
+    rows.push("SET=" + (names.join("+") || "none"));
+    var jarNames = [];
+    var jarParts = String(cookieJar).split(/;\s*/);
+    for (var j = 0; j < jarParts.length; j++) {
+      var jn = jarParts[j].split("=")[0];
+      if (jn) jarNames.push(jn);
+    }
+    rows.push("JAR=" + (jarNames.join("+") || "none"));
+    if (csrf) {
+      try {
+        var res2 = await api.http(
+          String(watchUrl).replace(/[?#].*$/, "").replace(/\/+$/, "") + "/sources",
+          { method: "POST", headers: apiPostHeaders(csrf, watchUrl) }
+        );
+        var b = String((res2 && res2.body) || "").replace(/\s+/g, " ").slice(0, 110);
+        rows.push("POST=" + ((res2 && res2.status) || 0) + " " + b);
+      } catch (e2) {
+        rows.push("POST THREW " + String((e2 && e2.message) || e2).slice(0, 70));
+      }
+    }
+    var out = [];
+    for (var r = 0; r < rows.length; r++) {
+      var gate = baseUrl + "/watch/stream-gate/" + new Array(65).join("0");
+      out.push({
+        id: "diag" + r,
+        name: rows[r],
+        embedUrl: gate,
+        url: gate,
+        directUrl: "",
+        type: "embed",
+        quality: "",
+        qualities: [],
+        selectedQualityIndex: 0,
+        headers: {},
+        reason: "diag"
+      });
+    }
+    return out;
+  }
+
   async function decodeEpisodeServers(watchUrl) {
     var out = [];
     try {
@@ -1007,6 +1079,7 @@ function createSource(api, config) {
       try {
         var url = makeAbsolute((args && args.url) || "");
         if (!url) return [];
+        if (SERVER_PROBE) return await probeServers(url);
         return await decodeEpisodeServers(url);
       } catch (e) {
         return [];
