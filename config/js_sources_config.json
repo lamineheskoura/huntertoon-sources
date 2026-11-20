@@ -1,10 +1,10 @@
 {
-  "version": "1.65.6",
+  "version": "1.65.7",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.11.20.1",
+  "manifest_version": "2026.11.20.2",
   "generated_at": "2026-09-04T14:30:00Z",
-  "last_updated": "2026-11-20T12:00:00Z",
+  "last_updated": "2026-11-20T12:30:00Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
   "min_app_version": "1.4.0",
   "repository": {
@@ -1927,7 +1927,7 @@
       "id": "witanime",
       "sid": 134,
       "name": "ويت أنمي (WitAnime)",
-      "version": "1.4.1",
+      "version": "1.4.2",
       "enabled": true,
       "status": "beta",
       "base_url": "https://witanime.site",
@@ -1943,7 +1943,7 @@
       },
       "script": {
         "url": "sources/witanime/source.js",
-        "sha256": "09e17892c6d72b20f109abc19174b2f9d2ed8cab1e59e534b717a91e78d46efc",
+        "sha256": "08bd38b33742251e18ac9166f7c4e30dd88cf2858396cc342ded2898d59ede92",
         "entry": "createSource"
       },
       "capabilities": {
@@ -1964,8 +1964,8 @@
         "language": "ar",
         "adult": false,
         "author": "HunterToon Team",
-        "description": "WitAnime - Arabic anime source on witanime.site (Laravel Livewire). Browse/movies cards, suggest search, anime+movie details, every stream player the site reports (FHD/HD/SD) with on-demand direct-mp4 extraction (ok/videa/mp4upload/4shared).",
-        "changelog": "v1.4.1: watch servers fixed. The list is now returned in 2 requests (watch GET + /sources POST) instead of pre-resolving up to 7 gate URLs under a 12s deadline, which blew the app's 10s server sheet budget so the sheet showed nothing. All players the site reports are listed (mega/hgcloud/yonaplay/videas are no longer dropped silently); direct extraction moved on demand into resolveServer (15s budget) with per-host referers. requires_cf enabled (watch host is CF-guarded).",
+        "description": "WitAnime - Arabic anime source on witanime.site (Laravel + Cloudflare). Latest-episodes homepage, card/movie details, full episode lists, and every stream player the site reports (FHD/HD/SD) with on-demand direct-mp4 extraction (ok/videa/mp4upload/4shared).",
+        "changelog": "v1.4.2: watch servers reach the app. The transport (cronet_http) joins every Set-Cookie value with ',', but the cookie jar split on newlines only, so the HttpOnly witanime-session was dropped, POST /sources answered 419 and the sheet said no server. The jar now splits like CfCookieStore. Homepage reads the site's own /new-episodes feed (latest published episodes) instead of /browse, which is the permanent A-Z catalog.",
         "ai_translation": false
       },
       "display": {

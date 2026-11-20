@@ -54,7 +54,11 @@ function createSource(api, config) {
       if (raw instanceof Array) {
         parts = raw;
       } else if (raw) {
-        parts = String(raw).split(/\n/);
+        // The app's cronet_http transport joins every Set-Cookie value with
+        // ','. Splitting on '\n' alone kept only XSRF-TOKEN and dropped the
+        // HttpOnly witanime-session, so POST /sources answered 419 and the
+        // sheet showed no servers. Same split as CfCookieStore.
+        parts = String(raw).split(/\n|,(?=\s*[A-Za-z0-9_-]+=)/);
       }
       var store = {};
       var i, j;
@@ -295,6 +299,47 @@ function createSource(api, config) {
         contentType: "anime"
       });
       if (out.length > 300) break;
+    }
+    return out;
+  }
+
+  // Home /new-episodes cards: <a href=".../watch/{slug}/{n}"> with poster,
+  // episode badge "الحلقة N" and a type badge (TV/ONA/فيلم). The card is an
+  // episode, so the anime's detail page is /anime/{slug} (movies /movie/).
+  function parseLatestCards(html) {
+    var out = [];
+    var seen = {};
+    var re = /<a[^>]+href="([^"]*\/watch\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/g;
+    var m;
+    while ((m = re.exec(String(html || ""))) !== null) {
+      var watchUrl = makeAbsolute(m[1] || "");
+      var inner = m[2] || "";
+      var sm = watchUrl.match(/\/watch\/([^/?#]+)\/\d+/);
+      if (!sm) continue;
+      var badge = inner.match(/bg-black\/70[^>]*>([^<]*)</);
+      var typeText = badge ? cleanTitle(badge[1]) : "";
+      var isMovie = typeText === "فيلم" || /^movie$/i.test(typeText);
+      var detailUrl = baseUrl + (isMovie ? "/movie/" : "/anime/") + sm[1];
+      if (seen[detailUrl]) continue;
+      var title = "";
+      var hm = inner.match(/<h3[^>]*>([\s\S]*?)<\/h3>/);
+      if (hm) title = unescapeHtml(stripTags(hm[1]));
+      if (!title) {
+        var am = inner.match(/<img[^>]+alt="([^"]*)"/);
+        if (am) title = unescapeHtml(cleanTitle(am[1]));
+      }
+      if (!title) continue;
+      seen[detailUrl] = true;
+      var cover = "";
+      var cm = inner.match(/<img[^>]+src="([^"]+)"/);
+      if (cm) cover = makeAbsolute(cm[1]);
+      out.push({
+        title: title,
+        coverUrl: cover,
+        detailUrl: detailUrl,
+        contentType: "anime"
+      });
+      if (out.length > 60) break;
     }
     return out;
   }
@@ -814,11 +859,23 @@ function createSource(api, config) {
     requiresCloudflare: true,
 
     async getHomepageManga(args) {
+      var page = parseInt((args && args.page) || 1, 10);
+      if (!page || page < 1) page = 1;
+      // /browse is the full A-Z catalog ("قائمة الأنمي"), so "latest added"
+      // was a permanent alphabetical list. /new-episodes?page=N is the site's
+      // own latest-episodes feed (JSON {html,page,hasOlder}) behind the home
+      // carousel; every card there is a freshly published episode.
       try {
-        var page = parseInt((args && args.page) || 1, 10);
-        if (!page || page < 1) page = 1;
-        var url = page > 1 ? baseUrl + "/browse/page/" + page : baseUrl + "/browse";
-        return await parseCards(await fetchHtml(url));
+        var latest = await fetchJson(
+          baseUrl + "/new-episodes?page=" + page,
+          { "Accept": "application/json", "Referer": baseUrl + "/" },
+          "GET"
+        );
+        var cards = parseLatestCards((latest && latest.html) || "");
+        if (cards.length) return cards;
+      } catch (e) {}
+      try {
+        return await parseCards(await fetchHtml(page > 1 ? baseUrl + "/browse/page/" + page : baseUrl + "/browse"));
       } catch (e) {
         return [];
       }
