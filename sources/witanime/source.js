@@ -473,6 +473,9 @@ function createSource(api, config) {
   // Hosts like 4shared/mp4upload/videa reject source-domain Referer, so
   // every resolved file remembers the page that serves it.
   var mediaHeaders = {};
+  // token -> player label, learned from /sources and reused by resolveServer
+  // (the app's bridge passes only serverId/serverUrl, not the label).
+  var serverLabels = {};
 
   function rememberMedia(fileUrl, referer) {
     if (!fileUrl || !referer) return;
@@ -701,17 +704,22 @@ function createSource(api, config) {
     return "";
   }
 
-  // ---- episode servers (browser-exact chain, re-verified 2026-10-12) ----
-  // The site bot-gates API POSTs (fingerprint): node-style clients get
-  // {"message":"Not Found."} while real Chromium gets 200 (proven via XHR
-  // capture). The Alpine bundle sends ONLY {Accept, X-CSRF-TOKEN} + cookies —
-  // notably NO X-Requested-With (the /search/suggest route 404s WITH it),
-  // NO Origin/Content-Type/body. Replicate exactly; extras risk the gate.
+  // ---- episode servers (re-verified 2026-11-20) ----
+  // The site bot-gates the JSON API POSTs by TRANSPORT FINGERPRINT: a real
+  // Chromium network stack gets 200, every other client gets
+  // {"message":"Not Found."} (HTTP 404) even with valid cookies + CSRF
+  // (requests, curl_cffi chrome-impersonate and undici all 404; plain and
+  // stealth Chromium 200). The app's light path is Cronet (Chromium), so
+  // that is the transport this chain targets. Layout is Alpine:
   // GET {watchUrl} (cookies + csrf-token meta)
-  // -> POST {watchUrl}/sources {Accept, X-CSRF-TOKEN} (no body)
+  // -> POST {watchUrl}/sources {Accept, X-CSRF-TOKEN} (no body, no extras)
   // -> {players:{FHD:[{token,label,version,lang}],...}, downloads:{...}}
-  // -> POST /watch/stream-source/{token} (same headers)
-  // playback iframe = /watch/stream-gate/{token} (gate HTML holds player).
+  // -> POST /watch/stream-source/{token} unlocks
+  // -> playback iframe = /watch/stream-gate/{token} (302 to the real player)
+  // The list is returned immediately as honest `embed` entries; resolving a
+  // server to a direct mp4 is deferred to resolveServer. Pre-resolving all
+  // gate URLs here used 7 extra fetches + a 12s deadline and blew the app's
+  // 10s server-sheet budget, so the sheet showed nothing at all.
 
   function apiPostHeaders(csrf, referer) {
     var h = {
@@ -722,20 +730,34 @@ function createSource(api, config) {
     return withCookies(h);
   }
 
+  // GET the watch page for a fresh CSRF, then read /sources. One retry with a
+  // cache-busted page covers the site's own "stale session" 404/419 case.
+  async function loadPlayers(watchUrl) {
+    var sourcesUrl = String(watchUrl).replace(/[?#].*$/, "").replace(/\/+$/, "") + "/sources";
+    for (var attempt = 0; attempt < 2; attempt++) {
+      var html = "";
+      try {
+        var pageUrl = attempt
+          ? watchUrl + (watchUrl.indexOf("?") === -1 ? "?" : "&") + "_ht=" + new Date().getTime()
+          : watchUrl;
+        html = await fetchHtml(pageUrl);
+      } catch (e) {}
+      var csrf = getCsrfToken(html);
+      if (!csrf) continue;
+      try {
+        var data = await fetchJson(sourcesUrl, apiPostHeaders(csrf, watchUrl), "POST");
+        if (data && data.players) return data;
+      } catch (e) {}
+    }
+    return null;
+  }
+
   async function decodeEpisodeServers(watchUrl) {
     var out = [];
     try {
-      var html = await fetchHtml(watchUrl);
-      var csrf = getCsrfToken(html);
-      if (!csrf) return [];
-      var sourcesUrl = String(watchUrl).replace(/\/+$/, "") + "/sources";
-      var data;
-      try {
-        data = await fetchJson(sourcesUrl, apiPostHeaders(csrf, watchUrl), "POST");
-      } catch (e) {
-        return [];
-      }
-      var players = (data && data.players) || {};
+      var data = await loadPlayers(watchUrl);
+      if (!data) return out;
+      var players = data.players || {};
       var base = [];
       var bucket;
       for (bucket in players) {
@@ -746,172 +768,40 @@ function createSource(api, config) {
           if (!/^[a-f0-9]{64}$/.test(token)) continue;
           var label = cleanTitle(entry.label || "") || ("سيرفر " + (base.length + 1));
           var ver = cleanTitle(entry.version || "");
-          var name = ver ? (label + " " + ver) : label;
+          serverLabels[token] = label;
           base.push({
             token: token,
-            label: label,
-            name: name,
+            name: ver ? (label + " " + ver) : label,
             gate: baseUrl + "/watch/stream-gate/" + token,
             bucket: bucket
           });
         }
       }
-      // Owner rule: only natively playable (direct mp4) servers are listed.
-      // Dropped with zero direct proof (verified live 2026-09-21): mega
-      // (key never leaves browser), hgcloud (dynamic crypto), yonaplay /
-      // soraplay (gate targets unknown), workupload / wtsrv /
-      // wahmi / mediafire / gofile (download buckets, stream-only app).
-      // google/drive is NOT dropped: truthful gate passthrough (app extractor).
-      // ok is attempted (flashvars) and emitted as embed+reason on failure.
-      var DROP_LABELS = ["mega", "hgcloud", "yonaplay", "soraplay",
-        "workupload", "wtsrv", "wahmi", "mediafire", "gofile"];
-      function dropLabel(label) {
-        var n = String(label || "").toLowerCase();
-        for (var i = 0; i < DROP_LABELS.length; i++) {
-          if (n.indexOf(DROP_LABELS[i]) !== -1) return true;
-        }
-        return false;
-      }
-      function isOkLabel(label) {
-        return /(^|[\s\-_])ok($|[\s\-_])/i.test(String(label || ""));
-      }
-      function isMp4Capable(label) {
-        var n = String(label || "").toLowerCase();
-        return n.indexOf("4shared") !== -1 || n.indexOf("mp4upload") !== -1;
-      }
-      function isGoogleLabel(label) {
-        var n = String(label || "").toLowerCase();
-        return n.indexOf("google") !== -1 || n.indexOf("drive") !== -1;
-      }
-      // FHD first before resolution (quality-first, budget/deadline unchanged).
+      // Quality-first: FHD/HD/SD order, site order inside each bucket.
+      var order = { "4K": 0, "FHD": 1, "HD": 2, "SD": 3 };
       base.sort(function (a, b) {
-        var qa = qualityOf(a.bucket) || qualityOf(a.name);
-        var qb = qualityOf(b.bucket) || qualityOf(b.name);
-        var ra = (qa === "FHD") ? 0 : 1;
-        var rb = (qb === "FHD") ? 0 : 1;
+        var ra = order[a.bucket] == null ? 9 : order[a.bucket];
+        var rb = order[b.bucket] == null ? 9 : order[b.bucket];
         return ra - rb;
       });
-      // Resolution budget: watch+POST above, max 7 extra fetches here.
-      // Soft 12s deadline keeps slow networks responsive:
-      // resolved-so-far is returned, the rest is dropped (owner rule).
-      // NOTE: gates 404 without the stream-source handshake first
-      // (verified: fresh tokens fail direct gate GET), so shake each
-      // token before fetching its gate (handshake failures are free —
-      // no budget spent, no extra fetch counted).
-      var bud = { n: 7 };
-      var t0 = 0;
-      try {
-        t0 = new Date().getTime();
-      } catch (e0) {}
+      // Every player the site reports is listed, including mega/hgcloud/
+      // yonaplay that we cannot turn into a direct file (they used to be
+      // dropped silently). The gate URL is the honest embed; clicking the
+      // server runs resolveServer, which tries the direct extraction.
       for (var r = 0; r < base.length; r++) {
         var it = base[r];
-        if (dropLabel(it.label)) continue;
-        if (t0) {
-          var nowMs = 0;
-          try {
-            nowMs = new Date().getTime();
-          } catch (e1) {}
-          if (nowMs && nowMs - t0 > 12000) break;
-        }
-        var nl = String(it.label || "").toLowerCase();
-        var durl = "";
-        // Gate handshake: POST /watch/stream-source/{token} unlocks the gate
-        // for this session (browser-exact minimal headers, no budget cost).
-        // Only for labels whose gate we actually fetch (videa/4shared/
-        // mp4upload/ok); passthrough labels skip it.
-        var shook = false;
-        var needsGate = nl.indexOf("videa") !== -1 || isMp4Capable(it.label) || isOkLabel(it.label);
-        if (needsGate) {
-          try {
-            await fetchJson(baseUrl + "/watch/stream-source/" + it.token, apiPostHeaders(csrf, watchUrl), "POST");
-            shook = true;
-          } catch (e) {}
-        }
-        try {
-          if (nl.indexOf("videa") !== -1) {
-            if (shook && bud.n >= 2) {
-              var ph = await fetchHtml(it.gate, { "Referer": watchUrl });
-              bud.n--;
-              durl = await resolveVideaUrl(ph, bud);
-            }
-          } else if (isMp4Capable(it.label)) {
-            if (shook && bud.n >= 1) {
-              var tg = await fetchHtml(it.gate, { "Referer": watchUrl });
-              bud.n--;
-              durl = extractDirectMp4(tg);
-            }
-          } else if (isOkLabel(it.label)) {
-            if (shook && bud.n >= 1) {
-              var og = await fetchHtml(it.gate, { "Referer": watchUrl });
-              bud.n--;
-              durl = extractOkMp4(og);
-            }
-          } else if (isGoogleLabel(it.label)) {
-            // Truthful gate: no blind DROP, no extra fetch (budget untouched).
-            durl = "";
-          } else {
-            // No silent continue: honest embed with named reason.
-            const unresolvedReason = "unresolved_passthrough";
-            const unresolvedQuality = qualityOf(it.bucket) || qualityOf(it.name);
-            const unresolvedRef = it.gate;
-            out.push({
-              id: it.token,
-              name: it.name,
-              embedUrl: it.gate,
-              url: it.gate,
-              directUrl: "",
-              type: "embed",
-              quality: unresolvedQuality,
-              qualities: [],
-              selectedQualityIndex: 0,
-              headers: { "Referer": unresolvedRef, "User-Agent": userAgent },
-              reason: unresolvedReason
-            });
-            continue;
-          }
-        } catch (e) {}
-        // Referer must be same-host, never the gate or source domain
-        // (both 403 live; root referers proven 206).
-        var nl2 = String(it.label || "").toLowerCase();
-        var ref = it.gate;
-        if (nl2.indexOf("videa") !== -1) ref = "https://videa.hu/";
-        else if (nl2.indexOf("4shared") !== -1) ref = "https://www.4shared.com/";
-        else if (nl2.indexOf("mp4upload") !== -1) ref = "https://www.mp4upload.com/";
-        else if (isOkLabel(it.label)) ref = "https://ok.ru/";
-        else if (nl2.indexOf("google") !== -1 || nl2.indexOf("drive") !== -1) ref = "https://drive.google.com/";
-        if (!durl) {
-          const embedReasonGoogle = "google_passthrough";
-          const embedReason = nl2.indexOf("videa") !== -1 ? "videa_resolve_failed" : isMp4Capable(it.label) ? "mp4_extract_failed" : isGoogleLabel(it.label) ? embedReasonGoogle : "ok_extract_failed";
-          const embedQuality = qualityOf(it.bucket) || qualityOf(it.name);
-          out.push({
-            id: it.token,
-            name: it.name,
-            embedUrl: it.gate,
-            url: it.gate,
-            directUrl: "",
-            type: "embed",
-            quality: embedQuality,
-            qualities: [],
-            selectedQualityIndex: 0,
-            headers: { "Referer": ref, "User-Agent": userAgent },
-            reason: embedReason
-          });
-          continue;
-        }
-        rememberMedia(durl, ref);
-        var rqual = qualityOf(it.bucket) || qualityOf(it.name);
-        var rh = { "Referer": ref, "User-Agent": userAgent };
         out.push({
           id: it.token,
           name: it.name,
           embedUrl: it.gate,
           url: it.gate,
-          directUrl: durl,
-          type: "mp4",
-          quality: rqual,
-          qualities: [{ label: rqual || "Auto", url: durl, isDefault: true, headers: rh }],
+          directUrl: "",
+          type: "embed",
+          quality: qualityOf(it.bucket) || qualityOf(it.name) || "",
+          qualities: [],
           selectedQualityIndex: 0,
-          headers: rh
+          headers: { "Referer": watchUrl, "User-Agent": userAgent },
+          reason: "gate_embed"
         });
       }
     } catch (e) {}
@@ -919,7 +809,9 @@ function createSource(api, config) {
   }
 
   return {
-    requiresCloudflare: false,
+    // The site runs behind Cloudflare and mints cf_clearance for the watch
+    // host; the app's GETs/POSTs must ride the CF stack.
+    requiresCloudflare: true,
 
     async getHomepageManga(args) {
       try {
@@ -1081,26 +973,59 @@ function createSource(api, config) {
             }
           };
         }
-        // Verify the token resolves (same chain the player uses).
+        var episodeUrl = makeAbsolute((args && args.episodeUrl) || "") || lastPageUrl || "";
+        if (episodeUrl.indexOf("/watch/") === -1) episodeUrl = baseUrl + "/";
+        var label = serverLabels[token] || "";
         try {
-          var csrfPage = makeAbsolute((args && args.episodeUrl) || "");
-          if (csrfPage.indexOf("/watch/") === -1) csrfPage = baseUrl + "/";
-          var watchHtml = await fetchHtml(csrfPage);
+          if (!label) label = String((args && args.server &&
+            (args.server.name || args.server.label || args.server.quality)) || "");
+        } catch (e) {}
+        var nl = label.toLowerCase();
+        // Referer must be the host's own root, never the gate or the source
+        // domain (both 403 live; host roots proven 206).
+        var ref = baseUrl + "/";
+        if (nl.indexOf("videa") !== -1) ref = "https://videa.hu/";
+        else if (nl.indexOf("4shared") !== -1) ref = "https://www.4shared.com/";
+        else if (nl.indexOf("mp4upload") !== -1) ref = "https://www.mp4upload.com/";
+        else if (/(^|[\s\-_])ok($|[\s\-_])/.test(nl)) ref = "https://ok.ru/";
+        else if (nl.indexOf("google") !== -1 || nl.indexOf("drive") !== -1) ref = "https://drive.google.com/";
+        var headers = {
+          "User-Agent": userAgent,
+          "Referer": ref,
+          "Accept": "*/*",
+          "Accept-Language": "ar,en-US;q=0.9,en;q=0.8"
+        };
+        var gate = baseUrl + "/watch/stream-gate/" + token;
+        // The handshake is required for the gate to answer at all; the direct
+        // extraction only runs for labels we have a proven parser for (the
+        // app calls this on selection with a 15s budget, not from the list).
+        var canDirect = nl.indexOf("videa") !== -1 || nl.indexOf("mp4upload") !== -1 ||
+          nl.indexOf("4shared") !== -1 || /(^|[\s\-_])ok($|[\s\-_])/.test(nl);
+        try {
+          var watchHtml = await fetchHtml(episodeUrl);
           var csrf = getCsrfToken(watchHtml);
           if (csrf) {
-            await fetchJson(baseUrl + "/watch/stream-source/" + token, apiPostHeaders(csrf, csrfPage), "POST");
+            await fetchJson(baseUrl + "/watch/stream-source/" + token, apiPostHeaders(csrf, episodeUrl), "POST");
+            if (canDirect) {
+              var bud = { n: 2 };
+              var gateHtml = await fetchHtml(gate, { "Referer": episodeUrl });
+              var direct = "";
+              if (nl.indexOf("videa") !== -1) direct = await resolveVideaUrl(gateHtml, bud);
+              if (!direct && /(^|[\s\-_])ok($|[\s\-_])/.test(nl)) direct = extractOkMp4(gateHtml);
+              if (!direct) direct = extractDirectMp4(gateHtml);
+              if (direct) {
+                rememberMedia(direct, ref);
+                return {
+                  url: direct,
+                  type: "mp4",
+                  quality: qualityOf(label) || "",
+                  headers: headers
+                };
+              }
+            }
           }
         } catch (e) {}
-        return {
-          url: baseUrl + "/watch/stream-gate/" + token,
-          type: "embed",
-          headers: {
-            "User-Agent": userAgent,
-            "Referer": baseUrl + "/",
-            "Accept": "*/*",
-            "Accept-Language": "ar,en-US;q=0.9,en;q=0.8"
-          }
-        };
+        return { url: gate, type: "embed", headers: headers };
       } catch (e) {
         return null;
       }
