@@ -1,0 +1,160 @@
+{
+ "url": "https://witanime.site/watch/black-clover-2nd-season/7",
+ "csrf": "BDeCXoiAIlP2tSl8wqZSx9EMT7R3gJV5Z6kCqZJt",
+ "set_cookie_joined": "XSRF-TOKEN=REDACTED; expires=Fri, 20 Nov 2026 13:13:48 GMT; Max-Age=7200; path=/; secure; samesite=lax,witanime-session=REDACTED; expires=Fri, 20 Nov 2026 13:13:48 GMT; Max-Age=7200; path=/; secure; httponly; samesite=lax",
+ "set_cookie_values": [
+  "XSRF-TOKEN=REDACTED; expires=Fri, 20 Nov 2026 13:13:48 GMT; Max-Age=7200; path=/; secure; samesite=lax",
+  "witanime-session=REDACTED; expires=Fri, 20 Nov 2026 13:13:48 GMT; Max-Age=7200; path=/; secure; httponly; samesite=lax"
+ ],
+ "players": {
+  "players": {
+   "HD": [
+    {
+     "token": "134632794a7cad306206f832a64ead2a1646d6fbd9a4370dc6ba085da348f35d",
+     "label": "mega",
+     "version": "sub",
+     "lang": "jp"
+    },
+    {
+     "token": "af2431cf7dad7d53b746b7f0e6e50ff22af3dd0d9509509940fee4d966ffbc4c",
+     "label": "ok",
+     "version": "sub",
+     "lang": "jp"
+    },
+    {
+     "token": "5780302d24f7145fd80a24b2a4012115ba8585664c61a6702b67aa7d5716cb24",
+     "label": "videa",
+     "version": "sub",
+     "lang": "jp"
+    },
+    {
+     "token": "9e3d12da045ca5831918da333f52aee8a532615fb79d11e8404d9b7cd7513294",
+     "label": "mp4upload",
+     "version": "sub",
+     "lang": "jp"
+    }
+   ],
+   "FHD": [
+    {
+     "token": "18d280dc42b5aa967b79aad818b49ea6498ad1622923511c0889bd7c007151bd",
+     "label": "mega",
+     "version": "sub",
+     "lang": "jp"
+    },
+    {
+     "token": "24920ab98e9b36d52e02cf61421c80272511a036be982987749a8e19ba092fef",
+     "label": "yonaplay",
+     "version": "sub",
+     "lang": "jp"
+    },
+    {
+     "token": "a51af56efe8c0979069b485d001f8355fab91ca3802dc6a2cd1a95f24197e1fe",
+     "label": "videas",
+     "version": "sub",
+     "lang": "jp"
+    },
+    {
+     "token": "a3efd8f80eef53a70a2f85c7772847c83e8191f9499c39b15f7af1f518760ad5",
+     "label": "ok",
+     "version": "sub",
+     "lang": "jp"
+    },
+    {
+     "token": "f063a82f7cd81d61c8bf4f896df83ddce22d14349481050825b94fc4a5bc448c",
+     "label": "videa",
+     "version": "sub",
+     "lang": "jp"
+    },
+    {
+     "token": "c7013b2f9ed15382edfa69661000d7e5df7af21f988d3b82b381fc94aa84e691",
+     "label": "hgcloud",
+     "version": "sub",
+     "lang": "jp"
+    }
+   ],
+   "SD": [
+    {
+     "token": "f04effd13ff2087b9068a152463ec940e99c21fccc4d5494105a338bc3d180bc",
+     "label": "mp4upload",
+     "version": "sub",
+     "lang": "jp"
+    }
+   ]
+  },
+  "downloads": {
+   "HD": [
+    {
+     "token": "9222669c8c61351dd5f23aebc885a324f7b06cbdf6a184af26e147b2643bfe2b",
+     "label": "mediafire",
+     "version": "sub",
+     "lang": "jp"
+    },
+    {
+     "token": "6e5423af433107ddd6e7ff484ea420f6ff0adb6e79a291a5e2c08542314f1fde",
+     "label": "workupload",
+     "version": "sub",
+     "lang": "jp"
+    },
+    {
+     "token": "14015960c82feeaa5fca3999e8e3f260e21bfed7010b99058e5510de1758a1ba",
+     "label": "mp4upload",
+     "version": "sub",
+     "lang": "jp"
+    },
+    {
+     "token": "e7944cfa19a0190c2b2e61e9c5e7d5c1929f4d5129e126ea0c0faa223e64fd27",
+     "label": "gofile",
+     "version": "sub",
+     "lang": "jp"
+    }
+   ],
+   "SD": [
+    {
+     "token": "57793fe9940524ef0153853752c43221b9037b4f6aaca58cf3ea752d053bf9ad",
+     "label": "mediafire",
+     "version": "sub",
+     "lang": "jp"
+    },
+    {
+     "token": "425c45af12e104141b6f4f9f22620fa434decc8f1ad589aabfee3b3d133d6e86",
+     "label": "workupload",
+     "version": "sub",
+     "lang": "jp"
+    },
+    {
+     "token": "01921b3144f98ce160906fd665af7d46945ea411f4a68a8059269a4c11c75c73",
+     "label": "mp4upload",
+     "version": "sub",
+     "lang": "jp"
+    },
+    {
+     "token": "2150fa86b282641b1d6cb208d49db102744124ca095fdc573b715ab6bb8dde26",
+     "label": "gofile",
+     "version": "sub",
+     "lang": "jp"
+    }
+   ],
+   "FHD": [
+    {
+     "token": "f47cca284bbd1ed4c37370ae5950777a76b20879345ea77bcaf74ffa1a26bced",
+     "label": "mediafire",
+     "version": "sub",
+     "lang": "jp"
+    },
+    {
+     "token": "a303cdd82e77101fc088d1743ed46d2249503d46def2c70358b97ad078b4158e",
+     "label": "workupload",
+     "version": "sub",
+     "lang": "jp"
+    },
+    {
+     "token": "f5e718580ed44f13acb5cb97067a5bb401dd95567fa8607cde2f27777d79a8fd",
+     "label": "gofile",
+     "version": "sub",
+     "lang": "jp"
+    }
+   ]
+  }
+ },
+ "server_count": 11
+}
