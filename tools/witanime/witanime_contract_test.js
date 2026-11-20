@@ -23,7 +23,13 @@ const api = {
     const headers = opts.headers || {};
     const method = (opts.method || "GET").toUpperCase();
     const cookie = headers.Cookie || headers.cookie || "";
-    calls.push({ method, url, cookie: !!cookie });
+    calls.push({
+      method,
+      url,
+      cookie: !!cookie,
+      origin: headers.Origin || headers.origin || "",
+      secFetchSite: headers["Sec-Fetch-Site"] || headers["sec-fetch-site"] || "",
+    });
 
     if (method === "GET" && /\/watch\//.test(url)) {
       return {
@@ -34,6 +40,11 @@ const api = {
       };
     }
     if (method === "POST" && /\/sources$/.test(url)) {
+      // Live origin 404s any POST that does not look like the page's own
+      // fetch(): same URL + token + cookies from a bare client -> 404.
+      if (!(headers.Origin || headers.origin)) {
+        return { ok: false, status: 404, headers: {}, body: '{"message":"Not Found."}' };
+      }
       // Laravel: the CSRF header alone is not enough; the session cookie must travel.
       if (!/witanime-session=/.test(cookie)) {
         return { ok: false, status: 419, headers: {}, body: "CSRF token mismatch." };
@@ -70,6 +81,10 @@ function assert(cond, msg) {
 
   assert(posts.length === 1, "exactly one POST /sources (no wasted retry)");
   assert(posts[0] && posts[0].cookie === true, "POST carries a Cookie header");
+  assert(posts[0] && posts[0].origin === "https://witanime.site",
+    "POST carries the browser Origin header");
+  assert(posts[0] && posts[0].secFetchSite === "same-origin",
+    "POST carries Sec-Fetch-Site: same-origin");
   assert(servers.length === FIX.server_count,
     `all ${FIX.server_count} players listed (HD=${FIX.players.players.HD.length} FHD=${FIX.players.players.FHD.length} SD=${FIX.players.players.SD.length})`);
   assert(servers.every((s) => /^[a-f0-9]{64}$/.test(s.id)), "every server id is a real stream token");
