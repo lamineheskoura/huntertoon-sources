@@ -154,19 +154,33 @@ function createSource(api, config) {
     return prop;
   }
 
-  // Extract astro-island props from raw HTML by needle search
+  // Extract astro-island props from raw HTML by needle search.
+  // Linear scan instead of a backtracking regex: on a large page the regex
+  // engine (lre_exec) kept the UI thread busy for seconds (ANR).
   function extractAstroProps(html, needle) {
-    var regex = /<astro-island\b[^>]*props=(['"])([\s\S]*?)\1[^>]*>/gi;
-    var match;
-    while ((match = regex.exec(html)) !== null) {
-      var rawProps = match[2];
-      var decoded = htmlDecode(rawProps);
+    var src = String(html || "");
+    var pos = 0;
+    while (true) {
+      var start = src.indexOf("<astro-island", pos);
+      if (start === -1) return null;
+      pos = start + 13;
+      var tagEnd = src.indexOf(">", start);
+      if (tagEnd === -1) return null;
+      var tag = src.slice(start, tagEnd);
+      var p = tag.search(/\sprops\s*=/);
+      if (p === -1) { pos = tagEnd; continue; }
+      var v = tag.indexOf("=", p) + 1;
+      while (v < tag.length && /\s/.test(tag.charAt(v))) v++;
+      var q = tag.charAt(v);
+      if (q !== '"' && q !== "'") { pos = tagEnd; continue; }
+      var close = src.indexOf(q, start + v + 1);
+      if (close === -1 || close > tagEnd) { pos = tagEnd; continue; }
+      var decoded = htmlDecode(src.slice(start + v + 1, close));
+      if (needle && decoded.indexOf(needle) === -1) { pos = tagEnd; continue; }
       // JSON parse issue: htmlDecode may produce string with both raw and
       // escaped slashes. Handle gracefully.
-      if (needle && decoded.indexOf(needle) === -1) continue;
       try {
-        var parsed = JSON.parse(decoded);
-        return parseAstroProp(parsed);
+        return parseAstroProp(JSON.parse(decoded));
       } catch (e) {
         // Try once more with stricter entity cleanup
         try {
@@ -178,8 +192,8 @@ function createSource(api, config) {
           return parseAstroProp(JSON.parse(clean));
         } catch (e2) {}
       }
+      pos = tagEnd;
     }
-    return null;
   }
 
   // ────────────────── Image URL extraction from props (match Dart _extractImageUrlsFromProps) ──────────────────
@@ -714,6 +728,27 @@ function createSource(api, config) {
       return out;
     } catch (e) { return null; }
   }
+  function hexToBytes(hex) {
+    hex = String(hex || "").replace(/\s+/g, "");
+    if (!hex || hex.length % 2) throw new Error("Invalid hex length");
+    var out = new Uint8Array(hex.length / 2);
+    for (var i = 0; i < out.length; i++) out[i] = parseInt(hex.substr(i * 2, 2), 16);
+    return out;
+  }
+
+  function joinBytes(a, b) {
+    var out = new Uint8Array(a.length + b.length);
+    out.set(a, 0);
+    out.set(b, a.length);
+    return out;
+  }
+
+  function bytesToHex(bytes) {
+    var s = "";
+    for (var i = 0; i < bytes.length; i++) s += ("0" + (bytes[i] & 255).toString(16)).slice(-2);
+    return s;
+  }
+
   function ovDecryptNew(overlayB64, ksHex, token, chapterId) {
     try {
       if (!overlayB64 || !ksHex || !token || !chapterId) return null;
@@ -730,7 +765,7 @@ function createSource(api, config) {
       var asm3 = ovConcat2(asm2, cidb);
       var asm = ovConcat2(asm3, e);
       var unw = null;
-      try { unw = kdfUnwrapBytes(asm, w); } catch (eKdf) { return null; }
+      try { unw = kdfUnwrapBytes(asm, w, String(token).length, String(chapterId).length); } catch (eKdf) { return null; }
       if (!unw) return null;
       var pt = null;
       try { pt = aesGcmDecryptPure(unw.key, unw.iv, unw.ct, unw.tag); } catch (eAes) { return null; }
@@ -823,11 +858,13 @@ function createSource(api, config) {
   function solvePow(prefix, bits) {
     var target = Number(bits) || 0;
     if (!prefix || target <= 0) return "";
+    // Runs on the UI isolate: a PoW that cannot be solved in this budget must
+    // fail fast and fall back to plain pages instead of freezing the reader.
     var deadline = 0;
-    try { deadline = new Date().getTime() + 9000; } catch (e) { deadline = 0; }
-    for (var n = 0; n < 250000; n++) {
+    try { deadline = api.now() + 1500; } catch (e) { deadline = 0; }
+    for (var n = 0; n < 50000; n++) {
       if (deadline) {
-        try { if (new Date().getTime() > deadline) return ""; } catch (e2) {}
+        try { if (api.now() > deadline) return ""; } catch (e2) {}
       }
       var cand = n.toString(36);
       var digest = "";
@@ -1136,6 +1173,9 @@ function createSource(api, config) {
         headers: { "User-Agent": userAgent, Accept: "*/*", Referer: baseUrl + "/" }
       });
       if (!res || !res.ok || !res.body) return [];
+      // The rig parser walks the whole bundle with regexes; a pathological
+      // response must not be handed to it on the UI isolate.
+      if (res.body.length > 800000) return [];
       var keys = rigExtractKeys(res.body);
       if (!keys || !keys.salts.length) return [];
       var pairs = [];
@@ -1198,7 +1238,13 @@ function createSource(api, config) {
           shadow: 1
         })
       });
-      if (!gRes2 || !gRes2.ok) continue;
+      if (!gRes2) break;
+      if (!gRes2.ok) {
+        // Only an auth failure means "try the next rotating pair"; anything
+        // else (429, 5xx, network) must stop the loop, not multiply it.
+        if (gRes2.status === 401 || gRes2.status === 403) continue;
+        break;
+      }
       var gParsed = null;
       try { gParsed = JSON.parse(gRes2.body || "{}"); } catch (eGJson) { continue; }
       if (!gParsed || !gParsed.success || !Array.isArray(gParsed.data)) continue;
@@ -1272,7 +1318,7 @@ function createSource(api, config) {
           var ev = data.ev;
           if (ev === undefined || ev === null || Number(ev) === 3) {
             var pairN0 = n0 || overlayN0;
-            var newData = ovDecryptNewWithN0(data.overlay, data.ks, token, chapterId, pairN0);
+            var newData = await ovDecryptNewWithN0(data.overlay, data.ks, token, chapterId, pairN0);
             if (newData) {
               var off = data.overlay_page_offset;
               if (off === undefined || off === null) off = data.overlayPageOffset;
@@ -1297,8 +1343,10 @@ function createSource(api, config) {
     return null;
   }
 
-  // ovDecryptNew with explicit N0 (allows trying multiple salt/N0 pairs)
-  function ovDecryptNewWithN0(overlayB64, ksHex, token, chapterId, n0) {
+  // ovDecryptNew with explicit N0 (allows trying multiple salt/N0 pairs).
+  // Async: AES-GCM goes through the Dart bridge (native, fast) and falls back
+  // to the pure-JS implementation when the bridge is unavailable.
+  async function ovDecryptNewWithN0(overlayB64, ksHex, token, chapterId, n0) {
     try {
       if (!overlayB64 || !ksHex || !token || !chapterId || !n0) return null;
       var blob = ovB64ToBytes(overlayB64);
@@ -1314,15 +1362,27 @@ function createSource(api, config) {
       var asm3 = ovConcat2(asm2, cidb);
       var asm = ovConcat2(asm3, e);
       var unw = null;
-      try { unw = kdfUnwrapBytes(asm, w); } catch (eKdf) { return null; }
+      try { unw = kdfUnwrapBytes(asm, w, String(token).length, String(chapterId).length); } catch (eKdf) { return null; }
       if (!unw) return null;
+      var obj = null;
+      if (api.aesGcmDecrypt) {
+        try {
+          obj = await api.aesGcmDecrypt(
+            bytesToHex(unw.iv) + ":" + bytesToHex(unw.ct) + ":" + bytesToHex(unw.tag),
+            bytesToHex(unw.key)
+          );
+        } catch (eBridge) { obj = null; }
+        if (typeof obj === "string") {
+          try { obj = JSON.parse(obj); } catch (eParse) { obj = null; }
+        }
+        if (obj && Array.isArray(obj.pages)) return obj;
+      }
       var pt = null;
       try { pt = aesGcmDecryptPure(unw.key, unw.iv, unw.ct, unw.tag); } catch (eAes) { return null; }
       if (!pt) return null;
       var jsonStr = "";
       try { jsonStr = decodeUtf8(pt); } catch (eDec) { return null; }
       if (!jsonStr) return null;
-      var obj = null;
       try { obj = JSON.parse(jsonStr); } catch (eJson) { return null; }
       if (!obj || !Array.isArray(obj.pages)) return null;
       return obj;
