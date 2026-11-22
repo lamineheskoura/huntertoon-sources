@@ -1,10 +1,10 @@
 {
-  "version": "1.66.1",
+  "version": "1.66.2",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.11.22.2",
+  "manifest_version": "2026.11.23.1",
   "generated_at": "2026-09-04T14:30:00Z",
-  "last_updated": "2026-11-22T23:05:00Z",
+  "last_updated": "2026-11-23T00:55:00Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
   "min_app_version": "1.4.0",
   "repository": {
@@ -1927,7 +1927,7 @@
       "id": "witanime",
       "sid": 134,
       "name": "ويت أنمي (WitAnime)",
-      "version": "1.4.5",
+      "version": "1.4.6",
       "enabled": true,
       "status": "beta",
       "base_url": "https://witanime.site",
@@ -1943,7 +1943,7 @@
       },
       "script": {
         "url": "sources/witanime/source.js",
-        "sha256": "536403e639143fc58b3b37710637b577e52e049f464597e2e5e4562517aa06b2",
+        "sha256": "915aac9b5b0a83caf15d6425d1c54092f4008e53e8d39ce825e74b6ede61e540",
         "entry": "createSource"
       },
       "capabilities": {
@@ -1965,7 +1965,7 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "WitAnime - Arabic anime source on witanime.site (Laravel + Cloudflare). Latest-episodes homepage, card/movie details, full episode lists, and every stream player the site reports (FHD/HD/SD) with on-demand direct-mp4 extraction (ok/videa/mp4upload/4shared).",
-        "changelog": "v1.4.5: السيرفرات المشاهدة تعمل أخيراً. السبب لم يكن في الاستخراج: صفحة الحلقة لا تحوي التوكنات إطلاقاً (صفر توكن 64-بت في HTML)، بل تأتي من POST {watch}/sources بـكوكي الجلسة التي أنشأتها الصفحة نفسها. التطبيق كان يستبدل كوكي المصدر بجرته الخاصة على witanime.site (بلا جلسة Laravel) فيرد الموقع 404 {\"message\":\"Not Found.\"} وتظهر القائمة فارغة. الآن تُنشأ الجلسة وتُستخدم على المضيف witanime.site. (نقطة -terminating) — نفس الموقع أمام Cloudflare، لكن مفتاح مختلف في مخزن كوكي التطبيق، فتبقى جلستنا كما هي. تحقّق حي: 200 + players.",
+        "changelog": "v1.4.6: إثبات حي لسبب اختفاء السيرفرات: الموقع يرد 200 لكن {\"players\":{},\"downloads\":{}} عندما تكون الجلسة لا تملك رمز CSRF المرسَل (جرّبنا تغيير كوكي الجلسة دون إعادة تحميل الصفحة: النتيجة قائمة فارغة). التطبيق يستبدل كوكي المصدر بجرته على witanime.site، فيصل الرد فارغاً وتظهر «لا يوجد سيرفر». المصدر الآن ينشئ الجلسة ويستخدمها على المضيف witanime.site. (نقطة أخيرة) الذي لا يطابق مفتاح مخزن كوكي التطبيق، ويعتبر الرد الفارغ فشلاً فيعيد المحاولة بجلسة جديدة بدل إرجاع قائمة فارغة.",
         "ai_translation": false
       },
       "display": {

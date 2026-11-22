@@ -784,11 +784,13 @@ function createSource(api, config) {
   }
 
   // The app's CfCookieStore overwrites our Cookie header on witanime.site
-  // with its own jar, which does not hold the Laravel session minted by our
-  // page GET. Laravel then answers the /sources POST with 404 (proven on the
-  // device: GET 200 + Set-Cookie, POST 404 {"message":"Not Found."}).
-  // A trailing-dot host is the same origin to Cloudflare but a different
-  // lookup key to the store, so the cookies we just minted travel untouched.
+  // with its own jar. The page's CSRF token is bound to the session that
+  // rendered it, so a POST carrying a DIFFERENT session is answered with
+  // {"players":{},"downloads":{}} (200, empty buckets) — proven live
+  // 2026-11-23 by tampering the session cookie without reloading the page.
+  // That empty manifest is what the sheet renders as "no server available".
+  // A trailing-dot host is the same site to Cloudflare but a different
+  // lookup key to the store, so the session we just minted travels untouched.
   function sessionHostUrl(url) {
     return String(url || "").replace(
       /^https:\/\/witanime\.site(?=[/:?#]|$)/,
@@ -796,31 +798,29 @@ function createSource(api, config) {
     );
   }
 
-  // GET the watch page for a fresh CSRF, then read /sources. First attempt
-  // uses the trailing-dot host (isolated cookie jar); second keeps the
-  // canonical host as the legacy fallback.
+  // GET the watch page for a fresh CSRF, then read /sources. Attempts 0/1
+  // run on the isolated trailing-dot host (our own session survives); the
+  // canonical host is only the last resort. An EMPTY players object is a
+  // session mismatch, never an episode without servers, so it retries.
   async function loadPlayers(watchUrl) {
     var sourcesUrl = String(watchUrl).replace(/[?#].*$/, "").replace(/\/+$/, "") + "/sources";
-    for (var attempt = 0; attempt < 2; attempt++) {
+    for (var attempt = 0; attempt < 3; attempt++) {
+      var isolated = attempt < 2;
+      var pageUrl = isolated ? sessionHostUrl(watchUrl) : watchUrl;
+      if (attempt === 1) {
+        pageUrl += (pageUrl.indexOf("?") === -1 ? "?" : "&") + "_ht=" + new Date().getTime();
+      }
+      var origin = isolated ? "https://witanime.site." : baseUrl;
+      var postUrl = isolated ? sessionHostUrl(sourcesUrl) : sourcesUrl;
       var html = "";
-      var pageUrl = attempt
-        ? watchUrl + (watchUrl.indexOf("?") === -1 ? "?" : "&") + "_ht=" + new Date().getTime()
-        : watchUrl;
-      var origin = attempt ? baseUrl : "https://witanime.site.";
-      var pageHost = attempt ? pageUrl : sessionHostUrl(pageUrl);
-      var postHost = attempt ? sourcesUrl : sessionHostUrl(sourcesUrl);
       try {
-        html = await fetchHtml(pageHost);
+        html = await fetchHtml(pageUrl);
       } catch (e) {}
       var csrf = getCsrfToken(html);
       if (!csrf) continue;
       try {
-        var data = await fetchJson(
-          postHost,
-          apiPostHeaders(csrf, pageHost, origin),
-          "POST"
-        );
-        if (data && data.players) return data;
+        var data = await fetchJson(postUrl, apiPostHeaders(csrf, pageUrl, origin), "POST");
+        if (data && data.players && Object.keys(data.players).length) return data;
       } catch (e) {}
     }
     return null;

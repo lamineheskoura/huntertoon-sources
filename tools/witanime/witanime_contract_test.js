@@ -17,12 +17,18 @@ const sep = joinMode === "comma" ? "," : "\n";
 const setCookieHeader = FIX.set_cookie_values.join(sep);
 
 // The app's CfCookieStore.applyIdentity() REPLACES the source's Cookie header
-// with its own jar for witanime.site (host key "witanime.site"). That jar has
-// no Laravel session, so the origin answers POST /sources with
-// 404 {"message":"Not Found."} — exactly what the device showed.
+// with its own jar for witanime.site (host key "witanime.site"). The page's
+// CSRF token belongs to the session that rendered it, so a POST carrying a
+// DIFFERENT session is answered with 200 {"players":{},"downloads":{}} —
+// proven live 2026-11-23 by tampering the session cookie without reloading
+// the page. That empty manifest is what the sheet shows as "no server".
 // A trailing-dot host ("witanime.site.") is a different lookup key, so the
 // session the source just minted travels untouched.
 const APP_JAR = "XSRF-TOKEN=app-xsrf; witanime-session=app-stale-session";
+const EMPTY_MANIFEST = '{"players":{},"downloads":{}}';
+// "stale" mode: the FIRST isolated POST also loses its session, so the source
+// must mint a fresh session and retry instead of returning an empty list.
+const staleFirst = process.argv.includes("stale");
 
 const calls = [];
 const api = {
@@ -51,10 +57,12 @@ const api = {
       };
     }
     if (method === "POST" && /\/sources$/.test(url)) {
-      // Laravel: the POST only succeeds for the session that owns the CSRF
-      // token. Any other session (the app's stale jar) -> 404 Not Found.
-      if (!/witanime-session=REDACTED/.test(effectiveCookie)) {
-        return { ok: false, status: 404, headers: {}, body: '{"message":"Not Found."}' };
+      // Laravel: a session that does not own the CSRF token gets 200 with
+      // EMPTY buckets — an empty manifest, not an HTTP error.
+      const mine = /witanime-session=REDACTED/.test(effectiveCookie);
+      const postsSoFar = calls.filter((c) => c.method === "POST").length;
+      if (!mine || (staleFirst && postsSoFar === 1)) {
+        return { ok: true, status: 200, headers: { "content-type": "application/json" }, body: EMPTY_MANIFEST };
       }
       if (!(headers.Origin || headers.origin)) {
         return { ok: false, status: 404, headers: {}, body: '{"message":"Not Found."}' };
@@ -91,13 +99,17 @@ function assert(cond, msg) {
   console.log(`POST seen: ${posts.map((p) => p.host).join(",")} | cookie header sent: ${posts.map((p) => p.cookie).join(",")}`);
   console.log(`servers: ${servers.length} ${servers.map((s) => s.name).join(" | ")}`);
 
-  assert(posts.length === 1, "exactly one POST /sources (no wasted retry)");
+  const expectedPosts = staleFirst ? 2 : 1;
+  assert(posts.length === expectedPosts,
+    staleFirst
+      ? "an empty (session-mismatched) manifest triggers ONE retry, not an empty list"
+      : "exactly one POST /sources (no wasted retry)");
   assert(posts[0] && posts[0].cookie === true, "POST carries a Cookie header");
   // The session must be minted AND used on a host the app's cookie store
   // does not own, otherwise applyIdentity() replaces it with the app jar.
-  assert(posts[0] && posts[0].host === "witanime.site.",
+  assert(posts.every((p) => p.host === "witanime.site."),
     "POST /sources uses the isolated trailing-dot host (app jar cannot overwrite it)");
-  assert(gets.length === 1 && gets[0].host === "witanime.site.",
+  assert(gets.length === expectedPosts && gets.every((g) => g.host === "witanime.site."),
     "the watch page GET runs on the same isolated host as the POST");
   assert(posts[0] && posts[0].origin === "https://witanime.site.",
     "POST carries the browser Origin header of that host");
