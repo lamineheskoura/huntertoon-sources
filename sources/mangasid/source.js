@@ -10,6 +10,7 @@ function createSource(api, config) {
   // current salt stops working (403), add the new (salt, N0) pair here and
   // bump version. Extracted from live ChapterImageViewer.*.js via string-table decoder.
   var saltN0Pairs = [
+    { salt: "137d078c1fc620cff2e95d84b27c4071025ceca97c6cd2d5", n0: "e91b15464ead5c0d383d06cad34bc40066e0237b34586316" }, // 2026-11-21 live
     { salt: "1ac6ae94866f127f1c6238a63fe31d9ffcaa01e44cb11185", n0: "563d0546c0b6bd0d15b66c61fe725c2b00d74d4bb200d14d" }, // 2026-11-09
     { salt: "56f651f0d98c2732253f6a94b29cf0091ffb1c5b4f3bf747", n0: "369436543a9ef136e903055581da0a952d946a694968660b" }, // 2026-11
     { salt: "cc9544a33ccbc953b9e7546c9b134524f3c3a06e81d392f0", n0: "2435eb747e78f582e781909ebbfc14826e4f3954b4268850" }, // 2026-10
@@ -1118,11 +1119,23 @@ function createSource(api, config) {
       for (var g = 0; g < groups.length; g++) {
         if (groups[g].items.length < 6) continue;
         var sets = [];
+        var rotMaps = [];
         var broken = false;
         for (var q = 0; q < groups[g].items.length && !broken; q++) {
           var idxs = rigResolve(P, groups[g].items[q].name, groups[g].items[q].a, groups[g].items[q].b, scope, 0);
-          if (!idxs.length) broken = true;
-          else sets.push(idxs);
+          if (!idxs.length) { broken = true; continue; }
+          sets.push(idxs);
+          // Index each possible rotation once instead of rescanning every
+          // candidate for every rotation (the old shape did 725M checks).
+          var rotMap = new Array(N);
+          for (var c = 0; c < idxs.length; c++) {
+            var base = idxs[c];
+            for (var h = 0; h < hexRaw.length; h++) {
+              var rot = ((hexRaw[h] - base) % N + N) % N;
+              if (rotMap[rot] === undefined) rotMap[rot] = decoded[hexRaw[h]];
+            }
+          }
+          rotMaps.push(rotMap);
         }
         if (broken) continue;
         for (var c0 = 0; c0 < sets[0].length; c0++) {
@@ -1130,12 +1143,8 @@ function createSource(api, config) {
             var rot = ((hexRaw[h] - sets[0][c0]) % N + N) % N;
             var parts = [], ok = true;
             for (var p = 0; p < sets.length && ok; p++) {
-              var picked = null;
-              for (var c = 0; c < sets[p].length && picked === null; c++) {
-                var raw = ((sets[p][c] + rot) % N + N) % N;
-                if (HEX8.test(decoded[raw])) picked = decoded[raw];
-              }
-              if (picked === null) ok = false; else parts.push(picked);
+              var picked = rotMaps[p][rot];
+              if (picked === undefined) ok = false; else parts.push(picked);
             }
             if (!ok) continue;
             var val = parts.join("");
@@ -1211,6 +1220,7 @@ function createSource(api, config) {
         "Accept": "application/json, text/plain, */*",
         "Referer": baseUrl + "/",
         "Origin": baseUrl,
+        "User-Agent": userAgent,
         "x-device": deviceFingerprint
       },
       body: JSON.stringify(payload)
@@ -1279,6 +1289,7 @@ function createSource(api, config) {
           "Accept": "application/json, text/plain, */*",
           "Referer": baseUrl + "/",
           "Origin": baseUrl,
+          "User-Agent": userAgent,
           "x-device": deviceFingerprint
         },
         body: JSON.stringify({
