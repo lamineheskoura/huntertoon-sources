@@ -749,13 +749,13 @@ function createSource(api, config) {
     return "";
   }
 
-  // ---- episode servers (re-verified 2026-11-20) ----
-  // The site bot-gates the JSON API POSTs by TRANSPORT FINGERPRINT: a real
-  // Chromium network stack gets 200, every other client gets
-  // {"message":"Not Found."} (HTTP 404) even with valid cookies + CSRF
-  // (requests, curl_cffi chrome-impersonate and undici all 404; plain and
-  // stealth Chromium 200). The app's light path is Cronet (Chromium), so
-  // that is the transport this chain targets. Layout is Alpine:
+  // ---- episode servers (re-verified 2026-11-22) ----
+  // The raw watch page carries NO stream tokens (0 of 64-hex in the HTML):
+  // the server list is JSON behind POST {watchUrl}/sources, which the page's
+  // own JS calls with just {Accept, X-CSRF-TOKEN} and the cookies of the
+  // session that rendered the page. A browser gets 200 + players; a request
+  // that carries a DIFFERENT session gets 404 {"message":"Not Found."}.
+  // Layout is Alpine:
   // GET {watchUrl} (cookies + csrf-token meta)
   // -> POST {watchUrl}/sources {Accept, X-CSRF-TOKEN} (no body, no extras)
   // -> {players:{FHD:[{token,label,version,lang}],...}, downloads:{...}}
@@ -766,15 +766,15 @@ function createSource(api, config) {
   // gate URLs here used 7 extra fetches + a 12s deadline and blew the app's
   // 10s server-sheet budget, so the sheet showed nothing at all.
 
-  // The origin 404s a POST that does not look like the page's own fetch()
-  // (verified: same URL/token/cookies from a browser -> 200; bare CLI POST ->
-  // 404). Chrome always sends Origin + Sec-Fetch-* on a same-origin POST, so
-  // the request must carry the same shape.
-  function apiPostHeaders(csrf, referer) {
+  // The page's own fetch() sends {Accept, X-CSRF-TOKEN} and the browser adds
+  // Origin + Sec-Fetch-* on top. Both shapes answer 200 in a real browser
+  // (verified 2026-11-22), so the headers are kept browser-shaped; what the
+  // origin actually keys on is the SESSION, not the header set.
+  function apiPostHeaders(csrf, referer, origin) {
     var h = {
       "Accept": "application/json",
       "X-CSRF-TOKEN": csrf || "",
-      "Origin": baseUrl,
+      "Origin": origin || baseUrl,
       "Sec-Fetch-Site": "same-origin",
       "Sec-Fetch-Mode": "cors",
       "Sec-Fetch-Dest": "empty"
@@ -783,22 +783,43 @@ function createSource(api, config) {
     return withCookies(h);
   }
 
-  // GET the watch page for a fresh CSRF, then read /sources. One retry with a
-  // cache-busted page covers the site's own "stale session" 404/419 case.
+  // The app's CfCookieStore overwrites our Cookie header on witanime.site
+  // with its own jar, which does not hold the Laravel session minted by our
+  // page GET. Laravel then answers the /sources POST with 404 (proven on the
+  // device: GET 200 + Set-Cookie, POST 404 {"message":"Not Found."}).
+  // A trailing-dot host is the same origin to Cloudflare but a different
+  // lookup key to the store, so the cookies we just minted travel untouched.
+  function sessionHostUrl(url) {
+    return String(url || "").replace(
+      /^https:\/\/witanime\.site(?=[/:?#]|$)/,
+      "https://witanime.site."
+    );
+  }
+
+  // GET the watch page for a fresh CSRF, then read /sources. First attempt
+  // uses the trailing-dot host (isolated cookie jar); second keeps the
+  // canonical host as the legacy fallback.
   async function loadPlayers(watchUrl) {
     var sourcesUrl = String(watchUrl).replace(/[?#].*$/, "").replace(/\/+$/, "") + "/sources";
     for (var attempt = 0; attempt < 2; attempt++) {
       var html = "";
+      var pageUrl = attempt
+        ? watchUrl + (watchUrl.indexOf("?") === -1 ? "?" : "&") + "_ht=" + new Date().getTime()
+        : watchUrl;
+      var origin = attempt ? baseUrl : "https://witanime.site.";
+      var pageHost = attempt ? pageUrl : sessionHostUrl(pageUrl);
+      var postHost = attempt ? sourcesUrl : sessionHostUrl(sourcesUrl);
       try {
-        var pageUrl = attempt
-          ? watchUrl + (watchUrl.indexOf("?") === -1 ? "?" : "&") + "_ht=" + new Date().getTime()
-          : watchUrl;
-        html = await fetchHtml(pageUrl);
+        html = await fetchHtml(pageHost);
       } catch (e) {}
       var csrf = getCsrfToken(html);
       if (!csrf) continue;
       try {
-        var data = await fetchJson(sourcesUrl, apiPostHeaders(csrf, watchUrl), "POST");
+        var data = await fetchJson(
+          postHost,
+          apiPostHeaders(csrf, pageHost, origin),
+          "POST"
+        );
         if (data && data.players) return data;
       } catch (e) {}
     }

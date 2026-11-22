@@ -16,6 +16,14 @@ const joinMode = (process.argv[2] || "comma").toLowerCase();
 const sep = joinMode === "comma" ? "," : "\n";
 const setCookieHeader = FIX.set_cookie_values.join(sep);
 
+// The app's CfCookieStore.applyIdentity() REPLACES the source's Cookie header
+// with its own jar for witanime.site (host key "witanime.site"). That jar has
+// no Laravel session, so the origin answers POST /sources with
+// 404 {"message":"Not Found."} — exactly what the device showed.
+// A trailing-dot host ("witanime.site.") is a different lookup key, so the
+// session the source just minted travels untouched.
+const APP_JAR = "XSRF-TOKEN=app-xsrf; witanime-session=app-stale-session";
+
 const calls = [];
 const api = {
   http: async (url, opts) => {
@@ -23,9 +31,12 @@ const api = {
     const headers = opts.headers || {};
     const method = (opts.method || "GET").toUpperCase();
     const cookie = headers.Cookie || headers.cookie || "";
+    const canonical = /^https:\/\/witanime\.site\//.test(url);
+    const effectiveCookie = canonical ? APP_JAR : cookie;
     calls.push({
       method,
       url,
+      host: (url.match(/^https:\/\/([^/]+)\//) || [])[1] || "",
       cookie: !!cookie,
       origin: headers.Origin || headers.origin || "",
       secFetchSite: headers["Sec-Fetch-Site"] || headers["sec-fetch-site"] || "",
@@ -40,14 +51,13 @@ const api = {
       };
     }
     if (method === "POST" && /\/sources$/.test(url)) {
-      // Live origin 404s any POST that does not look like the page's own
-      // fetch(): same URL + token + cookies from a bare client -> 404.
-      if (!(headers.Origin || headers.origin)) {
+      // Laravel: the POST only succeeds for the session that owns the CSRF
+      // token. Any other session (the app's stale jar) -> 404 Not Found.
+      if (!/witanime-session=REDACTED/.test(effectiveCookie)) {
         return { ok: false, status: 404, headers: {}, body: '{"message":"Not Found."}' };
       }
-      // Laravel: the CSRF header alone is not enough; the session cookie must travel.
-      if (!/witanime-session=/.test(cookie)) {
-        return { ok: false, status: 419, headers: {}, body: "CSRF token mismatch." };
+      if (!(headers.Origin || headers.origin)) {
+        return { ok: false, status: 404, headers: {}, body: '{"message":"Not Found."}' };
       }
       return { ok: true, status: 200, headers: { "content-type": "application/json" }, body: JSON.stringify(FIX.players) };
     }
@@ -74,15 +84,23 @@ function assert(cond, msg) {
 
 (async () => {
   const servers = await src.getEpisodeServers({ url: FIX.url });
+  const gets = calls.filter((c) => c.method === "GET");
   const posts = calls.filter((c) => c.method === "POST");
   console.log(`\nmode=${joinMode} sep=${JSON.stringify(sep)} setCookieValues=${FIX.set_cookie_values.length}`);
-  console.log(`POST seen: ${posts.length} | cookie header sent: ${posts.map((p) => p.cookie).join(",")}`);
+  console.log(`GET  seen: ${gets.map((g) => g.host).join(",")}`);
+  console.log(`POST seen: ${posts.map((p) => p.host).join(",")} | cookie header sent: ${posts.map((p) => p.cookie).join(",")}`);
   console.log(`servers: ${servers.length} ${servers.map((s) => s.name).join(" | ")}`);
 
   assert(posts.length === 1, "exactly one POST /sources (no wasted retry)");
   assert(posts[0] && posts[0].cookie === true, "POST carries a Cookie header");
-  assert(posts[0] && posts[0].origin === "https://witanime.site",
-    "POST carries the browser Origin header");
+  // The session must be minted AND used on a host the app's cookie store
+  // does not own, otherwise applyIdentity() replaces it with the app jar.
+  assert(posts[0] && posts[0].host === "witanime.site.",
+    "POST /sources uses the isolated trailing-dot host (app jar cannot overwrite it)");
+  assert(gets.length === 1 && gets[0].host === "witanime.site.",
+    "the watch page GET runs on the same isolated host as the POST");
+  assert(posts[0] && posts[0].origin === "https://witanime.site.",
+    "POST carries the browser Origin header of that host");
   assert(posts[0] && posts[0].secFetchSite === "same-origin",
     "POST carries Sec-Fetch-Site: same-origin");
   assert(servers.length === FIX.server_count,

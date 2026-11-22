@@ -1,10 +1,10 @@
 {
-  "version": "1.66.0",
+  "version": "1.66.1",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.11.22.1",
+  "manifest_version": "2026.11.22.2",
   "generated_at": "2026-09-04T14:30:00Z",
-  "last_updated": "2026-11-22T16:46:33Z",
+  "last_updated": "2026-11-22T23:05:00Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
   "min_app_version": "1.4.0",
   "repository": {
@@ -1927,7 +1927,7 @@
       "id": "witanime",
       "sid": 134,
       "name": "ويت أنمي (WitAnime)",
-      "version": "1.4.4",
+      "version": "1.4.5",
       "enabled": true,
       "status": "beta",
       "base_url": "https://witanime.site",
@@ -1943,7 +1943,7 @@
       },
       "script": {
         "url": "sources/witanime/source.js",
-        "sha256": "895dae02dae62e154ff85a3091a12750a37e79babe5320444c3b3a9547d36c23",
+        "sha256": "536403e639143fc58b3b37710637b577e52e049f464597e2e5e4562517aa06b2",
         "entry": "createSource"
       },
       "capabilities": {
@@ -1965,7 +1965,7 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "WitAnime - Arabic anime source on witanime.site (Laravel + Cloudflare). Latest-episodes homepage, card/movie details, full episode lists, and every stream player the site reports (FHD/HD/SD) with on-demand direct-mp4 extraction (ok/videa/mp4upload/4shared).",
-        "changelog": "v1.4.4: إصلاح جلب سيرفرات المشاهدة — الطلب أصبح بشكل fetch المتصفح (Origin + Sec-Fetch) لأن الموقع يرد 404 على طلب لا يشبه طلب الصفحة.",
+        "changelog": "v1.4.5: السيرفرات المشاهدة تعمل أخيراً. السبب لم يكن في الاستخراج: صفحة الحلقة لا تحوي التوكنات إطلاقاً (صفر توكن 64-بت في HTML)، بل تأتي من POST {watch}/sources بـكوكي الجلسة التي أنشأتها الصفحة نفسها. التطبيق كان يستبدل كوكي المصدر بجرته الخاصة على witanime.site (بلا جلسة Laravel) فيرد الموقع 404 {\"message\":\"Not Found.\"} وتظهر القائمة فارغة. الآن تُنشأ الجلسة وتُستخدم على المضيف witanime.site. (نقطة -terminating) — نفس الموقع أمام Cloudflare، لكن مفتاح مختلف في مخزن كوكي التطبيق، فتبقى جلستنا كما هي. تحقّق حي: 200 + players.",
         "ai_translation": false
       },
       "display": {
