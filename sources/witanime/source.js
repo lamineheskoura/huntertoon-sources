@@ -1,7 +1,11 @@
 function createSource(api, config) {
   var baseUrl = ((config && config.base_url) || "https://witanime.site").replace(/\/+$/, "");
   var configHeaders = (config && config.headers) || {};
+  // The app supplies a device-coherent UA in config.user_agent. The old code
+  // used the hardcoded manifest UA (Chrome/124) instead; the origin rejects
+  // that mismatch with 404 {"message":"Not Found."} on POST /sources.
   var userAgent =
+    (config && config.user_agent) ||
     configHeaders["User-Agent"] ||
     "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
   var lastPageUrl = baseUrl + "/";

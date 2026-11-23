@@ -1,10 +1,10 @@
 {
-  "version": "1.66.2",
+  "version": "1.66.3",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.11.23.1",
+  "manifest_version": "2026.11.23.2",
   "generated_at": "2026-09-04T14:30:00Z",
-  "last_updated": "2026-11-23T00:55:00Z",
+  "last_updated": "2026-11-23T05:45:00Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
   "min_app_version": "1.4.0",
   "repository": {
@@ -1927,7 +1927,7 @@
       "id": "witanime",
       "sid": 134,
       "name": "ويت أنمي (WitAnime)",
-      "version": "1.4.6",
+      "version": "1.4.7",
       "enabled": true,
       "status": "beta",
       "base_url": "https://witanime.site",
@@ -1943,7 +1943,7 @@
       },
       "script": {
         "url": "sources/witanime/source.js",
-        "sha256": "915aac9b5b0a83caf15d6425d1c54092f4008e53e8d39ce825e74b6ede61e540",
+        "sha256": "6d3f9b00f2a6b10b2807e60c0768d1880fb49063c9005fb6b644f14963db47b2",
         "entry": "createSource"
       },
       "capabilities": {
@@ -1965,7 +1965,7 @@
         "adult": false,
         "author": "HunterToon Team",
         "description": "WitAnime - Arabic anime source on witanime.site (Laravel + Cloudflare). Latest-episodes homepage, card/movie details, full episode lists, and every stream player the site reports (FHD/HD/SD) with on-demand direct-mp4 extraction (ok/videa/mp4upload/4shared).",
-        "changelog": "v1.4.6: إثبات حي لسبب اختفاء السيرفرات: الموقع يرد 200 لكن {\"players\":{},\"downloads\":{}} عندما تكون الجلسة لا تملك رمز CSRF المرسَل (جرّبنا تغيير كوكي الجلسة دون إعادة تحميل الصفحة: النتيجة قائمة فارغة). التطبيق يستبدل كوكي المصدر بجرته على witanime.site، فيصل الرد فارغاً وتظهر «لا يوجد سيرفر». المصدر الآن ينشئ الجلسة ويستخدمها على المضيف witanime.site. (نقطة أخيرة) الذي لا يطابق مفتاح مخزن كوكي التطبيق، ويعتبر الرد الفارغ فشلاً فيعيد المحاولة بجلسة جديدة بدل إرجاع قائمة فارغة.",
+        "changelog": "v1.4.7: إصلاح سبب 404 في جلب السيرفرات: المصدر كان يرسل UA ثابتاً قديماً من config.headers بدلاً من config.user_agent المتوافق مع الجهاز الذي يمرره التطبيق. الموقع يرفض UA غير المطابق لبصمة الاتصال بـ404. تحقق حي بتشغيل المصدر الحقيقي على الموقع: 9 سيرفرات (mega/4shared/videa/hgcloud/mp4upload). كما يبقى عزل الجلسة على المضيف witanime.site. وإعادة المحاولة عند الرد الفارغ.",
         "ai_translation": false
       },
       "display": {
