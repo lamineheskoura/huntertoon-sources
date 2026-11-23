@@ -1,10 +1,10 @@
 {
-  "version": "1.66.3",
+  "version": "1.66.4",
   "schema_version": 3,
   "runtime_api_version": "1.0",
-  "manifest_version": "2026.11.23.2",
+  "manifest_version": "2026.11.23.3",
   "generated_at": "2026-09-04T14:30:00Z",
-  "last_updated": "2026-11-23T05:45:00Z",
+  "last_updated": "2026-11-23T06:10:00Z",
   "sid_policy": "Stable 3-digit numeric source id (101-999). Assigned once, NEVER changed, NEVER reused after removal. Use for favorites/history/settings keys in app & server.",
   "min_app_version": "1.4.0",
   "repository": {
@@ -3166,6 +3166,62 @@
         },
         "in_filters": [
           "مانهوا"
+        ]
+      }
+    },
+    "anime_criative": {
+      "id": "anime_criative",
+      "sid": 157,
+      "name": "أنمي كريتيف (Anime Criative)",
+      "version": "1.0.0",
+      "enabled": true,
+      "status": "beta",
+      "base_url": "https://anime-site-api.animecriative.workers.dev",
+      "website_url": "https://anime-site-api.animecriative.workers.dev/home",
+      "icon_url": "https://www.google.com/s2/favicons?sz=64&domain=animecriative.workers.dev",
+      "requires_cf": false,
+      "image_referer": "https://anime-site-api.animecriative.workers.dev/home",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
+        "Accept": "application/json",
+        "Accept-Language": "ar,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://anime-site-api.animecriative.workers.dev/home"
+      },
+      "script": {
+        "url": "sources/anime_criative/source.js",
+        "sha256": "bb915767f79a84e1c00a123eca8c48c1fbf2c59920b5b7c5aae83881839b2f8e",
+        "entry": "createSource"
+      },
+      "capabilities": {
+        "content_types": [
+          "anime"
+        ],
+        "supports_search": true,
+        "supports_filters": true,
+        "supports_lazy_chapters": false,
+        "supports_download": false,
+        "requires_cloudflare": false
+      },
+      "compatibility": {
+        "min_app_version": "1.4.0",
+        "runtime_api_version": "1.0"
+      },
+      "metadata": {
+        "language": "ar",
+        "adult": false,
+        "author": "HunterToon Team",
+        "description": "Anime Criative - Arabic anime source rebuilt from the official app's public Worker API. Latest episodes, search, genre/list filters, details and episode lists (with custom-document fallback), and direct/embed watch servers.",
+        "changelog": "v1.0.0: مصدر جديد مفكوك من تطبيق Anime Criative 2.5 عبر rea/jadx. API الرسمي: latest_episodes/search/info/stream مع دمج custom/doc للعناوين والحلقات، وسيرفرات mp4/embed. تحقق حي: 24 بطاقة، 43 نتيجة بحث، 4 حلقات و5 سيرفرات.",
+        "ai_translation": false
+      },
+      "display": {
+        "alias": "سيرفر 57",
+        "icon": {
+          "seed": 157,
+          "icon_name": "movie"
+        },
+        "in_filters": [
+          "أنمي"
         ]
       }
     }
