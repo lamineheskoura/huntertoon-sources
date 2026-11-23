@@ -1133,12 +1133,33 @@ function createSource(api, config) {
         }
         // Final gate: HEAD-probe kills file-pages masquerading as mp4.
         // No budget left -> trust the pattern (previous behavior).
+        var okProbe = true;
         if (budDec(bud)) {
-          var okProbe = false;
           try {
             okProbe = await probeMedia(durl, link);
-          } catch (e) {}
-          if (!okProbe) continue;
+          } catch (e) {
+            okProbe = false;
+          }
+        }
+        if (!okProbe) {
+          // A dead direct URL must not delete the whole server. Streamtape's
+          // /get_video can answer {"status":500} while its embed still works;
+          // hand that original embed to the app's native extractor instead.
+          if (lastPageAlive) {
+            const probeFailedReason = label + "_direct_probe_failed";
+            out.push({
+              id: label + "-probe-" + idx,
+              name: label,
+              embedUrl: link,
+              url: link,
+              type: "embed",
+              quality: null,
+              headers: { "Referer": link, "User-Agent": FIREFOX_MOBILE },
+              reason: probeFailedReason
+            });
+            idx++;
+          }
+          continue;
         }
         rememberMedia(durl, link);
         out.push({
